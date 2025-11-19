@@ -4161,18 +4161,6 @@ class App {
             `;
         }
 
-        // Dinero B: solo si está en otrosMedios
-        if (metodosActivos.has('Dinero B (sin IVA)')) {
-            html += `
-                <tr style="background: #fff9e6;">
-                    <td>💵 Dinero B (sin IVA)</td>
-                    <td>–</td>
-                    <td><span id="resumenDineroB">0.00 €</span></td>
-                    <td><span style="color: #856404;">No computa</span></td>
-                </tr>
-            `;
-        }
-
         // Fila TOTAL: siempre visible
         html += `
             <tr class="fila-total">
@@ -4184,6 +4172,16 @@ class App {
         `;
 
         tbody.innerHTML = html;
+        
+        // Mostrar/ocultar caja de Dinero B
+        const containerDineroB = document.getElementById('resumenDineroBContainer');
+        if (containerDineroB) {
+            if (metodosActivos.has('Dinero B (sin IVA)')) {
+                containerDineroB.classList.remove('hidden');
+            } else {
+                containerDineroB.classList.add('hidden');
+            }
+        }
     }
 
     calcularTotalesCierre() {
