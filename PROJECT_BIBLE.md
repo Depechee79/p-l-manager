@@ -1,6 +1,6 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versión:** 4.27.3 Campos POS Dinámicos (Noviembre 2025)  
+**Versión:** 4.27.4 OCR Detección Duplicados Mejorada (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hostelería profesional (restaurantes, cafeterías)  
 **Estado:** ✅ APLICACIÓN FUNCIONAL - OCR INTELIGENTE COMPLETO + INVENTARIO PROFESIONAL + UX MEJORADA
@@ -8,6 +8,96 @@
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.27.4 - DETECCIÓN DUPLICADOS OCR MEJORADA Y CORRECCIONES UX (Noviembre 19, 2025)
+
+**CORRECCIONES CRÍTICAS DE UX EN OCR:**
+
+**1. MODAL DE FACTURA DUPLICADA - ARREGLADO**
+
+**Problema anterior:**
+- El modal mostraba símbolos HTML raros (`<strong>`, `<br>`) en lugar de texto formateado
+- No había forma de personalizar los textos de los botones
+- Mensaje confuso sin jerarquía visual
+
+**Solución:**
+- ✅ **`showConfirm()` ahora usa `innerHTML`** en lugar de `textContent` (línea 4459)
+- ✅ **Botones personalizables:** Nuevos parámetros `confirmText` y `cancelText`
+- ✅ **Mensaje mejorado con HTML:**
+  - Fondo amarillo para destacar datos de factura existente
+  - Fecha y total en bloque separado
+  - Pregunta clara: "¿Deseas sustituir la factura anterior?"
+- ✅ **Botones con iconos:** "✓ Sustituir factura" / "✗ Cancelar"
+
+**Código (app.js líneas ~4458-4461):**
+```javascript
+showConfirm(title, message, onConfirm, confirmText = 'Confirmar', cancelText = 'Cancelar') {
+    // ...
+    modalMessage.innerHTML = message; // ← Ahora renderiza HTML
+    btnConfirm.textContent = confirmText;
+    btnCancel.textContent = cancelText;
+}
+```
+
+**2. DETECCIÓN DE DUPLICADOS EN TIEMPO REAL**
+
+**Nueva funcionalidad:**
+- ✅ **Advertencia instantánea** mientras el usuario escribe
+- ✅ **Campo "Nº Factura" con indicador visual:**
+  - Borde naranja si detecta duplicado
+  - Mensaje: "⚠️ Ya existe una factura con este número"
+- ✅ **Detección automática** al cambiar número o proveedor
+- ✅ **Check inicial** cuando se carga el formulario OCR
+
+**Implementación (app.js líneas ~3525-3557):**
+```javascript
+const checkDuplicado = () => {
+    const numero = inputNumero.value.trim();
+    const proveedor = inputProveedor.value.trim();
+    
+    if (numero && proveedor) {
+        const existe = this.db.facturas.find(f => 
+            f.numeroFactura === numero && 
+            f.proveedor.toLowerCase() === proveedor.toLowerCase()
+        );
+        
+        if (existe) {
+            warningNumero.style.display = 'block';
+            inputNumero.style.borderColor = '#e67e22';
+        }
+    }
+};
+
+inputNumero.addEventListener('input', checkDuplicado);
+inputProveedor.addEventListener('input', checkDuplicado);
+```
+
+**3. CONFIRMACIÓN: RESUMEN CIERRES YA FUNCIONA CORRECTAMENTE**
+
+**Verificado:**
+- ✅ Bizum y Transferencias **solo aparecen** si tienen importe > 0
+- ✅ Implementado en v4.27.2 (líneas 1363-1375)
+- ✅ Lógica condicional:
+```javascript
+${bizumReal > 0 || bizumPOS > 0 ? `<tr>...Bizum...</tr>` : ''}
+${transReal > 0 || transPOS > 0 ? `<tr>...Transferencias...</tr>` : ''}
+```
+- **Estado:** Funcionando como se espera desde v4.27.2
+
+**ARCHIVOS MODIFICADOS:**
+- `app/app.js` (+55 líneas)
+  - Función `showConfirm()` con HTML y botones personalizables
+  - Modal de factura duplicada con mensaje HTML mejorado
+  - Detección en tiempo real de duplicados en campo Nº Factura
+  - Warning visual con borde naranja
+
+**BENEFICIOS:**
+- ✅ **Modal legible:** Ahora se ve correctamente el HTML formateado
+- ✅ **Prevención proactiva:** Usuario sabe ANTES de guardar que hay duplicado
+- ✅ **UX clara:** Botones con iconos y textos descriptivos
+- ✅ **Menos errores:** Advertencia instantánea evita duplicados accidentales
+
+---
 
 ### VERSIÓN 4.27.3 - CAMPOS POS DINÁMICOS SEGÚN MÉTODOS DE PAGO (Noviembre 19, 2025)
 

@@ -3411,6 +3411,7 @@ class App {
                     <div class="form-group">
                         <label>Nº Factura ${getConfidenceBadge(data.numero.confidence)}</label>
                         <input type="text" id="ocr_numero" value="${data.numero.value}" required>
+                        <small class="form-help" id="ocr_numero_warning" style="display: none; color: #e67e22; font-weight: 600;">⚠️ Ya existe una factura con este número</small>
                     </div>
                     <div class="form-group">
                         <label>Fecha ${getConfidenceBadge(data.fecha.confidence)}</label>
@@ -3498,6 +3499,9 @@ class App {
         if (tipo === 'factura') {
             const inputBase = document.getElementById('ocr_base');
             const inputTotal = document.getElementById('ocr_total');
+            const inputNumero = document.getElementById('ocr_numero');
+            const inputProveedor = document.getElementById('ocr_proveedor');
+            const warningNumero = document.getElementById('ocr_numero_warning');
             
             if (inputBase && inputTotal) {
                 const recalcular = () => {
@@ -3516,6 +3520,38 @@ class App {
                 
                 inputBase.addEventListener('input', recalcular);
                 inputTotal.addEventListener('input', recalcular);
+            }
+            
+            // Detectar duplicados en tiempo real
+            if (inputNumero && inputProveedor && warningNumero) {
+                const checkDuplicado = () => {
+                    const numero = inputNumero.value.trim();
+                    const proveedor = inputProveedor.value.trim();
+                    
+                    if (numero && proveedor) {
+                        const existe = this.db.facturas.find(f => 
+                            f.numeroFactura === numero && 
+                            f.proveedor.toLowerCase() === proveedor.toLowerCase()
+                        );
+                        
+                        if (existe) {
+                            warningNumero.style.display = 'block';
+                            inputNumero.style.borderColor = '#e67e22';
+                        } else {
+                            warningNumero.style.display = 'none';
+                            inputNumero.style.borderColor = '';
+                        }
+                    } else {
+                        warningNumero.style.display = 'none';
+                        inputNumero.style.borderColor = '';
+                    }
+                };
+                
+                inputNumero.addEventListener('input', checkDuplicado);
+                inputProveedor.addEventListener('input', checkDuplicado);
+                
+                // Check inicial
+                checkDuplicado();
             }
         }
     }
@@ -3547,17 +3583,20 @@ class App {
                     return new Promise((resolve) => {
                         this.showConfirm(
                             '⚠️ Factura Duplicada',
-                            `Ya existe una factura con el número <strong>${numeroFactura}</strong> del proveedor <strong>${nombreProveedor}</strong>.<br><br>` +
-                            `<strong>Fecha existente:</strong> ${facturaDuplicada.fecha}<br>` +
-                            `<strong>Total existente:</strong> ${facturaDuplicada.total.toFixed(2)} €<br><br>` +
-                            `¿Qué deseas hacer?`,
+                            `<p style="margin-bottom: 15px;">Ya existe una factura con el número <strong>${numeroFactura}</strong> del proveedor <strong>${nombreProveedor}</strong>.</p>` +
+                            `<div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin-bottom: 15px;">` +
+                            `<strong>📄 Factura existente:</strong><br>` +
+                            `<span style="color: #666;">Fecha: ${facturaDuplicada.fecha}</span><br>` +
+                            `<span style="color: #666;">Total: ${facturaDuplicada.total.toFixed(2)} €</span>` +
+                            `</div>` +
+                            `<p style="font-weight: 600;">¿Deseas sustituir la factura anterior por esta nueva?</p>`,
                             () => {
                                 // Sustituir factura existente
                                 this.db.delete('facturas', facturaDuplicada.id);
                                 this.continuarGuardadoFactura(tipo, baseNeta, nombreProveedor, nifCif, numeroFactura, true);
                             },
-                            'Sustituir factura',
-                            'Cancelar'
+                            '✓ Sustituir factura',
+                            '✗ Cancelar'
                         );
                     });
                 }
@@ -4449,7 +4488,7 @@ class App {
         modal.classList.add('show');
     }
 
-    showConfirm(title, message, onConfirm) {
+    showConfirm(title, message, onConfirm, confirmText = 'Confirmar', cancelText = 'Cancelar') {
         const modal = document.getElementById('confirmModal');
         const modalTitle = document.getElementById('confirmTitle');
         const modalMessage = document.getElementById('confirmMessage');
@@ -4457,7 +4496,9 @@ class App {
         const btnCancel = document.getElementById('cancelBtn');
         
         modalTitle.textContent = title;
-        modalMessage.textContent = message;
+        modalMessage.innerHTML = message;
+        btnConfirm.textContent = confirmText;
+        btnCancel.textContent = cancelText;
         
         // Limpiar listeners previos
         const newBtnConfirm = btnConfirm.cloneNode(true);
