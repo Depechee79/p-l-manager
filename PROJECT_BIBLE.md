@@ -1,13 +1,50 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hosteler�a Profesional
 
-**Versi�n:** 4.23 Sistema de Diseño UX/UI Moderno (Noviembre 2025)  
+**Versi�n:** 4.23.1 UX Formularios Colapsables (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hosteler�a profesional (restaurantes, cafeter�as)  
-**Estado:** ✅ APLICACIÓN FUNCIONAL - DISEÑO MODERNO APLICADO
+**Estado:** ✅ APLICACIÓN FUNCIONAL - DISEÑO MODERNO + UX MEJORADA
 
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.23.1 - FIX UX: FORMULARIOS COLAPSABLES (Noviembre 19, 2025)
+
+**PROBLEMA CORREGIDO:**
+Los formularios de Productos y Proveedores se mostraban abiertos por defecto al acceder a sus vistas, igual que ocurría antes con Cierres y Escandallos.
+
+**SOLUCIÓN APLICADA:**
+- ✅ Agregado botón "Nuevo Producto" y "Nuevo Proveedor" sobre los formularios
+- ✅ Formularios ahora empiezan colapsados (con clase `hidden`)
+- ✅ Botones toggle para mostrar/ocultar formularios
+- ✅ Al hacer clic en "Editar" se expande automáticamente el formulario
+- ✅ Botón cambia de "+ Nuevo..." a "− Cancelar" según estado
+- ✅ Al cancelar se resetea el formulario y vuelve a modo "Nuevo"
+
+**ARCHIVOS MODIFICADOS:**
+1. `app/index.html`:
+   - Línea 355: Agregado `<button id="toggleProveedorForm">` antes del formulario
+   - Línea 356: Agregado `id="proveedorFormCard"` y clase `hidden` al form-card
+   - Línea 456: Agregado `<button id="toggleProductoForm">` antes del formulario
+   - Línea 457: Agregado `id="productoFormCard"` y clase `hidden` al form-card
+
+2. `app/app.js`:
+   - Líneas 97-125: Agregado método `toggleForm(type)` para productos y proveedores
+   - Líneas 804-810: Modificado case 'proveedores' para colapsar formulario al entrar
+   - Líneas 811-817: Modificado case 'productos' para colapsar formulario al entrar
+   - Líneas 2447-2453: Expandir formulario en `editItem` caso 'proveedores'
+   - Líneas 2481-2487: Expandir formulario en `editItem` caso 'productos'
+
+**CONSISTENCIA UX:**
+Ahora TODOS los módulos con formularios (Cierres, Escandallos, Productos, Proveedores) siguen el mismo patrón:
+1. Vista muestra botón "+ Nuevo..."
+2. Formulario colapsado por defecto
+3. Click en botón → expande formulario
+4. Click en editar → expande formulario con datos
+5. Click en cancelar/guardar → colapsa formulario
+
+---
 
 ### VERSIÓN 4.23 - SISTEMA DE DISEÑO MODERNO (Noviembre 19, 2025)
 

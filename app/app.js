@@ -110,6 +110,31 @@ class App {
         }
     }
 
+    // Toggle form para productos y proveedores
+    toggleForm(type) {
+        const formCard = document.getElementById(`${type}FormCard`);
+        const toggleBtn = document.getElementById(`toggle${type.charAt(0).toUpperCase() + type.slice(1)}Form`);
+        
+        if (formCard && toggleBtn) {
+            const isHidden = formCard.classList.contains('hidden');
+            
+            if (isHidden) {
+                // Expandir
+                formCard.classList.remove('hidden');
+                formCard.style.display = 'block';
+                toggleBtn.textContent = '− Cancelar';
+            } else {
+                // Colapsar
+                formCard.classList.add('hidden');
+                formCard.style.display = 'none';
+                toggleBtn.textContent = type === 'proveedor' ? '+ Nuevo Proveedor' : '+ Nuevo Producto';
+                // Limpiar formulario
+                document.getElementById(`${type}Form`).reset();
+                delete document.getElementById(`${type}Form`).dataset.editId;
+            }
+        }
+    }
+
     initializeEventListeners() {
         // Navigation
         document.querySelectorAll('.nav-item').forEach(btn => {
@@ -802,9 +827,25 @@ class App {
                 break;
             case 'proveedores':
                 this.renderProveedores();
+                // Colapsar formulario al entrar
+                const proveedorFormCard = document.getElementById('proveedorFormCard');
+                const toggleProveedorBtn = document.getElementById('toggleProveedorForm');
+                if (proveedorFormCard && toggleProveedorBtn) {
+                    proveedorFormCard.classList.add('hidden');
+                    proveedorFormCard.style.display = 'none';
+                    toggleProveedorBtn.textContent = '+ Nuevo Proveedor';
+                }
                 break;
             case 'productos':
                 this.renderProductos();
+                // Colapsar formulario al entrar
+                const productoFormCard = document.getElementById('productoFormCard');
+                const toggleProductoBtn = document.getElementById('toggleProductoForm');
+                if (productoFormCard && toggleProductoBtn) {
+                    productoFormCard.classList.add('hidden');
+                    productoFormCard.style.display = 'none';
+                    toggleProductoBtn.textContent = '+ Nuevo Producto';
+                }
                 break;
             case 'escandallos':
                 this.renderEscandallos();
@@ -2441,6 +2482,14 @@ class App {
                 return;
 
             case 'proveedores':
+                // Expandir formulario
+                const proveedorFormCard = document.getElementById('proveedorFormCard');
+                const toggleProveedorBtn = document.getElementById('toggleProveedorForm');
+                if (proveedorFormCard && toggleProveedorBtn) {
+                    proveedorFormCard.classList.remove('hidden');
+                    proveedorFormCard.style.display = 'block';
+                    toggleProveedorBtn.textContent = '− Cancelar';
+                }
                 document.getElementById('proveedorNombreFiscal').value = item.nombreFiscal || item.nombre || '';
                 document.getElementById('proveedorNombreComercial').value = item.nombreComercial || '';
                 document.getElementById('proveedorNifCif').value = item.nifCif || item.nif || '';
@@ -2460,6 +2509,14 @@ class App {
                 break;
 
             case 'productos':
+                // Expandir formulario
+                const productoFormCard = document.getElementById('productoFormCard');
+                const toggleProductoBtn = document.getElementById('toggleProductoForm');
+                if (productoFormCard && toggleProductoBtn) {
+                    productoFormCard.classList.remove('hidden');
+                    productoFormCard.style.display = 'block';
+                    toggleProductoBtn.textContent = '− Cancelar';
+                }
                 document.getElementById('productoNombre').value = item.nombre;
                 document.getElementById('productoProveedorId').value = item.proveedorId || '';
                 document.getElementById('productoPrecio').value = item.precioPromedioNeto || item.precio || 0;

@@ -353,7 +353,8 @@
 
             <!-- PROVEEDORES VIEW -->
             <div id="proveedoresView" class="view hidden">
-                <div class="form-card">
+                <button id="toggleProveedorForm" class="btn-primary" style="margin-bottom: 20px;" onclick="app.toggleForm('proveedor')">+ Nuevo Proveedor</button>
+                <div class="form-card hidden" id="proveedorFormCard">
                     <h3>Nuevo Proveedor</h3>
                     <form id="proveedorForm">
                         <div class="form-row">
@@ -453,7 +454,8 @@
 
             <!-- PRODUCTOS VIEW -->
             <div id="productosView" class="view hidden">
-                <div class="form-card">
+                <button id="toggleProductoForm" class="btn-primary" style="margin-bottom: 20px;" onclick="app.toggleForm('producto')">+ Nuevo Producto</button>
+                <div class="form-card hidden" id="productoFormCard">
                     <h3>Nuevo Producto</h3>
                     <form id="productoForm">
                         <div class="form-group">
