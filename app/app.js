@@ -81,6 +81,15 @@ class App {
             editingLineId: null,
             tempProductoAltaRapida: null // Para cuando se crea producto desde inventario
         };
+        
+        // IMPORTANTE: Cerrar modales que puedan estar bloqueados
+        setTimeout(() => {
+            document.querySelectorAll('.modal, .modal-overlay').forEach(m => {
+                m.classList.remove('show');
+                m.style.display = 'none';
+            });
+        }, 100);
+        
         // Variables OCR mejoradas
         this.currentPDFText = null;
         this.isPDFWithEmbeddedText = false;
@@ -4792,6 +4801,14 @@ class App {
         const modalMessage = document.getElementById('confirmMessage');
         const btnConfirm = document.getElementById('confirmBtn');
         const btnCancel = document.getElementById('cancelBtn');
+        
+        if (!modal || !modalTitle || !modalMessage || !btnConfirm || !btnCancel) {
+            console.error('❌ Confirm modal elements not found');
+            if (confirm(`${title}\n\n${message}`)) {
+                onConfirm();
+            }
+            return;
+        }
         
         modalTitle.textContent = title;
         modalMessage.innerHTML = message;
