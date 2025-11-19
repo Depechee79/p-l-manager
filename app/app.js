@@ -4325,20 +4325,29 @@ class App {
         document.getElementById('resumenRealTarjetas').textContent = totalDatafonos.toFixed(2) + ' €';
         this.updateDeltaResumen('resumenDeltaTarjetas', descTarjetas);
         
-        // Bizum
-        document.getElementById('resumenPOSBizum').textContent = posBizum.toFixed(2) + ' €';
-        document.getElementById('resumenRealBizum').textContent = bizumContado.toFixed(2) + ' €';
-        this.updateDeltaResumen('resumenDeltaBizum', descBizum);
+        // Bizum (solo si existe en tabla)
+        const bizumPOSEl = document.getElementById('resumenPOSBizum');
+        const bizumRealEl = document.getElementById('resumenRealBizum');
+        if (bizumPOSEl && bizumRealEl) {
+            bizumPOSEl.textContent = posBizum.toFixed(2) + ' €';
+            bizumRealEl.textContent = bizumContado.toFixed(2) + ' €';
+            this.updateDeltaResumen('resumenDeltaBizum', descBizum);
+        }
         
-        // Transferencias
-        document.getElementById('resumenPOSTrans').textContent = posTrans.toFixed(2) + ' €';
-        document.getElementById('resumenRealTrans').textContent = transContadas.toFixed(2) + ' €';
-        this.updateDeltaResumen('resumenDeltaTrans', descTrans);
+        // Transferencias (solo si existe en tabla)
+        const transPOSEl = document.getElementById('resumenPOSTrans');
+        const transRealEl = document.getElementById('resumenRealTrans');
+        if (transPOSEl && transRealEl) {
+            transPOSEl.textContent = posTrans.toFixed(2) + ' €';
+            transRealEl.textContent = transContadas.toFixed(2) + ' €';
+            this.updateDeltaResumen('resumenDeltaTrans', descTrans);
+        }
         
         // Dinero B (sin IVA - solo informativo)
         const resumenDineroBEl = document.getElementById('resumenDineroB');
         if (resumenDineroBEl) {
-            resumenDineroBEl.textContent = dineroB.toFixed(2) + ' €';
+            const valorDineroB = dineroB !== undefined ? dineroB : 0;
+            resumenDineroBEl.textContent = valorDineroB.toFixed(2) + ' €';
         }
         
         // TOTAL
