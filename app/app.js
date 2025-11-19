@@ -81,6 +81,9 @@ class App {
             editingLineId: null,
             tempProductoAltaRapida: null // Para cuando se crea producto desde inventario
         };
+        // Variables OCR mejoradas
+        this.currentPDFText = null;
+        this.isPDFWithEmbeddedText = false;
         this.initializeEventListeners();
         this.render();
     }
@@ -2079,7 +2082,7 @@ class App {
             return;
         }
 
-        // Si es PDF, convertir a imagen de alta calidad
+        // Si es PDF, intentar extraer texto embebido primero
         if (file.type === 'application/pdf' || fileExtension === 'pdf') {
             this.showToast('📝 Procesando PDF...');
             try {
@@ -2088,12 +2091,30 @@ class App {
                     throw new Error('PDF.js no está cargado');
                 }
                 
-                const imageData = await this.convertPDFToImage(file);
-                this.currentImageData = imageData;
-                document.getElementById('ocrPreviewImg').src = imageData;
-                document.getElementById('ocrPreviewContainer').classList.remove('hidden');
-                document.getElementById('ocrUploadCard').classList.remove('hidden');
-                this.showToast('✅ PDF cargado correctamente');
+                // PASO 1: Intentar extraer texto embebido (MUCHO MÁS RÁPIDO)
+                const extractedText = await this.extractPDFText(file);
+                
+                if (extractedText && extractedText.length > 100) {
+                    // PDF con texto embebido - NO necesita OCR
+                    this.showToast('✅ PDF con texto embebido detectado (sin OCR)');
+                    this.currentPDFText = extractedText;
+                    this.isPDFWithEmbeddedText = true;
+                    
+                    // Generar preview visual del PDF
+                    const imageData = await this.convertPDFToImage(file);
+                    document.getElementById('ocrPreviewImg').src = imageData;
+                    document.getElementById('ocrPreviewContainer').classList.remove('hidden');
+                    document.getElementById('ocrUploadCard').classList.remove('hidden');
+                } else {
+                    // PDF escaneado - NECESITA OCR con Tesseract
+                    this.showToast('📸 PDF escaneado detectado, usando OCR...');
+                    this.isPDFWithEmbeddedText = false;
+                    const imageData = await this.convertPDFToImage(file);
+                    this.currentImageData = imageData;
+                    document.getElementById('ocrPreviewImg').src = imageData;
+                    document.getElementById('ocrPreviewContainer').classList.remove('hidden');
+                    document.getElementById('ocrUploadCard').classList.remove('hidden');
+                }
             } catch (error) {
                 console.error('Error convirtiendo PDF:', error);
                 this.showToast('❌ Error al procesar PDF. Intenta con una imagen JPG/PNG', true);
@@ -2124,6 +2145,38 @@ class App {
             document.getElementById('ocrFile').value = '';
         };
         reader.readAsDataURL(file);
+    }
+
+    async extractPDFText(pdfFile) {
+        // Intentar extraer texto embebido del PDF (sin OCR)
+        try {
+            if (typeof pdfjsLib === 'undefined') {
+                return null;
+            }
+
+            const arrayBuffer = await pdfFile.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            
+            if (!pdf || pdf.numPages === 0) return null;
+
+            const page = await pdf.getPage(1);
+            const textContent = await page.getTextContent();
+            
+            // Extraer texto de los items
+            const textItems = textContent.items.map(item => item.str).join(' ');
+            
+            // Si el texto es sustancial (>100 caracteres), el PDF tiene texto embebido
+            if (textItems.trim().length > 100) {
+                console.log('✅ PDF con texto embebido detectado, NO se necesita OCR');
+                return textItems;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Error extrayendo texto embebido:', error);
+            return null;
+        }
     }
 
     async convertPDFToImage(pdfFile) {
@@ -2248,6 +2301,44 @@ class App {
     }
 
     async analyzeOCRDocument() {
+        // Verificar si tenemos texto embebido de PDF
+        if (this.isPDFWithEmbeddedText && this.currentPDFText) {
+            this.showToast('✅ Procesando texto embebido del PDF...');
+            try {
+                // Parsear directamente el texto embebido (SIN Tesseract)
+                const extractedData = {
+                    text: this.currentPDFText,
+                    confidence: 99, // Texto embebido tiene máxima confianza
+                    words: []
+                };
+                
+                const parsedData = this.parseOCRTextWithConfidence(extractedData);
+                
+                // Detectar tipo si no hay seleccionado
+                let tipoDocumento = this.currentOCRType;
+                if (!tipoDocumento) {
+                    tipoDocumento = this.detectarTipoDocumento(parsedData);
+                    this.currentOCRType = tipoDocumento;
+                    document.querySelectorAll('.ocr-tipo-btn').forEach(btn => {
+                        if (btn.dataset.tipo === tipoDocumento) {
+                            btn.classList.add('active');
+                        }
+                    });
+                    this.showToast(`📄 Tipo detectado: ${this.getTipoLabel(tipoDocumento)}`);
+                }
+                
+                this.displayOCRForm(parsedData, tipoDocumento);
+                document.getElementById('ocrDataCard').classList.remove('hidden');
+                this.showToast('✅ Análisis completado (texto embebido)');
+                return;
+            } catch (error) {
+                console.error('Error procesando texto embebido:', error);
+                this.showToast('❌ Error al procesar texto embebido', true);
+                return;
+            }
+        }
+        
+        // Flujo normal con OCR Tesseract
         if (!this.currentImageData) {
             this.showToast('⚠️ Primero carga una imagen o PDF', true);
             return;
@@ -2323,13 +2414,18 @@ class App {
             });
 
             // Configuración ÓPTIMA para documentos comerciales (facturas, albaranes)
+            // OEM 1 = LSTM only (Tesseract 4+ con redes neuronales)
+            // PSM 6 = Assume uniform block of text (ideal para facturas)
             await worker.setParameters({
-                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, // PSM 6: texto en bloques (facturas/tablas)
-                tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY, // OEM 3: LSTM (máxima calidad)
+                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, // PSM 6
+                tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY, // OEM 1
                 preserve_interword_spaces: '1',
-                tessedit_char_blacklist: '', // Sin blacklist
+                tessedit_char_blacklist: '',
                 language_model_penalty_non_dict_word: '0.5',
-                language_model_penalty_non_freq_dict_word: '0.5'
+                language_model_penalty_non_freq_dict_word: '0.5',
+                // Mejorar detección de números y puntuación
+                classify_enable_adaptive_matcher: '1',
+                classify_enable_learning: '1'
             });
 
             // Primera pasada: texto completo
@@ -2373,6 +2469,60 @@ class App {
         }
     }
 
+    normalizeNumber(numStr) {
+        // Función para normalizar números de facturas españolas
+        // "668,84€" → 668.84
+        // "1.609,30€" → 1609.30
+        // "1,609.30" → 1609.30 (formato americano)
+        
+        if (!numStr) return 0;
+        
+        // Convertir a string y limpiar
+        let cleaned = numStr.toString()
+            .trim()
+            .replace(/€/g, '')
+            .replace(/\s+/g, '')
+            .replace(/[A-Za-z]/g, ''); // Quitar letras
+        
+        // Detectar formato:
+        // Si tiene punto Y coma → formato europeo (punto=miles, coma=decimal)
+        // Si solo tiene coma → coma es decimal
+        // Si solo tiene punto → punto es decimal (formato US)
+        
+        const tienePunto = cleaned.includes('.');
+        const tieneComa = cleaned.includes(',');
+        
+        if (tienePunto && tieneComa) {
+            // Formato europeo: 1.609,30 → 1609.30
+            // El último separador es el decimal
+            const ultimoPunto = cleaned.lastIndexOf('.');
+            const ultimaComa = cleaned.lastIndexOf(',');
+            
+            if (ultimaComa > ultimoPunto) {
+                // Formato: 1.609,30
+                cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+            } else {
+                // Formato: 1,609.30 (americano)
+                cleaned = cleaned.replace(/,/g, '');
+            }
+        } else if (tieneComa) {
+            // Solo coma: puede ser decimal o miles
+            // Si tiene más de 3 dígitos después de la coma, es miles
+            const partes = cleaned.split(',');
+            if (partes.length === 2 && partes[1].length <= 2) {
+                // Es decimal: 668,84 → 668.84
+                cleaned = cleaned.replace(',', '.');
+            } else {
+                // Es miles: 1,609 → 1609
+                cleaned = cleaned.replace(/,/g, '');
+            }
+        }
+        // Si solo tiene punto, ya está en formato correcto
+        
+        const numero = parseFloat(cleaned);
+        return isNaN(numero) ? 0 : numero;
+    }
+
     parseOCRTextWithConfidence(ocrData) {
         const text = ocrData.text;
         const confidence = ocrData.confidence;
@@ -2387,61 +2537,134 @@ class App {
             fecha: { value: '', confidence: 0 },
             baseImponible: { value: 0, confidence: 0 },
             iva: { value: 0, confidence: 0 },
-            total: { value: 0, confidence: 0 }
+            total: { value: 0, confidence: 0 },
+            needsReview: false
         };
 
-        lines.forEach((line, index) => {
-            const lineConfidence = confidence; // Simplificado - en producción calcular por línea
-            
-            // Proveedor
-            if (line.match(/proveedor|supplier|empresa/i) && !data.proveedor.value) {
-                const match = line.split(/[:]/)[1]?.trim() || lines[index + 1]?.trim() || '';
-                data.proveedor = { value: match, confidence: lineConfidence };
+        // EXTRACCIÓN SEMÁNTICA CON REGEX (no por posición)
+        
+        // 1. PROVEEDOR/EMPRESA (buscar antes del CIF o en encabezado)
+        const cifMatch = text.match(/(?:NIF|CIF|B)[:\s]*([A-HJ-NP-SUVW][0-9]{8})/i);
+        if (cifMatch) {
+            data.nif = { value: cifMatch[1], confidence: confidence };
+            // Buscar nombre de empresa antes del CIF
+            const textBeforeCIF = text.substring(0, text.indexOf(cifMatch[0]));
+            const lineasAntes = textBeforeCIF.split('\n').reverse();
+            for (let i = 0; i < Math.min(3, lineasAntes.length); i++) {
+                const linea = lineasAntes[i].trim();
+                if (linea.length > 3 && linea.length < 60 && !linea.match(/factura|fecha|total/i)) {
+                    data.proveedor = { value: linea, confidence: confidence };
+                    break;
+                }
             }
-            
-            // NIF/CIF
-            if (line.match(/NIF|CIF|B[0-9]{8}/i)) {
-                const match = line.match(/[A-Z][0-9]{8}/);
-                if (match) data.nif = { value: match[0], confidence: lineConfidence };
+        }
+        
+        // 2. NÚMERO DE FACTURA (patrones comunes)
+        const numeroPatterns = [
+            /(?:N[úu]mero|Factura|Invoice|Número\s*#?)\s*[:\s]*([A-Z0-9\-\/]+)/i,
+            /(?:PCK|FCK|FAC|INV)[\-]?([0-9]+)/i,
+            /(?:Número|N[úu]m)\s*[:\s]*([A-Z0-9]+)/i
+        ];
+        for (const pattern of numeroPatterns) {
+            const match = text.match(pattern);
+            if (match && match[1] && match[1].length > 2) {
+                data.numero = { value: match[1], confidence: confidence };
+                break;
             }
-            
-            // Número factura
-            if (line.match(/factura|invoice|n[úu]mero|nº/i) && !data.numero.value) {
-                const match = line.match(/[A-Z0-9\-]+/);
-                if (match) data.numero = { value: match[0], confidence: lineConfidence };
+        }
+        
+        // 3. FECHA (múltiples formatos)
+        const fechaMatch = text.match(/(?:Fecha|Date)[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i) ||
+                          text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+        if (fechaMatch) {
+            const fechaStr = this.parseDateFromText(fechaMatch[1]);
+            data.fecha = { value: fechaStr, confidence: confidence };
+        }
+        
+        // 4. BASE IMPONIBLE (buscar patrón semántico)
+        const basePatterns = [
+            /BASE\s+IMPONIBLE[\s\w]*?([0-9\.\,]+)\s*€?/i,
+            /BASE\s+NETA[\s\w]*?([0-9\.\,]+)\s*€?/i,
+            /IMPONIBLE[\s\w]*?([0-9\.\,]+)\s*€?/i
+        ];
+        for (const pattern of basePatterns) {
+            const match = text.match(pattern);
+            if (match && match[1]) {
+                data.baseImponible = { 
+                    value: this.normalizeNumber(match[1]), 
+                    confidence: confidence 
+                };
+                break;
             }
-            
-            // Fecha
-            if (line.match(/fecha|date/i) && !data.fecha.value) {
-                const fechaStr = this.parseDateFromText(line);
-                data.fecha = { value: fechaStr, confidence: lineConfidence };
+        }
+        
+        // 5. IVA (buscar porcentaje + importe)
+        const ivaPatterns = [
+            /IVA\s*(\d{1,2})%[\s\w]*?([0-9\.\,]+)\s*€?/i,
+            /IVA[\s]*[:\s]*([0-9\.\,]+)\s*€?/i,
+            /(\d{1,2})%\s+IVA[\s]*[:\s]*([0-9\.\,]+)\s*€?/i
+        ];
+        for (const pattern of ivaPatterns) {
+            const match = text.match(pattern);
+            if (match) {
+                // Tomar el último número (el importe, no el porcentaje)
+                const numero = match[match.length - 1];
+                data.iva = { 
+                    value: this.normalizeNumber(numero), 
+                    confidence: confidence 
+                };
+                break;
             }
-            
-            // Base Imponible
-            if (line.match(/base\s+imponible/i)) {
-                const amount = line.match(/[\d.,]+/);
-                if (amount) data.baseImponible = { value: parseFloat(amount[0].replace(',', '.')), confidence: lineConfidence };
+        }
+        
+        // 6. TOTAL (buscar patrón semántico)
+        const totalPatterns = [
+            /TOTAL\s+CON\s+IVA[\s\w]*?([0-9\.\,]+)\s*€?/i,
+            /TOTAL[\s]*[:\s]*([0-9\.\,]+)\s*€?/i,
+            /IMPORTE\s+TOTAL[\s]*[:\s]*([0-9\.\,]+)\s*€?/i
+        ];
+        for (const pattern of totalPatterns) {
+            const match = text.match(pattern);
+            if (match && match[1]) {
+                data.total = { 
+                    value: this.normalizeNumber(match[1]), 
+                    confidence: confidence 
+                };
+                break;
             }
-            
-            // IVA
-            if (line.match(/IVA|iva/i) && line.match(/[\d.,]+/)) {
-                const amount = line.match(/[\d.,]+/g);
-                if (amount) data.iva = { value: parseFloat(amount[amount.length - 1].replace(',', '.')), confidence: lineConfidence };
-            }
-            
-            // Total
-            if (line.match(/total|importe\s+total/i)) {
-                const amount = line.match(/[\d.,]+/g);
-                if (amount) data.total = { value: parseFloat(amount[amount.length - 1].replace(',', '.')), confidence: lineConfidence };
-            }
-        });
+        }
 
         // Si no hay fecha, usar hoy
         if (!data.fecha.value) {
             data.fecha = { value: new Date().toISOString().split('T')[0], confidence: 0 };
         }
+        
+        // VALIDACIÓN DE COHERENCIA: base + IVA ≈ total
+        this.validateInvoiceCoherence(data);
 
         return data;
+    }
+    
+    validateInvoiceCoherence(data) {
+        // Validar que base + IVA ≈ total (tolerancia 0.01€)
+        const base = data.baseImponible.value;
+        const iva = data.iva.value;
+        const total = data.total.value;
+        
+        if (base > 0 && iva > 0 && total > 0) {
+            const calculado = base + iva;
+            const diferencia = Math.abs(calculado - total);
+            
+            if (diferencia > 0.01) {
+                // No cuadra - marcar para revisar
+                data.needsReview = true;
+                data.coherenceError = `Base (${base.toFixed(2)}) + IVA (${iva.toFixed(2)}) = ${calculado.toFixed(2)} ≠ Total (${total.toFixed(2)})`;
+                console.warn('⚠️ Coherencia: Los importes no cuadran', data.coherenceError);
+            } else {
+                data.needsReview = false;
+                console.log('✅ Coherencia: Base + IVA = Total correctamente');
+            }
+        }
     }
 
     parseDateFromText(text) {
@@ -2456,17 +2679,84 @@ class App {
 
     displayOCRForm(data, tipo) {
         const getConfidenceClass = (conf) => {
-            if (conf > 75) return 'high';
-            if (conf > 50) return 'medium';
+            if (conf >= 85) return 'high';
+            if (conf >= 60) return 'medium';
             return 'low';
         };
 
         const getConfidenceBadge = (conf) => {
             const cls = getConfidenceClass(conf);
-            return `<span class="field-confidence ${cls}" title="Confianza: ${Math.round(conf)}%"></span>`;
+            let icon = '🟢'; // Verde
+            let texto = 'Alta confianza';
+            if (cls === 'medium') {
+                icon = '🟡'; // Amarillo
+                texto = 'Revisar';
+            } else if (cls === 'low') {
+                icon = '🔴'; // Rojo
+                texto = 'Corregir';
+            }
+            return `<span class="field-confidence ${cls}" title="${texto}: ${Math.round(conf)}%">${icon}</span>`;
         };
 
-        let html = `<div class="form-group">
+        let html = '';
+        
+        // SECCIÓN DE VERIFICACIÓN (solo para facturas)
+        if (tipo === 'factura') {
+            const baseImponible = data.baseImponible.value || 0;
+            const ivaAmount = data.iva.value || 0;
+            const totalConIva = data.total.value || 0;
+            const baseNeta = baseImponible > 0 ? baseImponible : totalConIva > 0 ? (totalConIva / 1.10) : 0;
+            
+            // Calcular coherencia
+            const calculado = baseNeta + ivaAmount;
+            const coherente = totalConIva > 0 && Math.abs(calculado - totalConIva) <= 0.01;
+            
+            html += `
+            <div class="ocr-verification-panel" style="background: ${coherente ? '#e8f5e9' : '#fff3e0'}; border: 2px solid ${coherente ? '#4caf50' : '#ff9800'}; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 12px 0; color: #1f2d3d; font-size: 15px;">
+                    ${coherente ? '✅' : '⚠️'} Verificación de Importes
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px;">
+                    <div>
+                        <div style="color: #7f8c8d; font-weight: 500;">Proveedor</div>
+                        <div style="font-weight: 600; color: #1f2d3d;">${data.proveedor.value || '-'} ${getConfidenceBadge(data.proveedor.confidence)}</div>
+                    </div>
+                    <div>
+                        <div style="color: #7f8c8d; font-weight: 500;">CIF/NIF</div>
+                        <div style="font-weight: 600; color: #1f2d3d;">${data.nif.value || '-'} ${getConfidenceBadge(data.nif.confidence)}</div>
+                    </div>
+                    <div>
+                        <div style="color: #7f8c8d; font-weight: 500;">Nº Factura</div>
+                        <div style="font-weight: 600; color: #1f2d3d;">${data.numero.value || '-'} ${getConfidenceBadge(data.numero.confidence)}</div>
+                    </div>
+                </div>
+                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 12px 0;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+                    <div>
+                        <div style="color: #7f8c8d; font-weight: 500;">Fecha</div>
+                        <div style="font-weight: 600; color: #1f2d3d;">${data.fecha.value || '-'}</div>
+                    </div>
+                    <div>
+                        <div style="color: #7f8c8d; font-weight: 500;">Base NETA</div>
+                        <div style="font-weight: 700; color: #1171ef;">${baseNeta.toFixed(2)}€ ${getConfidenceBadge(data.baseImponible.confidence)}</div>
+                    </div>
+                    <div>
+                        <div style="color: #7f8c8d; font-weight: 500;">IVA</div>
+                        <div style="font-weight: 600; color: #1f2d3d;">${ivaAmount.toFixed(2)}€ ${getConfidenceBadge(data.iva.confidence)}</div>
+                    </div>
+                    <div>
+                        <div style="color: #7f8c8d; font-weight: 500;">Total</div>
+                        <div style="font-weight: 700; color: ${coherente ? '#4caf50' : '#ff9800'};">${totalConIva.toFixed(2)}€ ${getConfidenceBadge(data.total.confidence)}</div>
+                    </div>
+                </div>
+                ${!coherente && totalConIva > 0 ? `
+                <div style="margin-top: 10px; padding: 8px; background: #fff; border-left: 3px solid #ff9800; font-size: 12px; color: #e65100;">
+                    <strong>⚠️ Revisa los importes:</strong> Base (${baseNeta.toFixed(2)}) + IVA (${ivaAmount.toFixed(2)}) = ${(baseNeta + ivaAmount).toFixed(2)}€ ≠ Total (${totalConIva.toFixed(2)})€
+                </div>` : ''}
+            </div>`;
+        }
+        
+        html += `<div class="form-group">
             <label>📄 Texto Original Extraído</label>
             <textarea readonly rows="4" style="font-size: 12px; background: #f8f9fa;">${data.text.substring(0, 500)}...</textarea>
         </div>`;
@@ -2577,6 +2867,31 @@ class App {
         document.getElementById('ocrDynamicForm').innerHTML = html;
         document.getElementById('ocrSaveBtn').disabled = false;
         this.currentOCRExtractedData = data;
+        
+        // Añadir listeners para recálculo automático (solo facturas)
+        if (tipo === 'factura') {
+            const inputBase = document.getElementById('ocr_base');
+            const inputTotal = document.getElementById('ocr_total');
+            
+            if (inputBase && inputTotal) {
+                const recalcular = () => {
+                    const base = parseFloat(inputBase.value) || 0;
+                    const total = parseFloat(inputTotal.value) || 0;
+                    const iva = total - base;
+                    
+                    // Actualizar panel de verificación
+                    const coherente = Math.abs((base + iva) - total) <= 0.01;
+                    const panel = document.querySelector('.ocr-verification-panel');
+                    if (panel && total > 0) {
+                        panel.style.background = coherente ? '#e8f5e9' : '#fff3e0';
+                        panel.style.borderColor = coherente ? '#4caf50' : '#ff9800';
+                    }
+                };
+                
+                inputBase.addEventListener('input', recalcular);
+                inputTotal.addEventListener('input', recalcular);
+            }
+        }
     }
 
     saveOCRData() {
