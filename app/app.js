@@ -255,18 +255,22 @@ class App {
                     <option value="Otro">Otro</option>
                 </select>
                 <input type="number" step="0.01" value="0" min="0" placeholder="Importe" class="otro-medio-importe">
-                <button type="button" class="btn-remove" onclick="this.parentElement.remove(); app.calcularTotalesCierre()">✗</button>
+                <button type="button" class="btn-remove" onclick="this.parentElement.remove(); app.renderDatosPOS(); app.calcularTotalesCierre()">✗</button>
             `;
             container.appendChild(item);
+            item.querySelector('.otro-medio-tipo').addEventListener('change', () => this.renderDatosPOS());
             item.querySelector('.otro-medio-importe').addEventListener('input', () => this.calcularTotalesCierre());
+            this.renderDatosPOS();
         });
 
-        ['posEfectivo', 'posTarjetas', 'posBizum', 'posTransferencias', 'dineroB'].forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.addEventListener('input', () => this.calcularTotalesCierre());
-            }
-        });
+        // Listener para dineroB
+        const dineroB = document.getElementById('dineroB');
+        if (dineroB) {
+            dineroB.addEventListener('input', () => this.calcularTotalesCierre());
+        }
+
+        // Renderizar campos POS inicialmente (solo Efectivo y Tarjetas)
+        this.renderDatosPOS();
 
         // Filtros compras
         document.getElementById('btnFiltrarCompras').addEventListener('click', () => {
@@ -3967,6 +3971,75 @@ class App {
                (billetes.m005 * 0.05) + (billetes.m002 * 0.02) + (billetes.m001 * 0.01);
     }
 
+    renderDatosPOS() {
+        // Obtener métodos de pago activos de "Otros Medios"
+        const metodosActivos = new Set();
+        document.querySelectorAll('.otro-medio-item').forEach(item => {
+            const tipo = item.querySelector('.otro-medio-tipo').value;
+            metodosActivos.add(tipo);
+        });
+
+        const container = document.getElementById('datosPOSContainer');
+        if (!container) return;
+
+        // Siempre mostrar Efectivo y Tarjetas
+        let html = `
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Efectivo POS</label>
+                    <input type="number" step="0.01" id="posEfectivo" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Tarjetas POS</label>
+                    <input type="number" step="0.01" id="posTarjetas" value="0" min="0">
+                </div>
+            </div>
+        `;
+
+        // Solo mostrar Bizum y Transferencias si están en otrosMedios
+        const tieneBizum = metodosActivos.has('Bizum');
+        const tieneTransferencia = metodosActivos.has('Transferencia');
+
+        if (tieneBizum || tieneTransferencia) {
+            html += '<div class="form-row">';
+            if (tieneBizum) {
+                html += `
+                    <div class="form-group">
+                        <label>Bizum POS</label>
+                        <input type="number" step="0.01" id="posBizum" value="0" min="0">
+                    </div>
+                `;
+            }
+            if (tieneTransferencia) {
+                html += `
+                    <div class="form-group">
+                        <label>Transferencias POS</label>
+                        <input type="number" step="0.01" id="posTransferencias" value="0" min="0">
+                    </div>
+                `;
+            }
+            html += '</div>';
+        }
+
+        // Nº Tickets POS (siempre visible)
+        html += `
+            <div class="form-group">
+                <label>Nº Tickets POS</label>
+                <input type="number" id="posTickets" value="0" min="0">
+            </div>
+        `;
+
+        container.innerHTML = html;
+
+        // Reasignar listeners a los nuevos campos
+        ['posEfectivo', 'posTarjetas', 'posBizum', 'posTransferencias'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', () => this.calcularTotalesCierre());
+            }
+        });
+    }
+
     calcularTotalesCierre() {
         // Calcular efectivo
         const billetes = {
@@ -4019,11 +4092,16 @@ class App {
         });
         document.getElementById('totalOtrosMedios').textContent = totalOtrosMedios.toFixed(2) + '€';
 
-        // Obtener valores POS
-        const posEfectivo = parseFloat(document.getElementById('posEfectivo').value) || 0;
-        const posTarjetas = parseFloat(document.getElementById('posTarjetas').value) || 0;
-        const posBizum = parseFloat(document.getElementById('posBizum').value) || 0;
-        const posTrans = parseFloat(document.getElementById('posTransferencias').value) || 0;
+        // Obtener valores POS (verificar si existen)
+        const posEfectivoEl = document.getElementById('posEfectivo');
+        const posTarjetasEl = document.getElementById('posTarjetas');
+        const posBizumEl = document.getElementById('posBizum');
+        const posTransEl = document.getElementById('posTransferencias');
+
+        const posEfectivo = posEfectivoEl ? (parseFloat(posEfectivoEl.value) || 0) : 0;
+        const posTarjetas = posTarjetasEl ? (parseFloat(posTarjetasEl.value) || 0) : 0;
+        const posBizum = posBizumEl ? (parseFloat(posBizumEl.value) || 0) : 0;
+        const posTrans = posTransEl ? (parseFloat(posTransEl.value) || 0) : 0;
 
         // Calcular descuadres
         const descEfectivo = totalEfectivo - posEfectivo;

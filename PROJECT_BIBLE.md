@@ -1,6 +1,6 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versión:** 4.27.2 Cierres Optimizados + Detección Duplicados (Noviembre 2025)  
+**Versión:** 4.27.3 Campos POS Dinámicos (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hostelería profesional (restaurantes, cafeterías)  
 **Estado:** ✅ APLICACIÓN FUNCIONAL - OCR INTELIGENTE COMPLETO + INVENTARIO PROFESIONAL + UX MEJORADA
@@ -8,6 +8,95 @@
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.27.3 - CAMPOS POS DINÁMICOS SEGÚN MÉTODOS DE PAGO (Noviembre 19, 2025)
+
+**MEJORA CRÍTICA DE UX EN DATOS DEL POS:**
+
+**Problema anterior:**
+- Los campos "Bizum POS" y "Transferencias POS" aparecían **siempre** en el formulario de cierres
+- Esto causaba confusión cuando esos métodos no se usaban en el día
+
+**Solución implementada:**
+- ✅ **Renderizado dinámico de campos POS** según métodos añadidos en "Otros Medios de Pago"
+- ✅ **Campos fijos:** Efectivo POS, Tarjetas POS, Nº Tickets POS (siempre visibles)
+- ✅ **Campos condicionales:** 
+  - Bizum POS → Solo aparece si se añade Bizum en "Otros Medios"
+  - Transferencias POS → Solo aparece si se añade Transferencia en "Otros Medios"
+- ✅ **Actualización en tiempo real:** Al añadir/eliminar/cambiar tipo en "Otros Medios", los campos POS se regeneran automáticamente
+
+**Implementación técnica:**
+
+**Función clave (app.js):**
+```javascript
+renderDatosPOS() {
+    // Detectar métodos activos en "Otros Medios de Pago"
+    const metodosActivos = new Set();
+    document.querySelectorAll('.otro-medio-item').forEach(item => {
+        const tipo = item.querySelector('.otro-medio-tipo').value;
+        metodosActivos.add(tipo);
+    });
+
+    // Regenerar HTML solo con campos necesarios
+    let html = `
+        <!-- Efectivo y Tarjetas: siempre visibles -->
+        <div class="form-group">
+            <label>Efectivo POS</label>
+            <input type="number" id="posEfectivo" value="0" min="0">
+        </div>
+    `;
+
+    // Bizum y Transferencias: condicionales
+    if (metodosActivos.has('Bizum')) {
+        html += `<input type="number" id="posBizum" value="0" min="0">`;
+    }
+    // ...
+}
+```
+
+**Eventos que disparan renderizado:**
+1. Al añadir nuevo medio de pago → `addOtroMedio.click`
+2. Al eliminar medio de pago → `btn-remove.click`
+3. Al cambiar tipo de medio → `.otro-medio-tipo.change`
+4. Al cargar la página → Inicialización automática
+
+**Prevención de errores:**
+- `calcularTotalesCierre()` actualizado para verificar existencia de campos antes de leerlos:
+```javascript
+const posBizumEl = document.getElementById('posBizum');
+const posBizum = posBizumEl ? (parseFloat(posBizumEl.value) || 0) : 0;
+```
+
+**HTML (index.html):**
+Sección POS convertida de estática a dinámica:
+```html
+<!-- ANTES: 30 líneas HTML fijas -->
+<div class="form-group">
+    <label>Bizum POS</label>
+    <input type="number" id="posBizum" value="0" min="0">
+</div>
+
+<!-- DESPUÉS: Contenedor dinámico -->
+<div id="datosPOSContainer">
+    <!-- Se renderiza dinámicamente -->
+</div>
+```
+
+**ARCHIVOS MODIFICADOS:**
+- `app/app.js` (+71 líneas)
+  - Función `renderDatosPOS()` (nueva)
+  - Listeners en `addOtroMedio` con llamadas a `renderDatosPOS()`
+  - `calcularTotalesCierre()` con comprobación de existencia de campos
+- `app/index.html` (-26 líneas)
+  - Sección POS simplificada a contenedor dinámico
+
+**BENEFICIOS:**
+- ✅ **UX más limpia:** Solo se muestran campos relevantes
+- ✅ **Menos errores:** No hay campos confusos sin usar
+- ✅ **Coherencia:** Si añades Bizum en "Otros Medios", aparece automáticamente campo "Bizum POS"
+- ✅ **Flexibilidad:** Soporta cualquier flujo de trabajo (añadir/quitar/cambiar métodos)
+
+---
 
 ### VERSIÓN 4.27.2 - CIERRES OPTIMIZADOS + DETECCIÓN DUPLICADOS + DINERO B (Noviembre 19, 2025)
 
