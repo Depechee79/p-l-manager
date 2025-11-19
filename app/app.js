@@ -4225,14 +4225,21 @@ class App {
         });
         document.getElementById('totalDatafonos').textContent = totalDatafonos.toFixed(2) + '€';
 
-        // Calcular otros medios
+        // Calcular otros medios (EXCLUIR Dinero B porque no computa)
         let totalOtrosMedios = 0;
         let bizumContado = 0;
         let transContadas = 0;
+        let dineroB = 0;
         document.querySelectorAll('.otro-medio-item').forEach(item => {
             const tipo = item.querySelector('.otro-medio-tipo').value;
             const importe = parseFloat(item.querySelector('.otro-medio-importe').value) || 0;
-            totalOtrosMedios += importe;
+            
+            if (tipo === 'Dinero B (sin IVA)') {
+                dineroB += importe;  // NO sumar a totalOtrosMedios
+            } else {
+                totalOtrosMedios += importe;
+            }
+            
             if (tipo === 'Bizum') bizumContado += importe;
             if (tipo === 'Transferencia') transContadas += importe;
         });
@@ -4259,14 +4266,14 @@ class App {
         // Actualizar resumen en tiempo real
         this.actualizarResumenTiempoReal({
             posEfectivo, posTarjetas, posBizum, posTrans,
-            totalEfectivo, totalDatafonos, bizumContado, transContadas,
+            totalEfectivo, totalDatafonos, bizumContado, transContadas, dineroB,
             descEfectivo, descTarjetas, descBizum, descTrans, descTotal
         });
     }
     
     actualizarResumenTiempoReal(datos) {
         const { posEfectivo, posTarjetas, posBizum, posTrans,
-                totalEfectivo, totalDatafonos, bizumContado, transContadas,
+                totalEfectivo, totalDatafonos, bizumContado, transContadas, dineroB,
                 descEfectivo, descTarjetas, descBizum, descTrans, descTotal } = datos;
         
         // Efectivo
@@ -4289,16 +4296,11 @@ class App {
         document.getElementById('resumenRealTrans').textContent = transContadas.toFixed(2) + ' €';
         this.updateDeltaResumen('resumenDeltaTrans', descTrans);
         
-        // Dinero B (sin IVA - solo informativo) - desde otrosMedios
-        let dineroB = 0;
-        document.querySelectorAll('.otro-medio-item').forEach(item => {
-            const tipo = item.querySelector('.otro-medio-tipo').value;
-            const importe = parseFloat(item.querySelector('.otro-medio-importe').value) || 0;
-            if (tipo === 'Dinero B (sin IVA)') {
-                dineroB += importe;
-            }
-        });
-        document.getElementById('resumenDineroB').textContent = dineroB.toFixed(2) + ' €';
+        // Dinero B (sin IVA - solo informativo)
+        const resumenDineroBEl = document.getElementById('resumenDineroB');
+        if (resumenDineroBEl) {
+            resumenDineroBEl.textContent = dineroB.toFixed(2) + ' €';
+        }
         
         // TOTAL
         const totalPOS = posEfectivo + posTarjetas + posBizum + posTrans;
