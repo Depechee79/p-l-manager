@@ -261,7 +261,7 @@ class App {
             item.querySelector('.otro-medio-importe').addEventListener('input', () => this.calcularTotalesCierre());
         });
 
-        ['posEfectivo', 'posTarjetas', 'posBizum', 'posTransferencias'].forEach(id => {
+        ['posEfectivo', 'posTarjetas', 'posBizum', 'posTransferencias', 'dineroB'].forEach(id => {
             const element = document.getElementById(id);
             if (element) {
                 element.addEventListener('input', () => this.calcularTotalesCierre());
@@ -338,6 +338,9 @@ class App {
                 totalDatafonos: totalDatafonos,
                 otrosMedios: otrosMedios,
                 totalOtrosMedios: totalOtrosMedios,
+                
+                // Dinero B (sin IVA)
+                dineroB: parseFloat(document.getElementById('dineroB').value) || 0,
                 
                 // Datos POS
                 posEfectivo: parseFloat(document.getElementById('posEfectivo').value) || 0,
@@ -1351,18 +1354,27 @@ class App {
                                     <td>${tarjetasReal.toFixed(2)} €</td>
                                     <td class="${deltaClass(deltaTarjetas)}">${deltaTarjetas >= 0 ? '+' : ''}${deltaTarjetas.toFixed(2)} €</td>
                                 </tr>
+                                ${bizumReal > 0 || bizumPOS > 0 ? `
                                 <tr>
                                     <td>📲 Bizum</td>
                                     <td>${bizumPOS.toFixed(2)} €</td>
                                     <td>${bizumReal.toFixed(2)} €</td>
                                     <td class="${deltaClass(deltaBizum)}">${deltaBizum >= 0 ? '+' : ''}${deltaBizum.toFixed(2)} €</td>
-                                </tr>
+                                </tr>` : ''}
+                                ${transReal > 0 || transPOS > 0 ? `
                                 <tr>
                                     <td>🏦 Transferencias</td>
                                     <td>${transPOS.toFixed(2)} €</td>
                                     <td>${transReal.toFixed(2)} €</td>
                                     <td class="${deltaClass(deltaTrans)}">${deltaTrans >= 0 ? '+' : ''}${deltaTrans.toFixed(2)} €</td>
-                                </tr>
+                                </tr>` : ''}
+                                ${c.otrosMedios && c.otrosMedios.filter(m => m.tipo !== 'Bizum' && m.tipo !== 'Transferencia').length > 0 ? c.otrosMedios.filter(m => m.tipo !== 'Bizum' && m.tipo !== 'Transferencia').map(m => `
+                                <tr>
+                                    <td>💰 ${m.tipo}</td>
+                                    <td>–</td>
+                                    <td>${m.importe.toFixed(2)} €</td>
+                                    <td class="delta-cero">–</td>
+                                </tr>`).join('') : ''}
                                 <tr class="fila-total">
                                     <td><strong>TOTAL</strong></td>
                                     <td><strong>${c.totalPos.toFixed(2)} €</strong></td>
@@ -3518,64 +3530,36 @@ class App {
                 
                 const nombreProveedor = document.getElementById('ocr_proveedor').value;
                 const nifCif = document.getElementById('ocr_nif').value;
+                const numeroFactura = document.getElementById('ocr_numero').value;
                 
-                // Verificar si el proveedor existe
-                let proveedorExiste = false;
-                if (nifCif) {
-                    proveedorExiste = this.db.proveedores.some(p => p.nifCif === nifCif);
+                // Verificar si ya existe factura con mismo número
+                const facturaDuplicada = this.db.facturas.find(f => 
+                    f.numeroFactura === numeroFactura && 
+                    f.proveedor.toLowerCase() === nombreProveedor.toLowerCase()
+                );
+                
+                if (facturaDuplicada) {
+                    // Mostrar modal de confirmación
+                    return new Promise((resolve) => {
+                        this.showConfirm(
+                            '⚠️ Factura Duplicada',
+                            `Ya existe una factura con el número <strong>${numeroFactura}</strong> del proveedor <strong>${nombreProveedor}</strong>.<br><br>` +
+                            `<strong>Fecha existente:</strong> ${facturaDuplicada.fecha}<br>` +
+                            `<strong>Total existente:</strong> ${facturaDuplicada.total.toFixed(2)} €<br><br>` +
+                            `¿Qué deseas hacer?`,
+                            () => {
+                                // Sustituir factura existente
+                                this.db.delete('facturas', facturaDuplicada.id);
+                                this.continuarGuardadoFactura(tipo, baseNeta, nombreProveedor, nifCif, numeroFactura, true);
+                            },
+                            'Sustituir factura',
+                            'Cancelar'
+                        );
+                    });
                 }
-                if (!proveedorExiste && nombreProveedor) {
-                    proveedorExiste = this.db.proveedores.some(p => 
-                        p.nombreFiscal.toLowerCase() === nombreProveedor.toLowerCase()
-                    );
-                }
                 
-                // Si es proveedor nuevo, crearlo automáticamente
-                if (!proveedorExiste && nombreProveedor) {
-                    const emailInput = document.getElementById('ocr_proveedor_email');
-                    const telefonoInput = document.getElementById('ocr_proveedor_telefono');
-                    const direccionInput = document.getElementById('ocr_proveedor_direccion');
-                    const cpInput = document.getElementById('ocr_proveedor_cp');
-                    const ciudadInput = document.getElementById('ocr_proveedor_ciudad');
-                    const provinciaInput = document.getElementById('ocr_proveedor_provincia');
-                    
-                    const nuevoProveedor = {
-                        nombreFiscal: nombreProveedor,
-                        nombreComercial: nombreProveedor,
-                        nifCif: nifCif || '',
-                        tipo: 'Comida', // Por defecto
-                        email: emailInput ? emailInput.value : '',
-                        telefono: telefonoInput ? telefonoInput.value : '',
-                        direccion: direccionInput ? direccionInput.value : '',
-                        codigoPostal: cpInput ? cpInput.value : '',
-                        ciudad: ciudadInput ? ciudadInput.value : '',
-                        provincia: provinciaInput ? provinciaInput.value : '',
-                        periodo: this.currentPeriod,
-                        creadoDesdeOCR: true
-                    };
-                    
-                    const proveedorCreado = this.db.add('proveedores', nuevoProveedor);
-                    console.log('✅ Nuevo proveedor creado desde OCR:', proveedorCreado);
-                    console.log('✅ Total proveedores después de crear:', this.db.proveedores.length);
-                }
-
-                const factura = {
-                    fecha: document.getElementById('ocr_fecha').value,
-                    proveedor: nombreProveedor,
-                    numeroFactura: document.getElementById('ocr_numero').value,
-                    nifCif: nifCif,
-                    baseImponible: baseNeta,
-                    total: parseFloat(document.getElementById('ocr_total').value) || baseNeta * 1.10,
-                    categoria: 'Comida',
-                    periodo: this.currentPeriod,
-                    ocrProcessed: true,
-                    ocrConfidence: this.currentOCRExtractedData.confidence
-                };
-                
-                this.db.add('facturas', factura);
-                
-                const mensajeProveedor = !proveedorExiste ? ' + Proveedor nuevo creado automáticamente' : '';
-                this.showModal('✅ Éxito', `Factura guardada en COMPRAS correctamente con base NETA sin IVA${mensajeProveedor}`, 'success');
+                // Continuar con guardado normal
+                this.continuarGuardadoFactura(tipo, baseNeta, nombreProveedor, nifCif, numeroFactura, false);
                 
             } else if (tipo === 'albaran') {
                 const albaran = {
@@ -3661,6 +3645,68 @@ class App {
     verificarProveedorSimilar() {
         // Si el usuario edita manualmente el nombre, re-verificar similares
         // (Función placeholder para futuras mejoras)
+    }
+
+    continuarGuardadoFactura(tipo, baseNeta, nombreProveedor, nifCif, numeroFactura, esSustitucion) {
+        // Verificar si el proveedor existe
+        let proveedorExiste = false;
+        if (nifCif) {
+            proveedorExiste = this.db.proveedores.some(p => p.nifCif === nifCif);
+        }
+        if (!proveedorExiste && nombreProveedor) {
+            proveedorExiste = this.db.proveedores.some(p => 
+                p.nombreFiscal.toLowerCase() === nombreProveedor.toLowerCase()
+            );
+        }
+        
+        // Si es proveedor nuevo, crearlo automáticamente
+        if (!proveedorExiste && nombreProveedor) {
+            const emailInput = document.getElementById('ocr_proveedor_email');
+            const telefonoInput = document.getElementById('ocr_proveedor_telefono');
+            const direccionInput = document.getElementById('ocr_proveedor_direccion');
+            const cpInput = document.getElementById('ocr_proveedor_cp');
+            const ciudadInput = document.getElementById('ocr_proveedor_ciudad');
+            const provinciaInput = document.getElementById('ocr_proveedor_provincia');
+            
+            const nuevoProveedor = {
+                nombreFiscal: nombreProveedor,
+                nombreComercial: nombreProveedor,
+                nifCif: nifCif || '',
+                tipo: 'Comida',
+                email: emailInput ? emailInput.value : '',
+                telefono: telefonoInput ? telefonoInput.value : '',
+                direccion: direccionInput ? direccionInput.value : '',
+                codigoPostal: cpInput ? cpInput.value : '',
+                ciudad: ciudadInput ? ciudadInput.value : '',
+                provincia: provinciaInput ? provinciaInput.value : '',
+                periodo: this.currentPeriod,
+                creadoDesdeOCR: true
+            };
+            
+            this.db.add('proveedores', nuevoProveedor);
+        }
+
+        const factura = {
+            fecha: document.getElementById('ocr_fecha').value,
+            proveedor: nombreProveedor,
+            numeroFactura: numeroFactura,
+            nifCif: nifCif,
+            baseImponible: baseNeta,
+            total: parseFloat(document.getElementById('ocr_total').value) || baseNeta * 1.10,
+            categoria: 'Comida',
+            periodo: this.currentPeriod,
+            ocrProcessed: true,
+            ocrConfidence: this.currentOCRExtractedData.confidence
+        };
+        
+        this.db.add('facturas', factura);
+        
+        const mensajeAccion = esSustitucion ? ' (factura anterior sustituida)' : '';
+        const mensajeProveedor = !proveedorExiste ? ' + Proveedor nuevo creado automáticamente' : '';
+        this.showModal('✅ Éxito', `Factura guardada en COMPRAS correctamente con base NETA sin IVA${mensajeAccion}${mensajeProveedor}`, 'success');
+        
+        this.resetOCRForm();
+        this.render();
     }
 
     abrirModalEditarFactura(factura) {
@@ -4018,6 +4064,10 @@ class App {
         document.getElementById('resumenPOSTrans').textContent = posTrans.toFixed(2) + ' €';
         document.getElementById('resumenRealTrans').textContent = transContadas.toFixed(2) + ' €';
         this.updateDeltaResumen('resumenDeltaTrans', descTrans);
+        
+        // Dinero B (sin IVA - solo informativo)
+        const dineroB = parseFloat(document.getElementById('dineroB').value) || 0;
+        document.getElementById('resumenDineroB').textContent = dineroB.toFixed(2) + ' €';
         
         // TOTAL
         const totalPOS = posEfectivo + posTarjetas + posBizum + posTrans;

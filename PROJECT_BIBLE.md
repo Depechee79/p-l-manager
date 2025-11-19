@@ -1,6 +1,6 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versión:** 4.27.0 OCR Inteligente con Zonas PDF (Noviembre 2025)  
+**Versión:** 4.27.2 Cierres Optimizados + Detección Duplicados (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hostelería profesional (restaurantes, cafeterías)  
 **Estado:** ✅ APLICACIÓN FUNCIONAL - OCR INTELIGENTE COMPLETO + INVENTARIO PROFESIONAL + UX MEJORADA
@@ -8,6 +8,115 @@
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.27.2 - CIERRES OPTIMIZADOS + DETECCIÓN DUPLICADOS + DINERO B (Noviembre 19, 2025)
+
+**MEJORAS CRÍTICAS DE CIERRES Y OCR:**
+
+**1. VISUALIZACIÓN INTELIGENTE DE MEDIOS DE PAGO EN CIERRES**
+
+**Antes:**
+- Todos los medios de pago aparecían siempre en el resumen (Bizum, Transferencias, etc.) aunque no se usaran
+- Resumen de cierres mostraba filas vacías con 0.00€
+
+**Después:**
+- ✅ **Filtrado dinámico:** Solo aparecen medios de pago que tienen importe > 0
+- ✅ Bizum solo si `bizumReal > 0 || bizumPOS > 0`
+- ✅ Transferencias solo si `transReal > 0 || transPOS > 0`
+- ✅ Otros medios personalizados (Cheque, etc.) se muestran automáticamente si existen
+- ✅ Resumen limpio y profesional sin datos vacíos
+
+**Código (app.js líneas ~1330):**
+```javascript
+${bizumReal > 0 || bizumPOS > 0 ? `
+<tr>
+    <td>📲 Bizum</td>
+    <td>${bizumPOS.toFixed(2)} €</td>
+    <td>${bizumReal.toFixed(2)} €</td>
+    <td>${deltaBizum >= 0 ? '+' : ''}${deltaBizum.toFixed(2)} €</td>
+</tr>` : ''}
+```
+
+**2. DETECCIÓN DE FACTURAS DUPLICADAS EN OCR**
+
+**Antes:**
+- OCR guardaba facturas sin verificar duplicados
+- Posibilidad de duplicar facturas con mismo número y proveedor
+
+**Después:**
+- ✅ **Detección automática** de factura duplicada (mismo número + proveedor)
+- ✅ **Modal de confirmación** con 2 opciones:
+  - **Sustituir factura:** Elimina la anterior y guarda la nueva
+  - **Cancelar:** Mantiene la factura existente sin duplicar
+- ✅ Información detallada de factura existente (fecha, total)
+- ✅ Previene duplicados accidentales
+
+**Código (app.js líneas ~3519):**
+```javascript
+const facturaDuplicada = this.db.facturas.find(f => 
+    f.numeroFactura === numeroFactura && 
+    f.proveedor.toLowerCase() === nombreProveedor.toLowerCase()
+);
+
+if (facturaDuplicada) {
+    this.showConfirm(
+        '⚠️ Factura Duplicada',
+        `Ya existe factura ${numeroFactura} de ${nombreProveedor}...`,
+        () => {
+            this.db.delete('facturas', facturaDuplicada.id);
+            this.continuarGuardadoFactura(..., true); // Sustituir
+        }
+    );
+}
+```
+
+**3. DINERO B (SIN IVA) EN CIERRES**
+
+**Nueva funcionalidad:**
+- ✅ **Campo Dinero B** en formulario de cierres
+- ✅ Importe **NO computa IVA** (aclaración explícita en UI)
+- ✅ Aparece en tabla de resumen con fondo amarillo
+- ✅ Etiqueta: "No computa" en columna de diferencias
+- ✅ Se guarda en cierre con campo `dineroB`
+- ✅ Actualización en tiempo real del resumen
+
+**HTML (index.html líneas ~199):**
+```html
+<div class="cierre-section" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+    <h4>💵 Dinero B (Sin IVA)</h4>
+    <p style="color: #856404;">⚠️ Este importe NO computa IVA en ningún cálculo</p>
+    <input type="number" id="dineroB" value="0" min="0">
+</div>
+```
+
+**Tabla resumen (index.html):**
+```html
+<tr style="background: #fff9e6;">
+    <td>💵 Dinero B (sin IVA)</td>
+    <td>–</td>
+    <td><span id="resumenDineroB">0.00 €</span></td>
+    <td><span style="color: #856404;">No computa</span></td>
+</tr>
+```
+
+**ARCHIVOS MODIFICADOS:**
+- `app/app.js` (+92 líneas)
+  - Función `renderCierres()` con filtrado de medios
+  - Función `continuarGuardadoFactura()` (nueva)
+  - Función `saveOCRData()` con detección duplicados
+  - Función `actualizarResumenTiempoReal()` con Dinero B
+  - Listener `dineroB` input
+- `app/index.html` (+15 líneas)
+  - Campo Dinero B en formulario
+  - Fila Dinero B en tabla resumen
+
+**IMPACTO USUARIO:**
+- ✅ Cierres más limpios y profesionales (solo datos relevantes)
+- ✅ Prevención de errores por duplicación de facturas
+- ✅ Control de "Dinero B" sin afectar IVA
+- ✅ UX mejorada con confirmaciones claras
+
+---
 
 ### VERSIÓN 4.27.1 - OCR UNIVERSAL CON ZONAS + VALIDACIONES REFORZADAS (Noviembre 19, 2025)
 
