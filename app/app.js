@@ -1575,7 +1575,7 @@ class App {
                 </div>
                 <div class="list-item-actions">
                     ${f.archivoData ? `<button class="btn-view" onclick="app.verArchivoFactura(${f.id})" title="Ver archivo">🔍</button>` : ''}
-                    <button class="btn-verify-factura" onclick="app.verificarFacturaAlbaranes(${f.id})" title="Verificar albaranes">🔍</button>
+                    <button class="btn-verify-factura" onclick="app.verificarFacturaAlbaranes(${f.id})" title="Verificar albaranes">📋</button>
                     <button class="btn-edit" onclick="app.editItem('facturas', ${f.id})" title="Editar">✏️</button>
                     <button class="btn-delete" onclick="app.deleteItem('facturas', ${f.id})" title="Eliminar">🗑️</button>
                 </div>
@@ -1620,10 +1620,16 @@ class App {
             return;
         }
 
+        // Validar que la factura tenga los datos necesarios
+        if (!factura.proveedor || !factura.fecha) {
+            this.showToast('❌ Factura sin datos de proveedor o fecha', true);
+            return;
+        }
+
         // Buscar albaranes del mismo proveedor anteriores o iguales a la fecha de la factura
         const albaranesCandidatos = this.db.albaranes.filter(a => 
             a.proveedor === factura.proveedor && 
-            a.fecha <= factura.fecha
+            a.fecha && a.fecha <= factura.fecha
         );
 
         if (albaranesCandidatos.length === 0) {
@@ -1631,7 +1637,7 @@ class App {
                 '📋 Información de Verificación',
                 `No se encontraron albaranes del proveedor "<strong>${factura.proveedor}</strong>" anteriores o iguales a la fecha <strong>${factura.fecha}</strong>.<br><br>` +
                 `<strong>Factura:</strong> ${factura.numeroFactura}<br>` +
-                `<strong>Total:</strong> ${factura.total.toFixed(2)}€<br><br>` +
+                `<strong>Total:</strong> ${(factura.total || factura.baseImponible || 0).toFixed(2)}€<br><br>` +
                 `<small style="color: #7f8c8d;">💡 Esto es normal si aún no has registrado albaranes de este proveedor. Los albaranes son opcionales.</small>`,
                 'info'
             );
@@ -1640,7 +1646,8 @@ class App {
 
         // Mostrar resumen
         const totalAlbaranes = albaranesCandidatos.reduce((sum, a) => sum + (a.total || 0), 0);
-        const diferencia = Math.abs(factura.total - totalAlbaranes);
+        const totalFactura = factura.total || factura.baseImponible || 0;
+        const diferencia = Math.abs(totalFactura - totalAlbaranes);
         const coincide = diferencia < 0.01;
 
         const detalleAlbaranes = albaranesCandidatos.map(a => 
@@ -1652,7 +1659,7 @@ class App {
                 <p><strong>Factura:</strong> ${factura.numeroFactura}</p>
                 <p><strong>Proveedor:</strong> ${factura.proveedor}</p>
                 <p><strong>Fecha:</strong> ${factura.fecha}</p>
-                <p><strong>Total Factura:</strong> ${factura.total.toFixed(2)}€</p>
+                <p><strong>Total Factura:</strong> ${totalFactura.toFixed(2)}€</p>
                 <hr style="margin: 15px 0; border: none; border-top: 1px solid #e3e8ef;">
                 <p><strong>Albaranes encontrados (${albaranesCandidatos.length}):</strong></p>
                 <ul style="margin: 10px 0; padding-left: 20px;">${detalleAlbaranes}</ul>
