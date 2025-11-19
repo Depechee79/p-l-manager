@@ -256,7 +256,7 @@ class App {
                     <option value="Otro">Otro</option>
                 </select>
                 <input type="number" step="0.01" value="0" min="0" placeholder="Importe" class="otro-medio-importe">
-                <button type="button" class="btn-remove" onclick="this.parentElement.remove(); app.renderDatosPOS(); app.calcularTotalesCierre()">✗</button>
+                <button type="button" class="btn-remove" onclick="this.parentElement.remove(); app.renderDatosPOS(); app.renderResumenTabla(); app.calcularTotalesCierre()">✗</button>
             `;
             container.appendChild(item);
             
@@ -287,13 +287,16 @@ class App {
             selectTipo.addEventListener('change', () => {
                 aplicarEstiloDineroB();
                 this.renderDatosPOS();
+                this.renderResumenTabla();
             });
             item.querySelector('.otro-medio-importe').addEventListener('input', () => this.calcularTotalesCierre());
             this.renderDatosPOS();
+            this.renderResumenTabla();
         });
 
-        // Renderizar campos POS inicialmente (solo Efectivo y Tarjetas)
+        // Renderizar campos POS y resumen inicialmente (solo Efectivo y Tarjetas)
         this.renderDatosPOS();
+        this.renderResumenTabla();
 
         // Filtros compras
         document.getElementById('btnFiltrarCompras').addEventListener('click', () => {
@@ -4103,6 +4106,84 @@ class App {
                 element.addEventListener('input', () => this.calcularTotalesCierre());
             }
         });
+    }
+
+    renderResumenTabla() {
+        // Obtener métodos de pago activos de "Otros Medios"
+        const metodosActivos = new Set();
+        document.querySelectorAll('.otro-medio-item').forEach(item => {
+            const tipo = item.querySelector('.otro-medio-tipo').value;
+            metodosActivos.add(tipo);
+        });
+
+        const tbody = document.getElementById('resumenTbody');
+        if (!tbody) return;
+
+        let html = '';
+
+        // Efectivo y Tarjetas: SIEMPRE visibles
+        html += `
+            <tr>
+                <td>💶 Efectivo</td>
+                <td><span id="resumenPOSEfectivo">0.00 €</span></td>
+                <td><span id="resumenRealEfectivo">0.00 €</span></td>
+                <td><span id="resumenDeltaEfectivo" class="delta-cero">0.00 €</span></td>
+            </tr>
+            <tr>
+                <td>💳 Tarjetas</td>
+                <td><span id="resumenPOSTarjetas">0.00 €</span></td>
+                <td><span id="resumenRealTarjetas">0.00 €</span></td>
+                <td><span id="resumenDeltaTarjetas" class="delta-cero">0.00 €</span></td>
+            </tr>
+        `;
+
+        // Bizum: solo si está en otrosMedios
+        if (metodosActivos.has('Bizum')) {
+            html += `
+                <tr>
+                    <td>📲 Bizum</td>
+                    <td><span id="resumenPOSBizum">0.00 €</span></td>
+                    <td><span id="resumenRealBizum">0.00 €</span></td>
+                    <td><span id="resumenDeltaBizum" class="delta-cero">0.00 €</span></td>
+                </tr>
+            `;
+        }
+
+        // Transferencias: solo si está en otrosMedios
+        if (metodosActivos.has('Transferencia')) {
+            html += `
+                <tr>
+                    <td>🏦 Transferencias</td>
+                    <td><span id="resumenPOSTrans">0.00 €</span></td>
+                    <td><span id="resumenRealTrans">0.00 €</span></td>
+                    <td><span id="resumenDeltaTrans" class="delta-cero">0.00 €</span></td>
+                </tr>
+            `;
+        }
+
+        // Dinero B: solo si está en otrosMedios
+        if (metodosActivos.has('Dinero B (sin IVA)')) {
+            html += `
+                <tr style="background: #fff9e6;">
+                    <td>💵 Dinero B (sin IVA)</td>
+                    <td>–</td>
+                    <td><span id="resumenDineroB">0.00 €</span></td>
+                    <td><span style="color: #856404;">No computa</span></td>
+                </tr>
+            `;
+        }
+
+        // Fila TOTAL: siempre visible
+        html += `
+            <tr class="fila-total">
+                <td><strong>TOTAL</strong></td>
+                <td><strong><span id="resumenPOSTotal">0.00 €</span></strong></td>
+                <td><strong><span id="resumenRealTotal">0.00 €</span></strong></td>
+                <td><strong><span id="resumenDeltaTotal" class="delta-cero">0.00 €</span></strong></td>
+            </tr>
+        `;
+
+        tbody.innerHTML = html;
     }
 
     calcularTotalesCierre() {

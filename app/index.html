@@ -217,43 +217,8 @@
                                         <th>Diferencia</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>💶 Efectivo</td>
-                                        <td><span id="resumenPOSEfectivo">0.00 €</span></td>
-                                        <td><span id="resumenRealEfectivo">0.00 €</span></td>
-                                        <td><span id="resumenDeltaEfectivo" class="delta-cero">0.00 €</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>💳 Tarjetas</td>
-                                        <td><span id="resumenPOSTarjetas">0.00 €</span></td>
-                                        <td><span id="resumenRealTarjetas">0.00 €</span></td>
-                                        <td><span id="resumenDeltaTarjetas" class="delta-cero">0.00 €</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>📲 Bizum</td>
-                                        <td><span id="resumenPOSBizum">0.00 €</span></td>
-                                        <td><span id="resumenRealBizum">0.00 €</span></td>
-                                        <td><span id="resumenDeltaBizum" class="delta-cero">0.00 €</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>🏦 Transferencias</td>
-                                        <td><span id="resumenPOSTrans">0.00 €</span></td>
-                                        <td><span id="resumenRealTrans">0.00 €</span></td>
-                                        <td><span id="resumenDeltaTrans" class="delta-cero">0.00 €</span></td>
-                                    </tr>
-                                    <tr style="background: #fff9e6;">
-                                        <td>💵 Dinero B (sin IVA)</td>
-                                        <td>–</td>
-                                        <td><span id="resumenDineroB">0.00 €</span></td>
-                                        <td><span style="color: #856404;">No computa</span></td>
-                                    </tr>
-                                    <tr class="fila-total">
-                                        <td><strong>TOTAL</strong></td>
-                                        <td><strong><span id="resumenPOSTotal">0.00 €</span></strong></td>
-                                        <td><strong><span id="resumenRealTotal">0.00 €</span></strong></td>
-                                        <td><strong><span id="resumenDeltaTotal" class="delta-cero">0.00 €</span></strong></td>
-                                    </tr>
+                                <tbody id="resumenTbody">
+                                    <!-- Se renderiza dinámicamente según otrosMedios -->
                                 </tbody>
                             </table>
                         </div>

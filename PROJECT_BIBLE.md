@@ -1,6 +1,6 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versión:** 4.27.5 Dinero B Integrado en Otros Medios (Noviembre 2025)  
+**Versión:** 4.27.6 Resumen de Cuadre Dinámico (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hostelería profesional (restaurantes, cafeterías)  
 **Estado:** ✅ APLICACIÓN FUNCIONAL - OCR INTELIGENTE COMPLETO + INVENTARIO PROFESIONAL + UX MEJORADA
@@ -8,6 +8,111 @@
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.27.6 - RESUMEN DE CUADRE DINÁMICO (Noviembre 19, 2025)
+
+**CORRECCIÓN CRÍTICA - TABLA RESUMEN CIERRES:**
+
+**Problema anterior:**
+- La tabla "📊 Resumen de Cuadre (en tiempo real)" mostraba **SIEMPRE** todas las filas:
+  - Efectivo ✓
+  - Tarjetas ✓
+  - Bizum (aunque no se usara) ✗
+  - Transferencias (aunque no se usara) ✗
+  - Dinero B (aunque no se usara) ✗
+- Tabla HTML estática con todas las filas hardcodeadas
+
+**Solución implementada:**
+- ✅ **Tabla 100% dinámica:** `<tbody id="resumenTbody">` se renderiza en función de `otrosMedios`
+- ✅ **Solo Efectivo y Tarjetas SIEMPRE visibles**
+- ✅ **Resto condicional:** Bizum, Transferencias, Dinero B **SOLO aparecen si se añadieron en "Otros Medios de Pago"**
+- ✅ **Fila TOTAL siempre visible**
+
+**Implementación técnica:**
+
+**HTML (index.html):**
+```html
+<!-- ANTES: Tbody estático con todas las filas -->
+<tbody>
+    <tr><td>💶 Efectivo</td>...</tr>
+    <tr><td>💳 Tarjetas</td>...</tr>
+    <tr><td>📲 Bizum</td>...</tr>          ← Siempre visible ✗
+    <tr><td>🏦 Transferencias</td>...</tr> ← Siempre visible ✗
+    <tr><td>💵 Dinero B</td>...</tr>       ← Siempre visible ✗
+</tbody>
+
+<!-- DESPUÉS: Tbody dinámico -->
+<tbody id="resumenTbody">
+    <!-- Renderizado dinámicamente por renderResumenTabla() -->
+</tbody>
+```
+
+**JavaScript - Nueva función (app.js líneas ~4112-4189):**
+```javascript
+renderResumenTabla() {
+    // Detectar métodos activos
+    const metodosActivos = new Set();
+    document.querySelectorAll('.otro-medio-item').forEach(item => {
+        const tipo = item.querySelector('.otro-medio-tipo').value;
+        metodosActivos.add(tipo);
+    });
+
+    let html = '';
+    
+    // SIEMPRE: Efectivo y Tarjetas
+    html += `<tr>💶 Efectivo...</tr>`;
+    html += `<tr>💳 Tarjetas...</tr>`;
+    
+    // CONDICIONAL: Solo si están en otrosMedios
+    if (metodosActivos.has('Bizum')) {
+        html += `<tr>📲 Bizum...</tr>`;
+    }
+    if (metodosActivos.has('Transferencia')) {
+        html += `<tr>🏦 Transferencias...</tr>`;
+    }
+    if (metodosActivos.has('Dinero B (sin IVA)')) {
+        html += `<tr>💵 Dinero B...</tr>`;
+    }
+    
+    // SIEMPRE: Fila TOTAL
+    html += `<tr class="fila-total">TOTAL...</tr>`;
+    
+    tbody.innerHTML = html;
+}
+```
+
+**Eventos que disparan renderizado:**
+1. Al añadir nuevo medio de pago → `addOtroMedio.click` → `renderResumenTabla()`
+2. Al eliminar medio de pago → `btn-remove.click` → `renderResumenTabla()`
+3. Al cambiar tipo de medio → `.otro-medio-tipo.change` → `renderResumenTabla()`
+4. Al cargar la página → Inicialización automática
+
+**ARCHIVOS MODIFICADOS:**
+- `app/index.html` (-44 líneas)
+  - Tabla resumen simplificada a tbody vacío
+- `app/app.js` (+85 líneas)
+  - Función `renderResumenTabla()` (nueva)
+  - Llamadas a `renderResumenTabla()` en eventos clave
+  - Sincronización con `renderDatosPOS()`
+
+**RESULTADO:**
+```
+📊 Resumen de Cuadre (en tiempo real)
+┌─────────────────┬──────────────┬──────────────┬────────────┐
+│ 💶 Efectivo     │ 0.00 €       │ 0.00 €       │ 0.00 €     │ ← SIEMPRE
+│ 💳 Tarjetas     │ 0.00 €       │ 0.00 €       │ 0.00 €     │ ← SIEMPRE
+│ 📲 Bizum        │ 0.00 €       │ 0.00 €       │ 0.00 €     │ ← Solo si añadido
+│ TOTAL           │ 0.00 €       │ 0.00 €       │ 0.00 €     │ ← SIEMPRE
+└─────────────────┴──────────────┴──────────────┴────────────┘
+```
+
+**BENEFICIOS:**
+- ✅ **Interfaz limpia:** No aparecen filas de métodos no usados
+- ✅ **Coherencia total:** Tabla resumen sincronizada con "Datos del POS"
+- ✅ **UX profesional:** Solo se muestra información relevante
+- ✅ **Menos confusión:** Usuario ve exactamente lo que ha introducido
+
+---
 
 ### VERSIÓN 4.27.5 - DINERO B INTEGRADO EN OTROS MEDIOS DE PAGO (Noviembre 19, 2025)
 
