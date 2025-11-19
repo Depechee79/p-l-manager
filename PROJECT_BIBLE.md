@@ -1,13 +1,155 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hosteler�a Profesional
 
-**Versi�n:** 4.23.1 UX Formularios Colapsables (Noviembre 2025)  
+**Versi�n:** 4.23.2 OCR Robusto Multi-formato (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hosteler�a profesional (restaurantes, cafeter�as)  
-**Estado:** ✅ APLICACIÓN FUNCIONAL - DISEÑO MODERNO + UX MEJORADA
+**Estado:** ✅ APLICACIÓN FUNCIONAL - OCR MEJORADO + PDF ROBUSTO
 
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.23.2 - FIX OCR: MANEJO ROBUSTO PDF/IMÁGENES (Noviembre 19, 2025)
+
+**PROBLEMA CORREGIDO:**
+El OCR fallaba al procesar archivos PDF mostrando pop-ups de error molestos. Problemas detectados:
+- PDF.js no se verificaba si estaba cargado antes de usarlo
+- Errores mostraban modales bloqueantes en lugar de toasts informativos
+- Validación de tipos de archivo demasiado estricta (solo MIME type)
+- No había validación de contenido extraído (texto vacío)
+- Worker de Tesseract no siempre se terminaba correctamente
+- Faltaba feedback visual de progreso detallado
+
+**SOLUCIÓN APLICADA:**
+
+**1. Validación Mejorada de Archivos:**
+```javascript
+// ANTES: Solo validaba MIME type
+if (!validTypes.includes(file.type)) { ... }
+
+// DESPUÉS: Valida MIME type + extensión de archivo
+const fileExtension = fileName.split('.').pop();
+const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'pdf'];
+if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) { ... }
+```
+
+**2. Manejo Robusto de PDF:**
+```javascript
+// Verificar que PDF.js está cargado
+if (typeof pdfjsLib === 'undefined') {
+    throw new Error('PDF.js no está cargado');
+}
+
+// Configuración completa con cmaps y fonts
+const loadingTask = pdfjsLib.getDocument({
+    data: arrayBuffer,
+    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+    cMapPacked: true,
+    standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/'
+});
+
+// Validación de PDF vacío
+if (!pdf || pdf.numPages === 0) {
+    reject(new Error('PDF vacío o corrupto'));
+}
+
+// Fondo blanco para PDFs con transparencia
+context.fillStyle = 'white';
+context.fillRect(0, 0, canvas.width, canvas.height);
+
+// Renderizado con intent='print' para mejor calidad OCR
+await page.render({
+    canvasContext: context,
+    viewport: viewport,
+    intent: 'print'
+}).promise;
+```
+
+**3. Errores como Toasts (NO Modales):**
+```javascript
+// ANTES: Modal bloqueante
+this.showModal('❌ Error al procesar PDF', ..., 'error');
+
+// DESPUÉS: Toast informativo no bloqueante
+this.showToast('❌ Error al procesar PDF. Intenta con una imagen JPG/PNG', true);
+```
+
+**4. Validación de Tesseract:**
+```javascript
+// Verificar que Tesseract está cargado
+if (typeof Tesseract === 'undefined') {
+    this.showToast('❌ Error: Tesseract OCR no está cargado. Recarga la página', true);
+    return;
+}
+
+// Validar texto extraído
+if (!extractedData || !extractedData.text || extractedData.text.trim().length < 5) {
+    this.showToast('⚠️ No se pudo extraer texto legible. Intenta con una imagen más nítida', true);
+    return;
+}
+```
+
+**5. Worker de Tesseract con Finally:**
+```javascript
+let worker = null;
+try {
+    worker = await Tesseract.createWorker(...);
+    // ... procesamiento
+    return resultado;
+} catch (error) {
+    throw new Error('Error al procesar OCR: ' + error.message);
+} finally {
+    // Asegurar que el worker se termina SIEMPRE
+    if (worker) {
+        try {
+            await worker.terminate();
+        } catch (e) {
+            console.error('Error terminando worker:', e);
+        }
+    }
+}
+```
+
+**6. Feedback de Progreso Mejorado:**
+```javascript
+logger: (m) => {
+    if (m.status === 'recognizing text') {
+        const progress = Math.round(m.progress * 100);
+        document.getElementById('ocrProgressText').textContent = `Analizando documento... ${progress}%`;
+    } else if (m.status === 'loading tesseract core') {
+        document.getElementById('ocrProgressText').textContent = 'Cargando motor OCR...';
+    } else if (m.status === 'initializing tesseract') {
+        document.getElementById('ocrProgressText').textContent = 'Inicializando...';
+    } else if (m.status === 'loading language traineddata') {
+        document.getElementById('ocrProgressText').textContent = 'Cargando diccionarios...';
+    }
+}
+```
+
+**ARCHIVOS MODIFICADOS:**
+- `app/app.js`:
+  - Líneas 1698-1771: `handleOCRImageUpload()` - Validación mejorada + manejo robusto de errores
+  - Líneas 1773-1849: `convertPDFToImage()` - Verificaciones PDF.js + configuración completa + fondo blanco
+  - Líneas 1913-1954: `analyzeOCRDocument()` - Validación Tesseract + texto extraído + toasts en lugar de modales
+  - Líneas 1956-2028: `runTesseractOCR()` - Try/catch/finally para worker + progreso detallado
+
+**FORMATOS SOPORTADOS:**
+✅ JPG / JPEG  
+✅ PNG  
+✅ WEBP  
+✅ BMP  
+✅ TIFF / TIF  
+✅ PDF (hasta 20MB)
+
+**RESULTADO:**
+- OCR procesa correctamente PDF, JPEG, PNG y todos los formatos soportados
+- Errores muestran toasts informativos (NO modales bloqueantes)
+- Validación robusta en cada paso del proceso
+- Workers de Tesseract siempre se terminan correctamente
+- Feedback visual de progreso detallado
+- Experiencia de usuario fluida sin interrupciones
+
+---
 
 ### VERSIÓN 4.23.1 - FIX UX: FORMULARIOS COLAPSABLES (Noviembre 19, 2025)
 

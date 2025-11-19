@@ -1696,13 +1696,14 @@ class App {
     }
 
     async handleOCRImageUpload(file) {
-        // Validate file type (images + PDF)
+        // Validate file type (images + PDF) - permitir variaciones de extensión
+        const fileName = file.name.toLowerCase();
+        const fileExtension = fileName.split('.').pop();
+        const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'pdf'];
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'application/pdf'];
-        if (!validTypes.includes(file.type)) {
-            this.showModal('⚠️ Formato no soportado', 
-                'El OCR acepta: JPG, PNG, WEBP, BMP, TIFF y PDF.\n\n' +
-                'Formato recibido: ' + file.type, 
-                'warning');
+        
+        if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+            this.showToast('⚠️ Formato no soportado. Use: JPG, PNG, WEBP, BMP, TIFF o PDF', true);
             document.getElementById('ocrFile').value = '';
             return;
         }
@@ -1710,23 +1711,29 @@ class App {
         // Validate file size (20MB max)
         if (file.size > 20 * 1024 * 1024) {
             this.showToast('⚠️ El archivo es demasiado grande (máximo 20MB)', true);
+            document.getElementById('ocrFile').value = '';
             return;
         }
 
         // Si es PDF, convertir a imagen de alta calidad
-        if (file.type === 'application/pdf') {
+        if (file.type === 'application/pdf' || fileExtension === 'pdf') {
             this.showToast('📝 Procesando PDF...');
             try {
+                // Verificar que PDF.js está cargado
+                if (typeof pdfjsLib === 'undefined') {
+                    throw new Error('PDF.js no está cargado');
+                }
+                
                 const imageData = await this.convertPDFToImage(file);
                 this.currentImageData = imageData;
                 document.getElementById('ocrPreviewImg').src = imageData;
                 document.getElementById('ocrPreviewContainer').classList.remove('hidden');
-                this.showToast('✅ PDF convertido a imagen de alta calidad');
+                document.getElementById('ocrUploadCard').classList.remove('hidden');
+                this.showToast('✅ PDF cargado correctamente');
             } catch (error) {
                 console.error('Error convirtiendo PDF:', error);
-                this.showModal('❌ Error al procesar PDF', 
-                    'No se pudo convertir el PDF a imagen. Intenta con un PDF más nítido o usa una imagen directa.', 
-                    'error');
+                this.showToast('❌ Error al procesar PDF. Intenta con una imagen JPG/PNG', true);
+                document.getElementById('ocrFile').value = '';
             }
             return;
         }
@@ -1734,11 +1741,23 @@ class App {
         // Preview image y preprocesar
         const reader = new FileReader();
         reader.onload = async (e) => {
-            // Preprocesar imagen para mejorar OCR
-            const preprocessedImage = await this.preprocessImage(e.target.result);
-            document.getElementById('ocrPreviewImg').src = preprocessedImage;
-            document.getElementById('ocrPreviewContainer').classList.remove('hidden');
-            this.currentImageData = preprocessedImage;
+            try {
+                // Preprocesar imagen para mejorar OCR
+                const preprocessedImage = await this.preprocessImage(e.target.result);
+                document.getElementById('ocrPreviewImg').src = preprocessedImage;
+                document.getElementById('ocrPreviewContainer').classList.remove('hidden');
+                document.getElementById('ocrUploadCard').classList.remove('hidden');
+                this.currentImageData = preprocessedImage;
+                this.showToast('✅ Imagen cargada correctamente');
+            } catch (error) {
+                console.error('Error procesando imagen:', error);
+                this.showToast('❌ Error al procesar imagen', true);
+                document.getElementById('ocrFile').value = '';
+            }
+        };
+        reader.onerror = () => {
+            this.showToast('❌ Error al leer el archivo', true);
+            document.getElementById('ocrFile').value = '';
         };
         reader.readAsDataURL(file);
     }
@@ -1747,11 +1766,30 @@ class App {
         // Usar PDF.js para renderizar PDF a canvas de alta calidad
         return new Promise(async (resolve, reject) => {
             try {
+                // Verificar que PDF.js está disponible
+                if (typeof pdfjsLib === 'undefined') {
+                    reject(new Error('PDF.js library not loaded'));
+                    return;
+                }
+
                 const arrayBuffer = await pdfFile.arrayBuffer();
-                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                
+                // Configurar opciones de carga
+                const loadingTask = pdfjsLib.getDocument({
+                    data: arrayBuffer,
+                    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+                    cMapPacked: true,
+                    standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/'
+                });
+                
                 const pdf = await loadingTask.promise;
                 
-                // Procesar primera página (si hay múltiples, tomar la primera)
+                if (!pdf || pdf.numPages === 0) {
+                    reject(new Error('PDF vacío o corrupto'));
+                    return;
+                }
+                
+                // Procesar primera página
                 const page = await pdf.getPage(1);
                 
                 // Escala para 300-400 DPI (alta calidad)
@@ -1761,19 +1799,37 @@ class App {
                 // Crear canvas
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
+                
+                if (!context) {
+                    reject(new Error('No se pudo crear contexto canvas'));
+                    return;
+                }
+                
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
+                
+                // Fondo blanco para PDFs con transparencia
+                context.fillStyle = 'white';
+                context.fillRect(0, 0, canvas.width, canvas.height);
                 
                 // Renderizar PDF a canvas
                 await page.render({
                     canvasContext: context,
-                    viewport: viewport
+                    viewport: viewport,
+                    intent: 'print' // Mejor calidad para impresión/OCR
                 }).promise;
                 
-                // Convertir canvas a imagen
-                const imageData = canvas.toDataURL('image/png');
+                // Convertir canvas a imagen PNG de alta calidad
+                const imageData = canvas.toDataURL('image/png', 1.0);
+                
+                if (!imageData || imageData === 'data:,') {
+                    reject(new Error('No se pudo convertir PDF a imagen'));
+                    return;
+                }
+                
                 resolve(imageData);
             } catch (error) {
+                console.error('Error detallado PDF:', error);
                 reject(error);
             }
         });
@@ -1829,17 +1885,31 @@ class App {
 
     async analyzeOCRDocument() {
         if (!this.currentImageData) {
-            this.showToast('⚠️ Primero carga una imagen', true);
+            this.showToast('⚠️ Primero carga una imagen o PDF', true);
+            return;
+        }
+
+        // Verificar que Tesseract está cargado
+        if (typeof Tesseract === 'undefined') {
+            this.showToast('❌ Error: Tesseract OCR no está cargado. Recarga la página', true);
             return;
         }
 
         // Show progress
         document.getElementById('ocrProgressBar').classList.remove('hidden');
         document.getElementById('ocrProgressText').textContent = 'Inicializando Tesseract OCR...';
+        document.getElementById('ocrProgressFill').style.width = '0%';
 
         try {
             // Call Tesseract.js (FREE OCR)
             const extractedData = await this.runTesseractOCR(this.currentImageData);
+            
+            // Validar que se extrajo algo
+            if (!extractedData || !extractedData.text || extractedData.text.trim().length < 5) {
+                this.showToast('⚠️ No se pudo extraer texto legible. Intenta con una imagen más nítida', true);
+                document.getElementById('ocrProgressBar').classList.add('hidden');
+                return;
+            }
             
             // Si no hay tipo seleccionado, detectar automáticamente
             let tipoDocumento = this.currentOCRType;
@@ -1860,63 +1930,83 @@ class App {
             this.displayOCRForm(extractedData, tipoDocumento);
             document.getElementById('ocrProgressBar').classList.add('hidden');
             document.getElementById('ocrDataCard').classList.remove('hidden');
+            this.showToast('✅ Análisis OCR completado');
         } catch (error) {
             console.error('Error OCR:', error);
-            this.showModal('❌ Error en OCR', 'No se pudo analizar el documento. Verifica que la imagen sea legible y de buena calidad.', 'error');
+            this.showToast('❌ Error al analizar documento. Verifica que la imagen sea legible', true);
             document.getElementById('ocrProgressBar').classList.add('hidden');
         }
     }
 
     async runTesseractOCR(imageData) {
-        // Tesseract.js - OCR 100% GRATUITO sin API keys
-        const worker = await Tesseract.createWorker('spa+eng', 1, {
-            logger: (m) => {
-                if (m.status === 'recognizing text') {
-                    const progress = Math.round(m.progress * 100);
-                    document.getElementById('ocrProgressText').textContent = `Analizando documento... ${progress}%`;
-                    document.getElementById('ocrProgressFill').style.width = `${progress}%`;
+        let worker = null;
+        try {
+            // Tesseract.js - OCR 100% GRATUITO sin API keys
+            worker = await Tesseract.createWorker('spa+eng', 1, {
+                logger: (m) => {
+                    if (m.status === 'recognizing text') {
+                        const progress = Math.round(m.progress * 100);
+                        document.getElementById('ocrProgressText').textContent = `Analizando documento... ${progress}%`;
+                        document.getElementById('ocrProgressFill').style.width = `${progress}%`;
+                    } else if (m.status === 'loading tesseract core') {
+                        document.getElementById('ocrProgressText').textContent = 'Cargando motor OCR...';
+                    } else if (m.status === 'initializing tesseract') {
+                        document.getElementById('ocrProgressText').textContent = 'Inicializando...';
+                    } else if (m.status === 'loading language traineddata') {
+                        document.getElementById('ocrProgressText').textContent = 'Cargando diccionarios...';
+                    }
+                }
+            });
+
+            // Configuración ÓPTIMA para documentos comerciales (facturas, albaranes)
+            await worker.setParameters({
+                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, // PSM 6: texto en bloques (facturas/tablas)
+                tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY, // OEM 3: LSTM (máxima calidad)
+                preserve_interword_spaces: '1',
+                tessedit_char_blacklist: '', // Sin blacklist
+                language_model_penalty_non_dict_word: '0.5',
+                language_model_penalty_non_freq_dict_word: '0.5'
+            });
+
+            // Primera pasada: texto completo
+            const { data } = await worker.recognize(imageData, {
+                rotateAuto: true // Deskew automático para documentos torcidos
+            });
+            
+            console.log('OCR Completo - Texto extraído:', data.text);
+            console.log('OCR Completo - Confianza:', data.confidence + '%');
+            console.log('OCR Completo - Palabras detectadas:', data.words?.length || 0);
+            
+            // Segunda pasada SOLO para números (importes, IVA, totales)
+            await worker.setParameters({
+                tessedit_char_whitelist: '0123456789,.-€%' // Whitelist numérica
+            });
+            
+            const { data: dataNumeros } = await worker.recognize(imageData);
+            console.log('OCR Números - Texto extraído:', dataNumeros.text);
+            
+            // Combinar resultados (priorizar números de segunda pasada para campos numéricos)
+            const resultado = {
+                ...data,
+                textNumeros: dataNumeros.text,
+                confidenceNumeros: dataNumeros.confidence
+            };
+            
+            // Parse text with confidence
+            return this.parseOCRTextWithConfidence(resultado);
+        } catch (error) {
+            console.error('Error en Tesseract OCR:', error);
+            throw new Error('Error al procesar OCR: ' + error.message);
+        } finally {
+            // Asegurar que el worker se termina siempre
+            if (worker) {
+                try {
+                    await worker.terminate();
+                } catch (e) {
+                    console.error('Error terminando worker:', e);
                 }
             }
-        });
-
-        // Configuración ÓPTIMA para documentos comerciales (facturas, albaranes)
-        await worker.setParameters({
-            tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, // PSM 6: texto en bloques (facturas/tablas)
-            tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY, // OEM 3: LSTM (máxima calidad)
-            preserve_interword_spaces: '1',
-            tessedit_char_blacklist: '', // Sin blacklist
-            language_model_penalty_non_dict_word: '0.5',
-            language_model_penalty_non_freq_dict_word: '0.5'
-        });
-
-        // Primera pasada: texto completo
-        const { data } = await worker.recognize(imageData, {
-            rotateAuto: true // Deskew automático para documentos torcidos
-        });
-        
-        console.log('OCR Completo - Texto extraído:', data.text);
-        console.log('OCR Completo - Confianza:', data.confidence + '%');
-        console.log('OCR Completo - Palabras detectadas:', data.words?.length || 0);
-        
-        // Segunda pasada SOLO para números (importes, IVA, totales)
-        await worker.setParameters({
-            tessedit_char_whitelist: '0123456789,.-€%' // Whitelist numérica
-        });
-        
-        const { data: dataNumeros } = await worker.recognize(imageData);
-        console.log('OCR Números - Texto extraído:', dataNumeros.text);
-        
-        await worker.terminate();
-        
-        // Combinar resultados (priorizar números de segunda pasada para campos numéricos)
-        const resultado = {
-            ...data,
-            textNumeros: dataNumeros.text,
-            confidenceNumeros: dataNumeros.confidence
-        };
-        
-        // Parse text with confidence
-        return this.parseOCRTextWithConfidence(resultado);
+        }
     }
 
     parseOCRTextWithConfidence(ocrData) {
