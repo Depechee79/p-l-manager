@@ -76,6 +76,11 @@ class App {
         this.currentView = 'ocr';
         this.currentPeriod = 'mes';
         this.currentFilters = null;
+        this.inventarioState = {
+            hasEditingLine: false,
+            editingLineId: null,
+            tempProductoAltaRapida: null // Para cuando se crea producto desde inventario
+        };
         this.initializeEventListeners();
         this.render();
     }
@@ -576,9 +581,27 @@ class App {
         document.getElementById('inventarioForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
+            // Validar que no haya líneas en edición
+            const lineasEditando = document.querySelectorAll('.inventario-producto-item[data-is-editing="true"]');
+            if (lineasEditando.length > 0) {
+                this.showToast('❌ Valida todas las líneas de inventario antes de guardar', true);
+                lineasEditando.forEach(linea => {
+                    linea.style.border = '2px solid #ff3b30';
+                    setTimeout(() => { linea.style.border = ''; }, 2000);
+                });
+                return;
+            }
+
+            // Validar que haya al menos un producto
+            const lineasValidadas = document.querySelectorAll('.inventario-producto-item.inventario-validated');
+            if (lineasValidadas.length === 0) {
+                this.showToast('❌ Añade al menos un producto al inventario', true);
+                return;
+            }
+            
             // Recoger productos inventariados
             const productosInventariados = [];
-            document.querySelectorAll('.inventario-producto-item').forEach(item => {
+            lineasValidadas.forEach(item => {
                 const productoId = parseInt(item.querySelector('.inventario-producto-id').value);
                 const producto = this.db.productos.find(p => p.id === productoId);
                 
@@ -587,12 +610,15 @@ class App {
                 const tipoConteo = item.querySelector('.inventario-tipo-conteo').value;
                 let stockRealUnidades = 0;
                 
-                if (tipoConteo === 'empaques') {
+                if (tipoConteo === 'solo-unidad') {
+                    stockRealUnidades = parseFloat(item.querySelector('.inventario-stock-real').value) || 0;
+                } else if (tipoConteo === 'solo-empaques') {
+                    const numEmpaques = parseFloat(item.querySelector('.inventario-num-empaques-solo').value) || 0;
+                    stockRealUnidades = numEmpaques * (producto.unidadesPorEmpaque || 0);
+                } else if (tipoConteo === 'empaques-sueltas') {
                     const numEmpaques = parseFloat(item.querySelector('.inventario-num-empaques').value) || 0;
                     const unidadesSueltas = parseFloat(item.querySelector('.inventario-unidades-sueltas').value) || 0;
-                    stockRealUnidades = (numEmpaques * producto.unidadesPorEmpaque) + unidadesSueltas;
-                } else {
-                    stockRealUnidades = parseFloat(item.querySelector('.inventario-stock-real').value) || 0;
+                    stockRealUnidades = (numEmpaques * (producto.unidadesPorEmpaque || 0)) + unidadesSueltas;
                 }
                 
                 const stockTeorico = producto.stockActualUnidades;
@@ -636,6 +662,12 @@ class App {
             
             form.reset();
             document.getElementById('inventarioProductosContainer').innerHTML = '';
+            
+            // Resetear estado de inventario
+            this.inventarioState.hasEditingLine = false;
+            this.inventarioState.editingLineId = null;
+            document.getElementById('addProductoInventario').disabled = false;
+            
             this.render();
         });
 
@@ -679,6 +711,12 @@ class App {
         if (btnAddProductoInv) {
             btnAddProductoInv.addEventListener('click', () => this.addProductoInventario());
         }
+
+        // Alta rápida de producto desde inventario
+        document.getElementById('altaRapidaProductoForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.guardarAltaRapidaProducto();
+        });
     }
 
     toggleEmpaqueFields() {
@@ -692,6 +730,12 @@ class App {
     }
 
     addProductoInventario() {
+        // Bloqueo: no permitir si ya hay una línea en edición
+        if (this.inventarioState.hasEditingLine) {
+            this.showToast('⚠️ Termina de contar el producto actual antes de añadir otro', true);
+            return;
+        }
+
         const container = document.getElementById('inventarioProductosContainer');
         const rowId = Date.now();
         
@@ -700,79 +744,399 @@ class App {
         ).join('');
 
         const row = document.createElement('div');
-        row.className = 'inventario-producto-item';
+        row.className = 'inventario-producto-item inventario-editing';
         row.dataset.id = rowId;
-        row.style.cssText = 'padding: 15px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;';
+        row.dataset.isEditing = 'true';
         row.innerHTML = `
+            <div class="inventario-producto-select-wrapper">
+                <div class="form-group">
+                    <label>Producto *</label>
+                    <input type="text" class="inventario-producto-search" placeholder="Buscar o crear producto..." 
+                           oninput="app.searchProductoInventario(${rowId})" 
+                           onfocus="app.showProductoDropdown(${rowId})"
+                           autocomplete="off">
+                    <input type="hidden" class="inventario-producto-id" required>
+                    <div class="inventario-producto-dropdown hidden"></div>
+                </div>
+            </div>
+            <div class="inventario-producto-info hidden" style="background: #e8f5e9; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 13px;"></div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Producto</label>
-                    <select class="inventario-producto-id" onchange="app.updateInventarioProducto(${rowId})" required>
+                    <label>Tipo Conteo *</label>
+                    <select class="inventario-tipo-conteo" onchange="app.updateTipoConteoInventario(${rowId})" required>
                         <option value="">Seleccionar...</option>
-                        ${productosOptions}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Tipo Conteo</label>
-                    <select class="inventario-tipo-conteo" onchange="app.toggleInventarioConteo(${rowId})">
-                        <option value="unidades">Unidades directas</option>
-                        <option value="empaques">Empaques + sueltas</option>
+                        <option value="solo-unidad">Solo unidad base</option>
+                        <option value="solo-empaques">Solo empaques</option>
+                        <option value="empaques-sueltas">Empaques + sueltas</option>
                     </select>
                 </div>
             </div>
-            <div class="inventario-conteo-unidades">
+            <div class="inventario-conteo-solo-unidad hidden">
                 <div class="form-group">
-                    <label>Stock Real (unidad base)</label>
-                    <input type="number" step="0.001" class="inventario-stock-real" required>
+                    <label>Stock Real (unidad base) *</label>
+                    <input type="number" step="0.001" class="inventario-stock-real" oninput="app.calcularDiferenciaInventario(${rowId})" min="0">
                 </div>
             </div>
-            <div class="inventario-conteo-empaques hidden">
+            <div class="inventario-conteo-solo-empaques hidden">
+                <div class="form-group">
+                    <label>Nº Empaques Completos *</label>
+                    <input type="number" step="1" class="inventario-num-empaques-solo" oninput="app.calcularDiferenciaInventario(${rowId})" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Stock Real Calculado (unidad base)</label>
+                    <input type="number" class="inventario-stock-calculado" readonly style="background: #f0f0f0;">
+                </div>
+            </div>
+            <div class="inventario-conteo-empaques-sueltas hidden">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Nº Empaques Completos</label>
-                        <input type="number" step="1" class="inventario-num-empaques" value="0">
+                        <label>Nº Empaques Completos *</label>
+                        <input type="number" step="1" class="inventario-num-empaques" oninput="app.calcularDiferenciaInventario(${rowId})" min="0">
                     </div>
                     <div class="form-group">
-                        <label>Unidades Sueltas</label>
-                        <input type="number" step="0.001" class="inventario-unidades-sueltas" value="0">
+                        <label>Unidades Sueltas *</label>
+                        <input type="number" step="0.001" class="inventario-unidades-sueltas" oninput="app.calcularDiferenciaInventario(${rowId})" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Stock Real Calculado (unidad base)</label>
+                    <input type="number" class="inventario-stock-calculado" readonly style="background: #f0f0f0;">
+                </div>
+            </div>
+            <div class="inventario-resumen hidden">
+                <div style="background: #fff; border: 2px solid #e3e8ef; border-radius: 8px; padding: 12px; margin: 15px 0;">
+                    <h5 style="margin: 0 0 10px 0; color: #1f2d3d; font-size: 14px;">📊 Resumen de Conteo</h5>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px;">
+                        <div>
+                            <div style="color: #7f8c8d;">Teórico</div>
+                            <div style="font-weight: 600; color: #1f2d3d;" class="inventario-stock-teorico">-</div>
+                        </div>
+                        <div>
+                            <div style="color: #7f8c8d;">Contado</div>
+                            <div style="font-weight: 600; color: #1f2d3d;" class="inventario-stock-contado">-</div>
+                        </div>
+                        <div>
+                            <div style="color: #7f8c8d;">Diferencia</div>
+                            <div style="font-weight: 700;" class="inventario-diferencia">-</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <button type="button" class="btn-delete" onclick="app.removeProductoInventario(${rowId})" style="margin-top: 10px;">🗑️ Quitar</button>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" class="btn-success inventario-btn-validar" onclick="app.validarLineaInventario(${rowId})">✓ Validar Conteo</button>
+                <button type="button" class="btn-delete" onclick="app.removeProductoInventario(${rowId})">🗑️ Quitar</button>
+            </div>
         `;
         container.appendChild(row);
+
+        // Marcar como línea en edición
+        this.inventarioState.hasEditingLine = true;
+        this.inventarioState.editingLineId = rowId;
+
+        // Deshabilitar botón de añadir
+        document.getElementById('addProductoInventario').disabled = true;
     }
 
-    updateInventarioProducto(rowId) {
+    searchProductoInventario(rowId) {
+        const row = document.querySelector(`.inventario-producto-item[data-id="${rowId}"]`);
+        const searchInput = row.querySelector('.inventario-producto-search');
+        const dropdown = row.querySelector('.inventario-producto-dropdown');
+        const searchTerm = searchInput.value.toLowerCase().trim();
+
+        if (!searchTerm) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+
+        const productosMatch = this.db.productos.filter(p => 
+            p.nombre.toLowerCase().includes(searchTerm)
+        );
+
+        let html = '';
+        productosMatch.forEach(p => {
+            html += `<div class="inventario-producto-option" onclick="app.selectProductoInventario(${rowId}, ${p.id})">
+                ${p.nombre} <span style="color: #7f8c8d; font-size: 12px;">(${p.unidadBase}${p.esEmpaquetado ? ` - ${p.tipoEmpaque} x${p.unidadesPorEmpaque}` : ''})</span>
+            </div>`;
+        });
+
+        // Opción de alta rápida
+        if (searchTerm.length > 2) {
+            html += `<div class="inventario-producto-option inventario-alta-rapida" onclick="app.abrirModalAltaRapida('${searchTerm.replace(/'/g, "\\'")}', ${rowId})">
+                ➕ Crear producto rápido "<strong>${searchTerm}</strong>"
+            </div>`;
+        }
+
+        dropdown.innerHTML = html || '<div style="padding: 10px; color: #7f8c8d; font-size: 13px;">No hay coincidencias</div>';
+        dropdown.classList.remove('hidden');
+    }
+
+    showProductoDropdown(rowId) {
+        const row = document.querySelector(`.inventario-producto-item[data-id="${rowId}"]`);
+        const dropdown = row.querySelector('.inventario-producto-dropdown');
+        const searchInput = row.querySelector('.inventario-producto-search');
+
+        if (!searchInput.value.trim()) {
+            // Mostrar todos los productos
+            let html = '';
+            this.db.productos.forEach(p => {
+                html += `<div class="inventario-producto-option" onclick="app.selectProductoInventario(${rowId}, ${p.id})">
+                    ${p.nombre} <span style="color: #7f8c8d; font-size: 12px;">(${p.unidadBase}${p.esEmpaquetado ? ` - ${p.tipoEmpaque} x${p.unidadesPorEmpaque}` : ''})</span>
+                </div>`;
+            });
+            dropdown.innerHTML = html;
+            dropdown.classList.remove('hidden');
+        }
+    }
+
+    selectProductoInventario(rowId, productoId) {
+        const row = document.querySelector(`.inventario-producto-item[data-id="${rowId}"]`);
+        const producto = this.db.productos.find(p => p.id === productoId);
+
+        if (!producto) return;
+
+        // Rellenar campos
+        row.querySelector('.inventario-producto-search').value = producto.nombre;
+        row.querySelector('.inventario-producto-id').value = productoId;
+        row.querySelector('.inventario-producto-dropdown').classList.add('hidden');
+
+        // Mostrar info del producto
+        const infoDiv = row.querySelector('.inventario-producto-info');
+        let infoHTML = `<strong>${producto.nombre}</strong><br>`;
+        infoHTML += `Unidad base: <strong>${producto.unidadBase}</strong>`;
+        if (producto.esEmpaquetado) {
+            infoHTML += `<br>Empaque: <strong>${producto.tipoEmpaque} de ${producto.unidadesPorEmpaque} ${producto.unidadBase}</strong>`;
+        } else {
+            infoHTML += '<br><span style="color: #ff9800;">⚠️ Este producto no tiene empaque definido</span>';
+        }
+        infoDiv.innerHTML = infoHTML;
+        infoDiv.classList.remove('hidden');
+
+        // Pre-seleccionar tipo de conteo según producto
+        const tipoConteoSelect = row.querySelector('.inventario-tipo-conteo');
+        if (producto.esEmpaquetado) {
+            tipoConteoSelect.value = 'empaques-sueltas';
+        } else {
+            tipoConteoSelect.value = 'solo-unidad';
+        }
+        this.updateTipoConteoInventario(rowId);
+    }
+
+    abrirModalAltaRapida(nombreSugerido, rowId) {
+        this.inventarioState.tempProductoAltaRapida = { rowId, nombreSugerido };
+        document.getElementById('altaRapidaNombre').value = nombreSugerido;
+        document.getElementById('modalAltaRapidaProducto').classList.remove('hidden');
+        
+        // Cerrar dropdown
+        const row = document.querySelector(`.inventario-producto-item[data-id="${rowId}"]`);
+        row.querySelector('.inventario-producto-dropdown').classList.add('hidden');
+    }
+
+    toggleAltaRapidaEmpaque() {
+        const esEmpaquetado = document.getElementById('altaRapidaEsEmpaquetado').value === 'true';
+        const fields = document.getElementById('altaRapidaEmpaqueFields');
+        if (esEmpaquetado) {
+            fields.classList.remove('hidden');
+        } else {
+            fields.classList.add('hidden');
+        }
+    }
+
+    guardarAltaRapidaProducto() {
+        const nombre = document.getElementById('altaRapidaNombre').value.trim();
+        const unidadBase = document.getElementById('altaRapidaUnidadBase').value;
+        const esEmpaquetado = document.getElementById('altaRapidaEsEmpaquetado').value === 'true';
+
+        if (!nombre || !unidadBase) {
+            this.showToast('❌ Completa nombre y unidad base', true);
+            return;
+        }
+
+        if (esEmpaquetado) {
+            const unidadesPorEmpaque = parseFloat(document.getElementById('altaRapidaUnidadesPorEmpaque').value);
+            if (!unidadesPorEmpaque || unidadesPorEmpaque <= 0) {
+                this.showToast('❌ Especifica las unidades por empaque', true);
+                return;
+            }
+        }
+
+        const producto = {
+            nombre,
+            unidadBase,
+            esEmpaquetado,
+            tipoEmpaque: esEmpaquetado ? document.getElementById('altaRapidaTipoEmpaque').value : '',
+            unidadesPorEmpaque: esEmpaquetado ? parseFloat(document.getElementById('altaRapidaUnidadesPorEmpaque').value) : 0,
+            precioPromedioNeto: parseFloat(document.getElementById('altaRapidaPrecioNeto').value) || 0,
+            stockActualUnidades: 0,
+            cantidadTotal: 0
+        };
+
+        const nuevoProducto = this.db.add('productos', producto);
+        this.showToast(`✓ Producto "${nombre}" creado correctamente`);
+
+        // Seleccionar automáticamente en la línea de inventario
+        if (this.inventarioState.tempProductoAltaRapida) {
+            const rowId = this.inventarioState.tempProductoAltaRapida.rowId;
+            this.selectProductoInventario(rowId, nuevoProducto.id);
+        }
+
+        // Cerrar modal y limpiar
+        this.cerrarModalAltaRapida();
+        this.render(); // Actualizar listas
+    }
+
+    cerrarModalAltaRapida() {
+        document.getElementById('modalAltaRapidaProducto').classList.add('hidden');
+        document.getElementById('altaRapidaProductoForm').reset();
+        document.getElementById('altaRapidaEmpaqueFields').classList.add('hidden');
+        this.inventarioState.tempProductoAltaRapida = null;
+    }
+
+    updateTipoConteoInventario(rowId) {
+        const row = document.querySelector(`.inventario-producto-item[data-id="${rowId}"]`);
+        const tipo = row.querySelector('.inventario-tipo-conteo').value;
+        const productoId = parseInt(row.querySelector('.inventario-producto-id').value);
+        const producto = this.db.productos.find(p => p.id === productoId);
+
+        // Ocultar todos
+        row.querySelector('.inventario-conteo-solo-unidad').classList.add('hidden');
+        row.querySelector('.inventario-conteo-solo-empaques').classList.add('hidden');
+        row.querySelector('.inventario-conteo-empaques-sueltas').classList.add('hidden');
+
+        if (!tipo) return;
+
+        // Validar si producto tiene empaque cuando se necesita
+        if ((tipo === 'solo-empaques' || tipo === 'empaques-sueltas') && producto && !producto.esEmpaquetado) {
+            this.showToast('⚠️ Este producto no tiene unidades por empaque definidas. Cuenta en unidad base o configúralo primero.', true);
+            row.querySelector('.inventario-tipo-conteo').value = 'solo-unidad';
+            row.querySelector('.inventario-conteo-solo-unidad').classList.remove('hidden');
+            return;
+        }
+
+        // Mostrar el tipo correcto
+        if (tipo === 'solo-unidad') {
+            row.querySelector('.inventario-conteo-solo-unidad').classList.remove('hidden');
+        } else if (tipo === 'solo-empaques') {
+            row.querySelector('.inventario-conteo-solo-empaques').classList.remove('hidden');
+        } else if (tipo === 'empaques-sueltas') {
+            row.querySelector('.inventario-conteo-empaques-sueltas').classList.remove('hidden');
+        }
+
+        this.calcularDiferenciaInventario(rowId);
+    }
+
+    calcularDiferenciaInventario(rowId) {
         const row = document.querySelector(`.inventario-producto-item[data-id="${rowId}"]`);
         const productoId = parseInt(row.querySelector('.inventario-producto-id').value);
         const producto = this.db.productos.find(p => p.id === productoId);
-        
-        if (producto && producto.esEmpaquetado) {
-            row.querySelector('.inventario-tipo-conteo').value = 'empaques';
-            this.toggleInventarioConteo(rowId);
+
+        if (!producto) return;
+
+        const tipo = row.querySelector('.inventario-tipo-conteo').value;
+        let stockContado = 0;
+
+        if (tipo === 'solo-unidad') {
+            stockContado = parseFloat(row.querySelector('.inventario-stock-real').value) || 0;
+        } else if (tipo === 'solo-empaques') {
+            const numEmpaques = parseFloat(row.querySelector('.inventario-num-empaques-solo').value) || 0;
+            stockContado = numEmpaques * (producto.unidadesPorEmpaque || 0);
+            row.querySelector('.inventario-stock-calculado').value = stockContado.toFixed(3);
+        } else if (tipo === 'empaques-sueltas') {
+            const numEmpaques = parseFloat(row.querySelector('.inventario-num-empaques').value) || 0;
+            const sueltas = parseFloat(row.querySelector('.inventario-unidades-sueltas').value) || 0;
+            stockContado = (numEmpaques * (producto.unidadesPorEmpaque || 0)) + sueltas;
+            row.querySelector('.inventario-stock-calculado').value = stockContado.toFixed(3);
         }
+
+        const stockTeorico = producto.stockActualUnidades || 0;
+        const diferencia = stockContado - stockTeorico;
+
+        // Mostrar resumen
+        const resumenDiv = row.querySelector('.inventario-resumen');
+        resumenDiv.classList.remove('hidden');
+        
+        row.querySelector('.inventario-stock-teorico').textContent = `${stockTeorico.toFixed(2)} ${producto.unidadBase}`;
+        row.querySelector('.inventario-stock-contado').textContent = `${stockContado.toFixed(2)} ${producto.unidadBase}`;
+        
+        const diferenciaEl = row.querySelector('.inventario-diferencia');
+        const diferenciaText = diferencia >= 0 ? `+${diferencia.toFixed(2)}` : diferencia.toFixed(2);
+        diferenciaEl.textContent = `${diferenciaText} ${producto.unidadBase}`;
+        diferenciaEl.style.color = diferencia === 0 ? '#34c759' : (diferencia > 0 ? '#1171ef' : '#ff3b30');
     }
 
-    toggleInventarioConteo(rowId) {
+    validarLineaInventario(rowId) {
         const row = document.querySelector(`.inventario-producto-item[data-id="${rowId}"]`);
-        const tipo = row.querySelector('.inventario-tipo-conteo').value;
         
-        const unidadesDiv = row.querySelector('.inventario-conteo-unidades');
-        const empaquesDiv = row.querySelector('.inventario-conteo-empaques');
-        
-        if (tipo === 'empaques') {
-            unidadesDiv.classList.add('hidden');
-            empaquesDiv.classList.remove('hidden');
-        } else {
-            unidadesDiv.classList.remove('hidden');
-            empaquesDiv.classList.add('hidden');
+        // Validar producto seleccionado
+        const productoId = parseInt(row.querySelector('.inventario-producto-id').value);
+        if (!productoId) {
+            this.showToast('❌ Selecciona un producto', true);
+            return;
         }
+
+        // Validar tipo de conteo
+        const tipo = row.querySelector('.inventario-tipo-conteo').value;
+        if (!tipo) {
+            this.showToast('❌ Selecciona el tipo de conteo', true);
+            return;
+        }
+
+        // Validar conteo según tipo
+        let valid = false;
+        if (tipo === 'solo-unidad') {
+            const stockReal = row.querySelector('.inventario-stock-real').value;
+            valid = stockReal && parseFloat(stockReal) >= 0;
+        } else if (tipo === 'solo-empaques') {
+            const numEmpaques = row.querySelector('.inventario-num-empaques-solo').value;
+            valid = numEmpaques && parseFloat(numEmpaques) >= 0;
+        } else if (tipo === 'empaques-sueltas') {
+            const numEmpaques = row.querySelector('.inventario-num-empaques').value;
+            const sueltas = row.querySelector('.inventario-unidades-sueltas').value;
+            valid = numEmpaques !== '' && sueltas !== '' && 
+                   parseFloat(numEmpaques) >= 0 && parseFloat(sueltas) >= 0;
+        }
+
+        if (!valid) {
+            this.showToast('❌ Completa el conteo correctamente', true);
+            return;
+        }
+
+        // Marcar como validada
+        row.classList.remove('inventario-editing');
+        row.classList.add('inventario-validated');
+        row.dataset.isEditing = 'false';
+
+        // Deshabilitar edición en los campos
+        row.querySelectorAll('input, select').forEach(input => {
+            input.disabled = true;
+        });
+
+        // Ocultar botón validar
+        row.querySelector('.inventario-btn-validar').style.display = 'none';
+
+        // Actualizar estado
+        this.inventarioState.hasEditingLine = false;
+        this.inventarioState.editingLineId = null;
+
+        // Habilitar botón de añadir producto
+        document.getElementById('addProductoInventario').disabled = false;
+
+        this.showToast('✓ Conteo validado correctamente');
     }
 
     removeProductoInventario(rowId) {
         const row = document.querySelector(`.inventario-producto-item[data-id="${rowId}"]`);
-        if (row) row.remove();
+        if (!row) return;
+
+        const isEditing = row.dataset.isEditing === 'true';
+        
+        row.remove();
+
+        // Si era la línea en edición, liberar el estado
+        if (isEditing) {
+            this.inventarioState.hasEditingLine = false;
+            this.inventarioState.editingLineId = null;
+            document.getElementById('addProductoInventario').disabled = false;
+        }
     }
 
     render() {

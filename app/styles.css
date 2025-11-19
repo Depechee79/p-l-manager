@@ -1599,3 +1599,169 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ========================================
+   INVENTARIO - MÓDULO PROFESIONAL v4.24
+   ======================================== */
+
+/* Líneas de inventario */
+.inventario-producto-item {
+    padding: 20px;
+    background: #ffffff;
+    border: 2px solid #e3e8ef;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.inventario-producto-item.inventario-editing {
+    border-color: #1171ef;
+    background: #f8fbff;
+    box-shadow: 0 4px 12px rgba(17, 113, 239, 0.1);
+}
+
+.inventario-producto-item.inventario-validated {
+    border-color: #34c759;
+    background: #f8faf9;
+    opacity: 0.95;
+}
+
+/* Dropdown de búsqueda de productos */
+.inventario-producto-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.inventario-producto-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin-top: 5px;
+}
+
+.inventario-producto-option {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f6fa;
+    transition: background 0.2s;
+    font-size: 14px;
+}
+
+.inventario-producto-option:hover {
+    background: #f3f6fa;
+}
+
+.inventario-producto-option:last-child {
+    border-bottom: none;
+}
+
+.inventario-producto-option.inventario-alta-rapida {
+    background: #f0f8ff;
+    border-top: 2px solid #1171ef;
+    color: #1171ef;
+    font-weight: 600;
+}
+
+.inventario-producto-option.inventario-alta-rapida:hover {
+    background: #e3f2ff;
+}
+
+/* Search input específico para inventario */
+.inventario-producto-search {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e3e8ef;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.inventario-producto-search:focus {
+    border-color: #1171ef;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(17, 113, 239, 0.1);
+}
+
+/* Info del producto */
+.inventario-producto-info {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Campos de conteo */
+.inventario-conteo-solo-unidad,
+.inventario-conteo-solo-empaques,
+.inventario-conteo-empaques-sueltas {
+    margin: 15px 0;
+}
+
+/* Resumen de stock */
+.inventario-resumen {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Botón validar */
+.inventario-btn-validar {
+    background: #34c759;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.inventario-btn-validar:hover {
+    background: #2fb54e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+}
+
+/* Modal de alta rápida */
+#modalAltaRapidaProducto .modal-content {
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estado deshabilitado del botón añadir */
+#addProductoInventario:disabled {
+    background: #e3e8ef;
+    color: #95a5a6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#addProductoInventario:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}

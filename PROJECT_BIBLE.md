@@ -1,9 +1,9 @@
-﻿#  PROJECT BIBLE - Sistema P&L Hosteler�a Profesional
+﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versi�n:** 4.23.2 OCR Robusto Multi-formato (Noviembre 2025)  
+**Versión:** 4.24 Módulo Inventario Profesional (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
-**Industria:** Hosteler�a profesional (restaurantes, cafeter�as)  
-**Estado:** ✅ APLICACIÓN FUNCIONAL - OCR MEJORADO + PDF ROBUSTO
+**Industria:** Hostelería profesional (restaurantes, cafeterías)  
+**Estado:** ✅ APLICACIÓN FUNCIONAL - INVENTARIO PROFESIONAL + OCR ROBUSTO
 
 ---
 
@@ -148,6 +148,331 @@ logger: (m) => {
 - Workers de Tesseract siempre se terminan correctamente
 - Feedback visual de progreso detallado
 - Experiencia de usuario fluida sin interrupciones
+
+---
+
+### VERSIÓN 4.24 - MÓDULO INVENTARIO PROFESIONAL (Noviembre 19, 2025)
+
+**MEJORAS IMPLEMENTADAS:**
+Transformación del módulo de Inventario en un sistema profesional de conteo tipo Bino Inventory con:
+- Bloqueo de líneas incompletas (un producto a la vez)
+- 3 tipos de conteo según empaques (solo unidad / solo empaques / empaques + sueltas)
+- Stock teórico vs contado con diferencia en tiempo real
+- Alta rápida de productos desde inventario sin salir de la vista
+- Búsqueda typeahead de productos con dropdown inteligente
+- Validaciones estrictas antes de guardar
+
+**1. BLOQUEO DE LÍNEAS INCOMPLETAS (UN PRODUCTO CADA VEZ):**
+
+**Comportamiento:**
+- Mientras haya una línea en edición incompleta:
+  - Botón "+ Añadir Producto" está **deshabilitado**
+  - Mensaje toast si se intenta añadir: "Termina de contar el producto actual antes de añadir otro"
+- Una línea es válida cuando:
+  - Producto seleccionado
+  - Tipo de conteo seleccionado
+  - Conteo válido según tipo (≥ 0)
+  - Botón "✓ Validar Conteo" clickado
+- Líneas validadas:
+  - Se marcan visualmente con borde verde
+  - Inputs pasan a readonly
+  - Se muestra resumen Stock Teórico/Contado/Diferencia
+  - Se habilita el botón "+ Añadir Producto" nuevamente
+
+**Código clave:**
+```javascript
+// Estado global en constructor
+this.inventarioState = {
+    hasEditingLine: false,
+    editingLineId: null,
+    tempProductoAltaRapida: null
+};
+
+// Bloqueo en addProductoInventario()
+if (this.inventarioState.hasEditingLine) {
+    this.showToast('⚠️ Termina de contar el producto actual antes de añadir otro', true);
+    return;
+}
+
+// Marcar como editando
+row.dataset.isEditing = 'true';
+this.inventarioState.hasEditingLine = true;
+document.getElementById('addProductoInventario').disabled = true;
+
+// Liberar al validar
+validarLineaInventario(rowId) {
+    // ... validaciones
+    row.dataset.isEditing = 'false';
+    row.classList.add('inventario-validated');
+    this.inventarioState.hasEditingLine = false;
+    document.getElementById('addProductoInventario').disabled = false;
+}
+```
+
+**2. TRES TIPOS DE CONTEO CON EMPAQUES:**
+
+**Tipos implementados:**
+1. **"Solo unidad base"**: Conteo directo en kg/L/ud/etc. Oculta campos de empaques.
+2. **"Solo empaques"**: Solo cuenta empaques completos. Calcula automáticamente stock en unidad base (empaques × unidades_por_empaque). Stock Real es readonly.
+3. **"Empaques + sueltas"**: Cuenta empaques completos + unidades sueltas. Calcula (empaques × unidades_por_empaque) + sueltas. Stock Real readonly.
+
+**Validaciones:**
+- Si producto NO tiene `unidades_por_empaque` y se selecciona tipo 2 ó 3:
+  - Toast: "Este producto no tiene unidades por empaque definidas. Cuenta en unidad base o configúralo primero"
+  - Auto-cambia a tipo 1 ("Solo unidad base")
+
+**Código clave:**
+```javascript
+updateTipoConteoInventario(rowId) {
+    const tipo = row.querySelector('.inventario-tipo-conteo').value;
+    const producto = this.db.productos.find(p => p.id === productoId);
+    
+    // Ocultar todos los divs de conteo
+    row.querySelector('.inventario-conteo-solo-unidad').classList.add('hidden');
+    row.querySelector('.inventario-conteo-solo-empaques').classList.add('hidden');
+    row.querySelector('.inventario-conteo-empaques-sueltas').classList.add('hidden');
+    
+    // Validar empaque si necesario
+    if ((tipo === 'solo-empaques' || tipo === 'empaques-sueltas') && !producto.esEmpaquetado) {
+        this.showToast('⚠️ Este producto no tiene unidades por empaque...', true);
+        row.querySelector('.inventario-tipo-conteo').value = 'solo-unidad';
+        tipo = 'solo-unidad';
+    }
+    
+    // Mostrar div correcto
+    if (tipo === 'solo-unidad') {
+        row.querySelector('.inventario-conteo-solo-unidad').classList.remove('hidden');
+    } else if (tipo === 'solo-empaques') {
+        row.querySelector('.inventario-conteo-solo-empaques').classList.remove('hidden');
+    } else if (tipo === 'empaques-sueltas') {
+        row.querySelector('.inventario-conteo-empaques-sueltas').classList.remove('hidden');
+    }
+}
+```
+
+**3. STOCK TEÓRICO VS CONTADO EN TIEMPO REAL:**
+
+**Resumen visual:**
+- Bloque con fondo blanco, borde gris, 3 columnas:
+  - **Teórico**: Stock actual del producto (`producto.stockActualUnidades`)
+  - **Contado**: Calculado según tipo de conteo
+  - **Diferencia**: `contado - teórico`
+    - Verde si = 0
+    - Azul si > 0
+    - Rojo si < 0
+
+**Actualización en tiempo real:**
+- Se ejecuta `calcularDiferenciaInventario(rowId)` en cada `oninput` de los campos de conteo
+- Cálculos por tipo:
+  - Solo unidad: `stockContado = valor_input`
+  - Solo empaques: `stockContado = numEmpaques × unidadesPorEmpaque`
+  - Empaques + sueltas: `stockContado = (numEmpaques × unidadesPorEmpaque) + sueltas`
+
+**Código clave:**
+```javascript
+calcularDiferenciaInventario(rowId) {
+    const producto = this.db.productos.find(p => p.id === productoId);
+    const tipo = row.querySelector('.inventario-tipo-conteo').value;
+    let stockContado = 0;
+    
+    if (tipo === 'solo-unidad') {
+        stockContado = parseFloat(row.querySelector('.inventario-stock-real').value) || 0;
+    } else if (tipo === 'solo-empaques') {
+        const numEmpaques = parseFloat(row.querySelector('.inventario-num-empaques-solo').value) || 0;
+        stockContado = numEmpaques * (producto.unidadesPorEmpaque || 0);
+        row.querySelector('.inventario-stock-calculado').value = stockContado.toFixed(3);
+    } else if (tipo === 'empaques-sueltas') {
+        const numEmpaques = parseFloat(row.querySelector('.inventario-num-empaques').value) || 0;
+        const sueltas = parseFloat(row.querySelector('.inventario-unidades-sueltas').value) || 0;
+        stockContado = (numEmpaques * (producto.unidadesPorEmpaque || 0)) + sueltas;
+        row.querySelector('.inventario-stock-calculado').value = stockContado.toFixed(3);
+    }
+    
+    const stockTeorico = producto.stockActualUnidades || 0;
+    const diferencia = stockContado - stockTeorico;
+    
+    // Mostrar resumen
+    row.querySelector('.inventario-stock-teorico').textContent = `${stockTeorico.toFixed(2)} ${producto.unidadBase}`;
+    row.querySelector('.inventario-stock-contado').textContent = `${stockContado.toFixed(2)} ${producto.unidadBase}`;
+    
+    const diferenciaEl = row.querySelector('.inventario-diferencia');
+    diferenciaEl.textContent = `${diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)} ${producto.unidadBase}`;
+    diferenciaEl.style.color = diferencia === 0 ? '#34c759' : (diferencia > 0 ? '#1171ef' : '#ff3b30');
+}
+```
+
+**4. ALTA RÁPIDA DE PRODUCTOS DESDE INVENTARIO:**
+
+**Flujo UX:**
+1. Usuario escribe en input de búsqueda de producto
+2. Aparece dropdown con:
+   - Productos que coinciden con búsqueda
+   - Opción "➕ Crear producto rápido '[texto]'" si no coincide ninguno
+3. Usuario click en "Crear producto rápido"
+4. Se abre modal con:
+   - Nombre (pre-rellenado)
+   - Unidad base (obligatorio): kg/g/L/ml/ud
+   - ¿Viene empaquetado? (sí/no)
+   - Si sí: Tipo empaque + Unidades por empaque
+   - Precio neto (opcional)
+5. Al guardar:
+   - Crea producto en DB
+   - Cierra modal
+   - Selecciona automáticamente el nuevo producto en la línea de inventario
+
+**Código clave:**
+```javascript
+// Búsqueda con opción de alta rápida
+searchProductoInventario(rowId) {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const productosMatch = this.db.productos.filter(p => p.nombre.toLowerCase().includes(searchTerm));
+    
+    let html = '';
+    productosMatch.forEach(p => {
+        html += `<div class="inventario-producto-option" onclick="app.selectProductoInventario(${rowId}, ${p.id})">
+            ${p.nombre} <span style="color: #7f8c8d;">(${p.unidadBase}...)</span>
+        </div>`;
+    });
+    
+    // Opción alta rápida si > 2 caracteres
+    if (searchTerm.length > 2) {
+        html += `<div class="inventario-producto-option inventario-alta-rapida" 
+                      onclick="app.abrirModalAltaRapida('${searchTerm}', ${rowId})">
+            ➕ Crear producto rápido "<strong>${searchTerm}</strong>"
+        </div>`;
+    }
+}
+
+// Guardar producto y auto-seleccionar
+guardarAltaRapidaProducto() {
+    const producto = {
+        nombre: document.getElementById('altaRapidaNombre').value.trim(),
+        unidadBase: document.getElementById('altaRapidaUnidadBase').value,
+        esEmpaquetado: document.getElementById('altaRapidaEsEmpaquetado').value === 'true',
+        tipoEmpaque: esEmpaquetado ? document.getElementById('altaRapidaTipoEmpaque').value : '',
+        unidadesPorEmpaque: esEmpaquetado ? parseFloat(...) : 0,
+        precioPromedioNeto: parseFloat(document.getElementById('altaRapidaPrecioNeto').value) || 0,
+        stockActualUnidades: 0,
+        cantidadTotal: 0
+    };
+    
+    const nuevoProducto = this.db.add('productos', producto);
+    this.showToast(`✓ Producto "${nombre}" creado correctamente`);
+    
+    // Seleccionar automáticamente en la línea
+    const rowId = this.inventarioState.tempProductoAltaRapida.rowId;
+    this.selectProductoInventario(rowId, nuevoProducto.id);
+    
+    this.cerrarModalAltaRapida();
+}
+```
+
+**5. VALIDACIONES ESTRICTAS AL GUARDAR:**
+
+**Antes de guardar inventario:**
+- ❌ Si hay líneas con `data-is-editing="true"`:
+  - Toast: "Valida todas las líneas de inventario antes de guardar"
+  - Resalta líneas incompletas con borde rojo 2s
+- ❌ Si NO hay líneas validadas:
+  - Toast: "Añade al menos un producto al inventario"
+- ✅ Solo guarda líneas con clase `inventario-validated`
+
+**Código clave:**
+```javascript
+document.getElementById('inventarioForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    // Validar líneas en edición
+    const lineasEditando = document.querySelectorAll('.inventario-producto-item[data-is-editing="true"]');
+    if (lineasEditando.length > 0) {
+        this.showToast('❌ Valida todas las líneas de inventario antes de guardar', true);
+        lineasEditando.forEach(linea => {
+            linea.style.border = '2px solid #ff3b30';
+            setTimeout(() => { linea.style.border = ''; }, 2000);
+        });
+        return;
+    }
+    
+    // Validar al menos un producto
+    const lineasValidadas = document.querySelectorAll('.inventario-producto-item.inventario-validated');
+    if (lineasValidadas.length === 0) {
+        this.showToast('❌ Añade al menos un producto al inventario', true);
+        return;
+    }
+    
+    // Procesar líneas validadas...
+    lineasValidadas.forEach(item => {
+        // ... guardar productos inventariados
+        producto.stockActualUnidades = stockRealUnidades; // Actualizar stock
+    });
+});
+```
+
+**6. MEJORAS VISUALES Y UX:**
+
+**Búsqueda typeahead:**
+- Input con dropdown posicionado absolute debajo
+- Auto-foco en input al añadir línea
+- Opciones con hover azul claro
+- Opción "alta rápida" con fondo azul claro y borde superior azul
+
+**Estados visuales de líneas:**
+- **Editando**: Borde azul #1171ef, fondo #f8fbff, box-shadow azul
+- **Validada**: Borde verde #34c759, fondo #f8faf9, opacidad 0.95, inputs disabled
+
+**Botón "+ Añadir Producto":**
+- Normal: Azul con hover transform
+- Disabled: Gris #e3e8ef, cursor not-allowed, sin hover effects
+
+**Info del producto:**
+- Bloque verde claro con:
+  - Nombre en negrita
+  - Unidad base
+  - Si empaquetado: "Empaque: Caja de 6 kg" (ejemplo)
+  - Si NO empaquetado: "⚠️ Este producto no tiene empaque definido"
+
+**ARCHIVOS MODIFICADOS:**
+- `app/index.html`:
+  - Líneas 592-625: Añadida instrucción UX + modal alta rápida producto
+  - Líneas 900-964: Modal de alta rápida con campos mínimos
+- `app/app.js`:
+  - Líneas 78-82: Estado `inventarioState` en constructor
+  - Líneas 687-692: Listener submit alta rápida
+  - Líneas 704-779: `addProductoInventario()` reescrito con bloqueo + búsqueda typeahead
+  - Líneas 781-973: Nuevas funciones:
+    - `searchProductoInventario()`: Búsqueda con dropdown
+    - `showProductoDropdown()`: Mostrar todos los productos
+    - `selectProductoInventario()`: Seleccionar producto + mostrar info
+    - `abrirModalAltaRapida()`: Abrir modal con nombre sugerido
+    - `toggleAltaRapidaEmpaque()`: Mostrar/ocultar campos empaque
+    - `guardarAltaRapidaProducto()`: Crear producto + auto-seleccionar
+    - `cerrarModalAltaRapida()`: Cerrar modal + limpiar
+    - `updateTipoConteoInventario()`: Cambiar tipo conteo + validar empaque
+    - `calcularDiferenciaInventario()`: Calcular stock contado + diferencia en tiempo real
+    - `validarLineaInventario()`: Validar línea + marcar completa + liberar bloqueo
+    - `removeProductoInventario()`: Quitar línea + liberar bloqueo si editando
+  - Líneas 576-655: Submit inventario reescrito con validaciones estrictas + reseteo de estado
+- `app/styles.css`:
+  - Líneas 1603-1767: Estilos completos módulo inventario profesional:
+    - `.inventario-producto-item` con estados editing/validated
+    - `.inventario-producto-dropdown` con posicionamiento absolute
+    - `.inventario-producto-option` con hover y opción alta rápida destacada
+    - `.inventario-resumen` con animación fadeIn
+    - `.inventario-btn-validar` con estilo success
+    - `#addProductoInventario:disabled` con estado deshabilitado
+    - Animaciones modalSlideIn
+
+**RESULTADO:**
+- ✅ Inventario funciona como app profesional tipo Bino Inventory
+- ✅ Un solo producto a la vez (bloqueo hasta validar)
+- ✅ 3 tipos de conteo según empaques (solo unidad / solo empaques / empaques+sueltas)
+- ✅ Stock teórico vs contado visible en tiempo real con diferencia color-coded
+- ✅ Alta rápida de productos sin salir de inventario
+- ✅ Búsqueda typeahead inteligente con dropdown
+- ✅ Validaciones estrictas antes de guardar
+- ✅ UX fluida con estados visuales claros (editando/validada)
+- ✅ Manejo correcto de empaques (cajas, packs, mallas)
+- ✅ Actualización automática de stock de productos al guardar
 
 ---
 
