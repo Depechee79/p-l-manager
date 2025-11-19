@@ -4765,6 +4765,12 @@ class App {
         const modalMessage = document.getElementById('modalMessage');
         const modalIcon = document.getElementById('modalIcon');
         
+        if (!modal || !modalTitle || !modalMessage || !modalIcon) {
+            console.error('❌ Modal elements not found');
+            alert(`${title}\n\n${message}`);
+            return;
+        }
+        
         modalTitle.textContent = title;
         modalMessage.innerHTML = message;
         
