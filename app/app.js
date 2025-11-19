@@ -2218,86 +2218,6 @@ class App {
         reader.readAsDataURL(file);
     }
 
-    extractZonesFromTesseractResult(tesseractData) {
-        // Extraer zonas de IMAGENES (JPEG, PNG, etc) usando coordenadas de Tesseract
-        // Similar a extractPDFText pero para imágenes
-        try {
-            if (!tesseractData.words || tesseractData.words.length === 0) {
-                return null; // Sin datos de palabras, usar texto plano
-            }
-
-            const words = tesseractData.words;
-            const imageWidth = tesseractData.width || 1000;
-            const imageHeight = tesseractData.height || 1000;
-
-            console.log('🎯 Aplicando extracción con ZONAS a imagen (JPEG/PNG)...');
-
-            // Definir zonas (igual que PDF.js)
-            const zones = {
-                topLeft: [],      // Proveedor (x < 50%, y < 30%)
-                topRight: [],     // Cliente (x >= 50%, y < 30%)
-                center: [],       // Detalle (30% < y < 70%)
-                bottom: []        // Totales (y >= 70%)
-            };
-
-            // Clasificar cada palabra por coordenadas
-            words.forEach(word => {
-                const text = word.text.trim();
-                if (!text || word.confidence < 30) return; // Ignorar palabras con baja confianza
-
-                const bbox = word.bbox;
-                const x = bbox.x0; // Posición X (izquierda)
-                const y = bbox.y0; // Posición Y (arriba)
-
-                // Normalizar coordenadas (0-1)
-                const normalX = x / imageWidth;
-                const normalY = y / imageHeight;
-
-                // Clasificar por zona (Y en imágenes: menor = arriba)
-                if (normalY < 0.3) { // Arriba (30% superior)
-                    if (normalX < 0.5) {
-                        zones.topLeft.push({ text, x, y });
-                    } else {
-                        zones.topRight.push({ text, x, y });
-                    }
-                } else if (normalY < 0.7) { // Centro
-                    zones.center.push({ text, x, y });
-                } else { // Abajo (totales)
-                    zones.bottom.push({ text, x, y });
-                }
-            });
-
-            // Ordenar cada zona por Y (ascendente) y luego por X
-            Object.keys(zones).forEach(zoneKey => {
-                zones[zoneKey].sort((a, b) => {
-                    const yDiff = a.y - b.y; // Menor Y primero (arriba)
-                    if (Math.abs(yDiff) > 10) return yDiff;
-                    return a.x - b.x; // Mismo Y → orden X
-                });
-            });
-
-            // Reconstruir texto estructurado
-            const structuredText = {
-                proveedor: zones.topLeft.map(i => i.text).join(' '),
-                cliente: zones.topRight.map(i => i.text).join(' '),
-                detalle: zones.center.map(i => i.text).join(' '),
-                totales: zones.bottom.map(i => i.text).join(' ')
-            };
-
-            console.log('📋 Zonas extraídas de imagen:');
-            console.log('  Proveedor (arriba-izq):', structuredText.proveedor.substring(0, 100) + '...');
-            console.log('  Cliente (arriba-der):', structuredText.cliente.substring(0, 100) + '...');
-            console.log('  Totales (abajo):', structuredText.totales.substring(0, 100) + '...');
-
-            // Devolver texto estructurado (igual que PDF.js)
-            return `ZONA_PROVEEDOR: ${structuredText.proveedor}\n\nZONA_CLIENTE: ${structuredText.cliente}\n\nZONA_DETALLE: ${structuredText.detalle}\n\nZONA_TOTALES: ${structuredText.totales}`;
-
-        } catch (error) {
-            console.error('Error extrayendo zonas de imagen:', error);
-            return null; // Fallback a texto plano
-        }
-    }
-
     extractZonesFromTesseractData(tesseractData) {
         // Extraer zonas de IMAGENES (JPEG, PNG, etc) usando coordenadas de Tesseract
         // Similar a extractPDFText pero para imágenes
@@ -2604,8 +2524,6 @@ class App {
         if (this.isPDFWithEmbeddedText && this.currentPDFText) {
             this.showToast('✅ Procesando texto embebido del PDF...');
             try {
-                console.log('📄 Texto PDF embebido recibido, longitud:', this.currentPDFText.length);
-                
                 // Parsear directamente el texto embebido (SIN Tesseract)
                 const extractedData = {
                     text: this.currentPDFText,
@@ -2613,14 +2531,11 @@ class App {
                     words: []
                 };
                 
-                console.log('🔍 Iniciando parseOCRTextWithConfidence...');
                 const parsedData = this.parseOCRTextWithConfidence(extractedData);
-                console.log('✅ parseOCRTextWithConfidence completado:', parsedData);
                 
                 // Detectar tipo si no hay seleccionado
                 let tipoDocumento = this.currentOCRType;
                 if (!tipoDocumento) {
-                    console.log('🔍 Detectando tipo de documento...');
                     tipoDocumento = this.detectarTipoDocumento(parsedData);
                     this.currentOCRType = tipoDocumento;
                     document.querySelectorAll('.ocr-tipo-btn').forEach(btn => {
@@ -2631,7 +2546,6 @@ class App {
                     this.showToast(`📄 Tipo detectado: ${this.getTipoLabel(tipoDocumento)}`);
                 }
                 
-                console.log('🔍 Mostrando formulario OCR...');
                 this.displayOCRForm(parsedData, tipoDocumento);
                 document.getElementById('ocrDataCard').classList.remove('hidden');
                 this.showToast('✅ Análisis completado (texto embebido)');
@@ -3229,8 +3143,6 @@ class App {
         
         // 11. EMAIL (REFUERZO: si tiene @, es un email)
         const textoBusquedaEmail = tieneZonas && zonaProveedor ? zonaProveedor : text;
-        console.log('🔍 Buscando email en texto (longitud:', textoBusquedaEmail.length, ')');
-        console.log('🔍 ¿Tiene @?', textoBusquedaEmail.includes('@'));
         
         const emailPatterns = [
             /(?:Email|E-mail|Correo)[:\s]*([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,  // Con etiqueta
@@ -3238,10 +3150,8 @@ class App {
         ];
         for (const pattern of emailPatterns) {
             const matches = [...textoBusquedaEmail.matchAll(pattern)];
-            console.log('🔍 Matches encontrados con patrón:', matches.length);
             for (const match of matches) {
                 const email = match[1].toLowerCase().trim();
-                console.log('🔍 Email candidato:', email);
                 // Validar formato básico: tiene @ y dominio válido
                 if (email.includes('@') && email.includes('.') && email.length > 5 && email.length < 100) {
                     data.email = { value: email, confidence: confidence };
@@ -3387,15 +3297,9 @@ class App {
             let proveedorExistente = null;
             let proveedoresSimilares = [];
             
-            // DEBUG: Mostrar cuántos proveedores hay en la base de datos
-            console.log('🔍 DEBUG OCR - Total proveedores en DB:', this.db.proveedores.length);
-            console.log('🔍 DEBUG OCR - Proveedores:', this.db.proveedores.map(p => ({id: p.id, nombre: p.nombreFiscal, cif: p.nifCif})));
-            console.log('🔍 DEBUG OCR - Buscando proveedor:', data.proveedor.value, '| CIF:', data.nif.value);
-            
             // Búsqueda por CIF (exacta)
             if (data.nif.value) {
                 proveedorExistente = this.db.proveedores.find(p => p.nifCif === data.nif.value);
-                console.log('🔍 DEBUG OCR - Búsqueda por CIF:', proveedorExistente ? 'ENCONTRADO' : 'NO ENCONTRADO');
             }
             
             // Búsqueda por nombre (exacta)
@@ -3403,7 +3307,6 @@ class App {
                 proveedorExistente = this.db.proveedores.find(p => 
                     p.nombreFiscal.toLowerCase() === data.proveedor.value.toLowerCase()
                 );
-                console.log('🔍 DEBUG OCR - Búsqueda por nombre:', proveedorExistente ? 'ENCONTRADO' : 'NO ENCONTRADO');
             }
             
             // Búsqueda de similares (para sugerir)
@@ -3761,8 +3664,6 @@ class App {
     }
 
     abrirModalEditarFactura(factura) {
-        console.log('🔍 abrirModalEditarFactura llamado con factura:', factura);
-        
         if (!factura) {
             console.error('❌ Error: factura es undefined');
             this.showToast('❌ Error al abrir factura para editar', true);
@@ -4254,12 +4155,10 @@ class App {
                 break;
 
             case 'facturas':
-                console.log('🔍 Caso facturas - editando item:', item);
                 // Cambiar a vista Compras y abrir modal de edición
                 this.currentView = 'compras';
                 this.render();
                 // Usar setTimeout para que el modal se abra después del render
-                console.log('🔍 Llamando a abrirModalEditarFactura en 100ms...');
                 setTimeout(() => this.abrirModalEditarFactura(item), 100);
                 return;
                 
