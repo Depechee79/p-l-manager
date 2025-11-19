@@ -1538,13 +1538,29 @@ class App {
             }
             
             if (desde) {
-                facturas = facturas.filter(f => f.fecha >= desde);
-                albaranes = albaranes.filter(a => a.fecha >= desde);
+                // Asegurar formato YYYY-MM-DD para comparación
+                const fechaDesde = desde.includes('-') ? desde : new Date(desde).toISOString().split('T')[0];
+                facturas = facturas.filter(f => {
+                    const fechaFactura = f.fecha.includes('-') ? f.fecha : new Date(f.fecha).toISOString().split('T')[0];
+                    return fechaFactura >= fechaDesde;
+                });
+                albaranes = albaranes.filter(a => {
+                    const fechaAlbaran = a.fecha.includes('-') ? a.fecha : new Date(a.fecha).toISOString().split('T')[0];
+                    return fechaAlbaran >= fechaDesde;
+                });
             }
             
             if (hasta) {
-                facturas = facturas.filter(f => f.fecha <= hasta);
-                albaranes = albaranes.filter(a => a.fecha <= hasta);
+                // Asegurar formato YYYY-MM-DD para comparación
+                const fechaHasta = hasta.includes('-') ? hasta : new Date(hasta).toISOString().split('T')[0];
+                facturas = facturas.filter(f => {
+                    const fechaFactura = f.fecha.includes('-') ? f.fecha : new Date(f.fecha).toISOString().split('T')[0];
+                    return fechaFactura <= fechaHasta;
+                });
+                albaranes = albaranes.filter(a => {
+                    const fechaAlbaran = a.fecha.includes('-') ? a.fecha : new Date(a.fecha).toISOString().split('T')[0];
+                    return fechaAlbaran <= fechaHasta;
+                });
             }
         }
 
@@ -3916,9 +3932,12 @@ class App {
             return;
         }
         
+        // IMPORTANTE: Cerrar modal anterior si existe (evitar duplicación)
+        this.cerrarModalEditarFactura();
+        
         // Crear modal dinámico para editar factura
         const modalHTML = `
-            <div id="modalEditarFactura" class="modal-overlay">
+            <div id="modalEditarFactura" class="modal-overlay" style="overflow-y: auto;">
                 <div class="modal-content" style="max-width: 600px;">
                     <h3>✏️ Editar Factura</h3>
                     <form id="editarFacturaForm">
@@ -3971,6 +3990,9 @@ class App {
         `;
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Scroll al inicio para ver el modal
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         
         document.getElementById('editarFacturaForm').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -4027,9 +4049,18 @@ class App {
     }
 
     abrirModalEditarAlbaran(albaran) {
+        if (!albaran) {
+            console.error('❌ Error: albarán es undefined');
+            this.showToast('❌ Error al abrir albarán para editar', true);
+            return;
+        }
+        
+        // IMPORTANTE: Cerrar modal anterior si existe (evitar duplicación)
+        this.cerrarModalEditarAlbaran();
+        
         // Similar a factura pero para albaranes
         const modalHTML = `
-            <div id="modalEditarAlbaran" class="modal-overlay">
+            <div id="modalEditarAlbaran" class="modal-overlay" style="overflow-y: auto;">
                 <div class="modal-content" style="max-width: 600px;">
                     <h3>✏️ Editar Albarán</h3>
                     <form id="editarAlbaranForm">
@@ -4057,6 +4088,9 @@ class App {
         `;
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Scroll al inicio para ver el modal
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         
         document.getElementById('editarAlbaranForm').addEventListener('submit', (e) => {
             e.preventDefault();
