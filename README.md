@@ -1,6 +1,6 @@
 # P&L Manager - Sistema de Gestión Hostelería
 
-Sistema completo de gestión de pérdidas y ganancias para restaurantes y cafeterías.
+Sistema completo de gestión de pérdidas y ganancias para restaurantes y cafeterías con diseño moderno y profesional.
 
 ## 🎯 Características
 
@@ -8,6 +8,7 @@ Sistema completo de gestión de pérdidas y ganancias para restaurantes y cafete
 - **Gestión de Cierres**: Sistema compacto con tabla desplegable por método de pago
 - **Escandallos**: Cálculo de costes de platos con ingredientes y márgenes
 - **P&L Completo**: Cuenta de explotación profesional con KPIs
+- **Diseño Moderno**: Sistema UX/UI con paleta corporativa y tipografía Inter
 - **100% Offline**: Funciona sin conexión, datos en localStorage
 
 ## 🚀 Tecnologías
@@ -16,7 +17,8 @@ Sistema completo de gestión de pérdidas y ganancias para restaurantes y cafete
 - Tesseract.js (OCR)
 - PDF.js (lectura de PDFs)
 - localStorage (persistencia)
-- CSS puro (sin frameworks)
+- CSS moderno con sistema de diseño cohesivo
+- Tipografía Google Fonts (Inter)
 
 ## 📦 Instalación
 
@@ -112,9 +114,17 @@ Se puede cambiar desde el selector en el sidebar.
 
 ## 📜 Versión
 
-**v4.20** - Cierres Compactos + OCR PDF (Noviembre 2025)
+**v4.23** - Sistema de Diseño UX/UI Moderno (Noviembre 2025)
 
 ### Últimas Mejoras
+- ✅ Sistema de diseño moderno con paleta corporativa (#1171ef, #34c759, #ff3b30)
+- ✅ Tipografía Inter integrada con pesos 400-700
+- ✅ Cards con hover effects y elevación suave
+- ✅ Inputs con focus rings y transiciones 0.2s
+- ✅ Componentes consistentes en todos los módulos
+- ✅ Sidebar oscuro profesional (#1d3041)
+- ✅ Toast notifications con 4 variantes (success, error, info, warning)
+- ✅ Modales con backdrop blur y border-radius 16px
 - ✅ Sistema de cierres compacto con tabla desplegable
 - ✅ OCR con soporte PDF (hasta 10MB)
 - ✅ Preprocesado de imagen (contraste, escala de grises)
