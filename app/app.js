@@ -3417,11 +3417,11 @@ class App {
             const calculado = baseNeta + ivaAmount;
             const coherente = totalConIva > 0 && Math.abs(calculado - totalConIva) <= 0.01;
             
-            // Verificar si factura ya existe
-            const facturaExistente = this.db.facturas.find(f => 
+            // Verificar si factura ya existe (con validación de campos)
+            const facturaExistente = (data.numero.value && data.proveedor.value) ? this.db.facturas.find(f => 
                 f.numeroFactura === data.numero.value && 
-                f.proveedorNombre.toLowerCase() === data.proveedor.value.toLowerCase()
-            );
+                f.proveedor && f.proveedor.toLowerCase() === data.proveedor.value.toLowerCase()
+            ) : null;
             const esDuplicada = !!facturaExistente;
             
             html += `
