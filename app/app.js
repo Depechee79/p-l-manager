@@ -740,6 +740,89 @@ class App {
             this.render();
         });
 
+        document.getElementById('cierreForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Calcular efectivo
+            const billetes = {
+                b500: parseInt(document.getElementById('b500').value) || 0,
+                b200: parseInt(document.getElementById('b200').value) || 0,
+                b100: parseInt(document.getElementById('b100').value) || 0,
+                b50: parseInt(document.getElementById('b50').value) || 0,
+                b20: parseInt(document.getElementById('b20').value) || 0,
+                b10: parseInt(document.getElementById('b10').value) || 0,
+                b5: parseInt(document.getElementById('b5').value) || 0,
+                m2: parseInt(document.getElementById('m2').value) || 0,
+                m1: parseInt(document.getElementById('m1').value) || 0,
+                m050: parseInt(document.getElementById('m050').value) || 0,
+                m020: parseInt(document.getElementById('m020').value) || 0,
+                m010: parseInt(document.getElementById('m010').value) || 0,
+                m005: parseInt(document.getElementById('m005').value) || 0,
+                m002: parseInt(document.getElementById('m002').value) || 0,
+                m001: parseInt(document.getElementById('m001').value) || 0
+            };
+            const totalEfectivo = this.calcularEfectivo(billetes);
+            
+            // Calcular datáfonos
+            const datafonos = [];
+            document.querySelectorAll('.datafono-item').forEach(item => {
+                const nombre = item.querySelector('.datafono-nombre').value;
+                const importe = parseFloat(item.querySelector('.datafono-importe').value) || 0;
+                if (nombre && importe > 0) {
+                    datafonos.push({ nombre, importe });
+                }
+            });
+            const totalDatafonos = datafonos.reduce((sum, d) => sum + d.importe, 0);
+            
+            // Otros medios
+            const otrosMedios = [];
+            document.querySelectorAll('.otro-medio-item').forEach(item => {
+                const tipo = item.querySelector('.otro-medio-tipo').value;
+                const importe = parseFloat(item.querySelector('.otro-medio-importe').value) || 0;
+                if (tipo && importe > 0) {
+                    otrosMedios.push({ tipo, importe });
+                }
+            });
+            
+            // POS
+            const posEfectivo = parseFloat(document.getElementById('posEfectivo').value) || 0;
+            const posTarjetas = parseFloat(document.getElementById('posTarjetas').value) || 0;
+            const posBizum = document.getElementById('posBizum') ? (parseFloat(document.getElementById('posBizum').value) || 0) : 0;
+            const posTransferencias = document.getElementById('posTransferencias') ? (parseFloat(document.getElementById('posTransferencias').value) || 0) : 0;
+            
+            const form = e.target;
+            const editId = form.dataset.editId ? parseInt(form.dataset.editId) : null;
+            
+            const cierre = {
+                fecha: document.getElementById('cierreFecha').value,
+                turno: document.getElementById('cierreTurno').value,
+                billetes,
+                totalEfectivo,
+                datafonos,
+                totalDatafonos,
+                otrosMedios,
+                posEfectivo,
+                posTarjetas,
+                posBizum,
+                posTransferencias,
+                descuadreEfectivo: totalEfectivo - posEfectivo,
+                descuadreTarjetas: totalDatafonos - posTarjetas
+            };
+            
+            if (editId) {
+                cierre.id = editId;
+                this.db.update('cierres', editId, cierre);
+                this.showToast('✓ Cierre actualizado');
+                delete form.dataset.editId;
+            } else {
+                this.db.add('cierres', cierre);
+                this.showToast('✓ Cierre guardado');
+            }
+            
+            form.reset();
+            this.render();
+        });
+
         // Set today's date
         document.querySelectorAll('input[type="date"]').forEach(input => {
             input.value = new Date().toISOString().split('T')[0];
@@ -3318,27 +3401,29 @@ class App {
             const calculado = baseNeta + ivaAmount;
             const coherente = totalConIva > 0 && Math.abs(calculado - totalConIva) <= 0.01;
             
+            // Verificar si factura ya existe
+            const facturaExistente = this.db.facturas.find(f => 
+                f.numeroFactura === data.numero.value && 
+                f.proveedorNombre.toLowerCase() === data.proveedor.value.toLowerCase()
+            );
+            const esDuplicada = !!facturaExistente;
+            
             html += `
             <div class="ocr-verification-panel" style="background: ${coherente ? '#e8f5e9' : '#fff3e0'}; border: 2px solid ${coherente ? '#4caf50' : '#ff9800'}; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                 <h4 style="margin: 0 0 12px 0; color: #1f2d3d; font-size: 15px;">
                     ${coherente ? '✅' : '⚠️'} Verificación de Importes
+                    ${esDuplicada ? ' <span style="color: #e74c3c; font-weight: 700; margin-left: 15px;">🚨 FACTURA YA INTRODUCIDA</span>' : ''}
                 </h4>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 13px;">
-                    <div>
-                        <div style="color: #7f8c8d; font-weight: 500;">Proveedor</div>
-                        <div style="font-weight: 600; color: #1f2d3d;">${data.proveedor.value || '-'} ${getConfidenceBadge(data.proveedor.confidence)}</div>
-                    </div>
-                    <div>
-                        <div style="color: #7f8c8d; font-weight: 500;">CIF/NIF</div>
-                        <div style="font-weight: 600; color: #1f2d3d;">${data.nif.value || '-'} ${getConfidenceBadge(data.nif.confidence)}</div>
-                    </div>
+                ${esDuplicada ? `
+                <div style="background: #fee; border-left: 3px solid #e74c3c; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
+                    <strong style="color: #c0392b;">⚠️ Esta factura (${data.numero.value} - ${data.proveedor.value}) ya está registrada</strong><br>
+                    <small style="color: #7f8c8d;">Fecha: ${facturaExistente.fecha} | Base: ${facturaExistente.baseImponible.toFixed(2)}€</small>
+                </div>` : ''}
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
                     <div>
                         <div style="color: #7f8c8d; font-weight: 500;">Nº Factura</div>
-                        <div style="font-weight: 600; color: #1f2d3d;">${data.numero.value || '-'} ${getConfidenceBadge(data.numero.confidence)}</div>
+                        <div style="font-weight: 600; color: ${esDuplicada ? '#e74c3c' : '#1f2d3d'};">${data.numero.value || '-'} ${getConfidenceBadge(data.numero.confidence)}</div>
                     </div>
-                </div>
-                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 12px 0;">
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
                     <div>
                         <div style="color: #7f8c8d; font-weight: 500;">Fecha</div>
                         <div style="font-weight: 600; color: #1f2d3d;">${data.fecha.value || '-'}</div>
@@ -3351,9 +3436,11 @@ class App {
                         <div style="color: #7f8c8d; font-weight: 500;">IVA</div>
                         <div style="font-weight: 600; color: #1f2d3d;">${ivaAmount.toFixed(2)}€ ${getConfidenceBadge(data.iva.confidence)}</div>
                     </div>
+                </div>
+                <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
                     <div>
-                        <div style="color: #7f8c8d; font-weight: 500;">Total</div>
-                        <div style="font-weight: 700; color: ${coherente ? '#4caf50' : '#ff9800'};">${totalConIva.toFixed(2)}€ ${getConfidenceBadge(data.total.confidence)}</div>
+                        <div style="color: #7f8c8d; font-weight: 500; text-align: right;">Total CON IVA</div>
+                        <div style="font-weight: 700; font-size: 18px; color: ${coherente ? '#4caf50' : '#ff9800'}; text-align: right;">${totalConIva.toFixed(2)}€ ${getConfidenceBadge(data.total.confidence)}</div>
                     </div>
                 </div>
                 ${!coherente && totalConIva > 0 ? `
