@@ -127,6 +127,11 @@ body {
     display: none;
 }
 
+/* UTILITY CLASS - Hidden */
+.hidden {
+    display: none !important;
+}
+
 /* FORMS */
 .form-card {
     background: #ffffff;

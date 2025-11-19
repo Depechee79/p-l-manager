@@ -727,8 +727,27 @@ class App {
         const fields = document.getElementById('empaqueFields');
         if (esEmpaquetado) {
             fields.classList.remove('hidden');
+            this.updateResumenEmpaque();
         } else {
             fields.classList.add('hidden');
+            document.getElementById('resumenEmpaque').style.display = 'none';
+        }
+    }
+
+    updateResumenEmpaque() {
+        // Actualizar resumen visual de empaque en tiempo real
+        const tipoEmpaque = document.getElementById('productoTipoEmpaque').value;
+        const unidadesPorEmpaque = parseFloat(document.getElementById('productoUnidadesPorEmpaque').value);
+        const unidadBase = document.getElementById('productoUnidadBase').value;
+        
+        const resumenDiv = document.getElementById('resumenEmpaque');
+        const resumenTexto = document.getElementById('resumenEmpaqueTexto');
+        
+        if (unidadesPorEmpaque && unidadesPorEmpaque > 0) {
+            resumenTexto.textContent = `1 ${tipoEmpaque} = ${unidadesPorEmpaque} ${unidadBase}`;
+            resumenDiv.style.display = 'block';
+        } else {
+            resumenDiv.style.display = 'none';
         }
     }
 
@@ -902,14 +921,15 @@ class App {
         row.querySelector('.inventario-producto-id').value = productoId;
         row.querySelector('.inventario-producto-dropdown').classList.add('hidden');
 
-        // Mostrar info del producto
+        // Mostrar info del producto con formato claro
         const infoDiv = row.querySelector('.inventario-producto-info');
         let infoHTML = `<strong>${producto.nombre}</strong><br>`;
-        infoHTML += `Unidad base: <strong>${producto.unidadBase}</strong>`;
-        if (producto.esEmpaquetado) {
-            infoHTML += `<br>Empaque: <strong>${producto.tipoEmpaque} de ${producto.unidadesPorEmpaque} ${producto.unidadBase}</strong>`;
+        infoHTML += `📦 Unidad base: <strong>${producto.unidadBase}</strong>`;
+        if (producto.esEmpaquetado && producto.unidadesPorEmpaque > 0) {
+            infoHTML += `<br>📐 <strong>1 ${producto.tipoEmpaque} = ${producto.unidadesPorEmpaque} ${producto.unidadBase}</strong>`;
+            infoHTML += `<br><small style="color: #7f8c8d;">Puedes contar empaques completos + unidades sueltas</small>`;
         } else {
-            infoHTML += '<br><span style="color: #ff9800;">⚠️ Este producto no tiene empaque definido</span>';
+            infoHTML += '<br><span style="color: #ff9800;">⚠️ Este producto no tiene empaque definido - solo conteo en unidad base</span>';
         }
         infoDiv.innerHTML = infoHTML;
         infoDiv.classList.remove('hidden');
@@ -1053,7 +1073,7 @@ class App {
         const stockTeorico = producto.stockActualUnidades || 0;
         const diferencia = stockContado - stockTeorico;
 
-        // Mostrar resumen
+        // Mostrar resumen mejorado con stock teórico vs real
         const resumenDiv = row.querySelector('.inventario-resumen');
         resumenDiv.classList.remove('hidden');
         
@@ -1063,7 +1083,16 @@ class App {
         const diferenciaEl = row.querySelector('.inventario-diferencia');
         const diferenciaText = diferencia >= 0 ? `+${diferencia.toFixed(2)}` : diferencia.toFixed(2);
         diferenciaEl.textContent = `${diferenciaText} ${producto.unidadBase}`;
-        diferenciaEl.style.color = diferencia === 0 ? '#34c759' : (diferencia > 0 ? '#1171ef' : '#ff3b30');
+        
+        // Color semántico: verde si cuadra, azul si sobra, rojo si falta
+        if (Math.abs(diferencia) < 0.01) {
+            diferenciaEl.style.color = '#34c759';
+            diferenciaEl.textContent = `✓ Cuadra (${diferencia.toFixed(2)} ${producto.unidadBase})`;
+        } else {
+            diferenciaEl.style.color = diferencia > 0 ? '#1171ef' : '#ff3b30';
+            const tipoAjuste = diferencia > 0 ? 'Sobra' : 'Falta';
+            diferenciaEl.textContent = `${tipoAjuste}: ${Math.abs(diferencia).toFixed(2)} ${producto.unidadBase}`;
+        }
     }
 
     validarLineaInventario(rowId) {
@@ -1360,6 +1389,14 @@ class App {
     }
 
     renderCompras() {
+        // Poblar datalist de proveedores para autocomplete
+        const datalist = document.getElementById('datalistProveedores');
+        if (datalist) {
+            datalist.innerHTML = this.db.proveedores
+                .map(p => `<option value="${p.nombreFiscal}">${p.nombreComercial ? `(${p.nombreComercial})` : ''}</option>`)
+                .join('');
+        }
+
         let facturas = this.db.getByPeriod('facturas', this.currentPeriod);
         let albaranes = this.db.getByPeriod('albaranes', this.currentPeriod);
 
@@ -1445,7 +1482,14 @@ class App {
         );
 
         if (albaranesCandidatos.length === 0) {
-            alert(`❌ VERIFICACIÓN FALLIDA\n\nNo se encontraron albaranes del proveedor "${factura.proveedor}" anteriores o iguales a la fecha ${factura.fecha}.\n\nFactura: ${factura.numeroFactura}\nTotal: ${factura.total.toFixed(2)}€`);
+            this.showModal(
+                '📋 Información de Verificación',
+                `No se encontraron albaranes del proveedor "<strong>${factura.proveedor}</strong>" anteriores o iguales a la fecha <strong>${factura.fecha}</strong>.<br><br>` +
+                `<strong>Factura:</strong> ${factura.numeroFactura}<br>` +
+                `<strong>Total:</strong> ${factura.total.toFixed(2)}€<br><br>` +
+                `<small style="color: #7f8c8d;">💡 Esto es normal si aún no has registrado albaranes de este proveedor. Los albaranes son opcionales.</small>`,
+                'info'
+            );
             return;
         }
 
@@ -1455,28 +1499,45 @@ class App {
         const coincide = diferencia < 0.01;
 
         const detalleAlbaranes = albaranesCandidatos.map(a => 
-            `  • ${a.numeroAlbaran} (${a.fecha}): ${(a.total || 0).toFixed(2)}€`
-        ).join('\n');
+            `<li><strong>${a.numeroAlbaran}</strong> (${a.fecha}): ${(a.total || 0).toFixed(2)}€</li>`
+        ).join('');
 
-        const mensaje = `${coincide ? '✅' : '⚠️'} VERIFICACIÓN DE FACTURA\n\n` +
-            `Factura: ${factura.numeroFactura}\n` +
-            `Proveedor: ${factura.proveedor}\n` +
-            `Fecha: ${factura.fecha}\n` +
-            `Total Factura: ${factura.total.toFixed(2)}€\n\n` +
-            `Albaranes encontrados (${albaranesCandidatos.length}):\n${detalleAlbaranes}\n\n` +
-            `Total Albaranes: ${totalAlbaranes.toFixed(2)}€\n` +
-            `Diferencia: ${diferencia.toFixed(2)}€\n\n` +
-            `${coincide ? '✅ Los totales coinciden' : '⚠️ Los totales NO coinciden'}`;
+        const mensajeHTML = `
+            <div style="text-align: left;">
+                <p><strong>Factura:</strong> ${factura.numeroFactura}</p>
+                <p><strong>Proveedor:</strong> ${factura.proveedor}</p>
+                <p><strong>Fecha:</strong> ${factura.fecha}</p>
+                <p><strong>Total Factura:</strong> ${factura.total.toFixed(2)}€</p>
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid #e3e8ef;">
+                <p><strong>Albaranes encontrados (${albaranesCandidatos.length}):</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">${detalleAlbaranes}</ul>
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid #e3e8ef;">
+                <p><strong>Total Albaranes:</strong> ${totalAlbaranes.toFixed(2)}€</p>
+                <p><strong>Diferencia:</strong> <span style="color: ${coincide ? '#27ae60' : '#e67e22'}; font-weight: 600;">${diferencia.toFixed(2)}€</span></p>
+                <p style="font-size: 16px; font-weight: 600; color: ${coincide ? '#27ae60' : '#e67e22'}; margin-top: 15px;">
+                    ${coincide ? '✅ Los totales coinciden' : '⚠️ Los totales NO coinciden'}
+                </p>
+            </div>
+        `;
 
-        alert(mensaje);
+        this.showModal(
+            coincide ? '✅ Verificación Correcta' : '⚠️ Verificación con Diferencias',
+            mensajeHTML,
+            coincide ? 'success' : 'warning'
+        );
     }
 
     renderProveedores() {
         const proveedores = this.db.proveedores;
+        
+        // DEBUG: Verificar datos de proveedores
+        console.log('📋 DEBUG RENDER - Total proveedores:', proveedores.length);
+        console.log('📋 DEBUG RENDER - Proveedores completos:', proveedores);
+        
         const html = proveedores.length > 0 ? proveedores.map(p => {
             const nombre = p.nombreFiscal || p.nombre || 'Sin nombre';
             const comercial = p.nombreComercial ? ` (${p.nombreComercial})` : '';
-            const tipo = p.tipoProveedor || 'N/A';
+            const tipo = p.tipo || p.tipoProveedor || 'N/A';
             
             return `
             <div class="list-item">
@@ -1496,7 +1557,16 @@ class App {
             `;
         }).join('') : '<p class="empty-state">No hay proveedores registrados</p>';
         
-        document.getElementById('listaProveedores').innerHTML = html;
+        console.log('📋 DEBUG RENDER - HTML generado (primeros 500 chars):', html.substring(0, 500));
+        console.log('📋 DEBUG RENDER - Elemento listaProveedores existe?:', !!document.getElementById('listaProveedores'));
+        
+        const contenedor = document.getElementById('listaProveedores');
+        if (contenedor) {
+            contenedor.innerHTML = html;
+            console.log('📋 DEBUG RENDER - HTML insertado correctamente. Children:', contenedor.children.length);
+        } else {
+            console.error('❌ ERROR - Elemento listaProveedores NO ENCONTRADO en el DOM');
+        }
         
         // Actualizar dropdown de productos
         const selectProveedor = document.getElementById('productoProveedorId');
@@ -2133,6 +2203,7 @@ class App {
                 document.getElementById('ocrPreviewContainer').classList.remove('hidden');
                 document.getElementById('ocrUploadCard').classList.remove('hidden');
                 this.currentImageData = preprocessedImage;
+                this.currentFileType = file.type; // Guardar tipo de archivo
                 this.showToast('✅ Imagen cargada correctamente');
             } catch (error) {
                 console.error('Error procesando imagen:', error);
@@ -2147,8 +2218,168 @@ class App {
         reader.readAsDataURL(file);
     }
 
+    extractZonesFromTesseractResult(tesseractData) {
+        // Extraer zonas de IMAGENES (JPEG, PNG, etc) usando coordenadas de Tesseract
+        // Similar a extractPDFText pero para imágenes
+        try {
+            if (!tesseractData.words || tesseractData.words.length === 0) {
+                return null; // Sin datos de palabras, usar texto plano
+            }
+
+            const words = tesseractData.words;
+            const imageWidth = tesseractData.width || 1000;
+            const imageHeight = tesseractData.height || 1000;
+
+            console.log('🎯 Aplicando extracción con ZONAS a imagen (JPEG/PNG)...');
+
+            // Definir zonas (igual que PDF.js)
+            const zones = {
+                topLeft: [],      // Proveedor (x < 50%, y < 30%)
+                topRight: [],     // Cliente (x >= 50%, y < 30%)
+                center: [],       // Detalle (30% < y < 70%)
+                bottom: []        // Totales (y >= 70%)
+            };
+
+            // Clasificar cada palabra por coordenadas
+            words.forEach(word => {
+                const text = word.text.trim();
+                if (!text || word.confidence < 30) return; // Ignorar palabras con baja confianza
+
+                const bbox = word.bbox;
+                const x = bbox.x0; // Posición X (izquierda)
+                const y = bbox.y0; // Posición Y (arriba)
+
+                // Normalizar coordenadas (0-1)
+                const normalX = x / imageWidth;
+                const normalY = y / imageHeight;
+
+                // Clasificar por zona (Y en imágenes: menor = arriba)
+                if (normalY < 0.3) { // Arriba (30% superior)
+                    if (normalX < 0.5) {
+                        zones.topLeft.push({ text, x, y });
+                    } else {
+                        zones.topRight.push({ text, x, y });
+                    }
+                } else if (normalY < 0.7) { // Centro
+                    zones.center.push({ text, x, y });
+                } else { // Abajo (totales)
+                    zones.bottom.push({ text, x, y });
+                }
+            });
+
+            // Ordenar cada zona por Y (ascendente) y luego por X
+            Object.keys(zones).forEach(zoneKey => {
+                zones[zoneKey].sort((a, b) => {
+                    const yDiff = a.y - b.y; // Menor Y primero (arriba)
+                    if (Math.abs(yDiff) > 10) return yDiff;
+                    return a.x - b.x; // Mismo Y → orden X
+                });
+            });
+
+            // Reconstruir texto estructurado
+            const structuredText = {
+                proveedor: zones.topLeft.map(i => i.text).join(' '),
+                cliente: zones.topRight.map(i => i.text).join(' '),
+                detalle: zones.center.map(i => i.text).join(' '),
+                totales: zones.bottom.map(i => i.text).join(' ')
+            };
+
+            console.log('📋 Zonas extraídas de imagen:');
+            console.log('  Proveedor (arriba-izq):', structuredText.proveedor.substring(0, 100) + '...');
+            console.log('  Cliente (arriba-der):', structuredText.cliente.substring(0, 100) + '...');
+            console.log('  Totales (abajo):', structuredText.totales.substring(0, 100) + '...');
+
+            // Devolver texto estructurado (igual que PDF.js)
+            return `ZONA_PROVEEDOR: ${structuredText.proveedor}\n\nZONA_CLIENTE: ${structuredText.cliente}\n\nZONA_DETALLE: ${structuredText.detalle}\n\nZONA_TOTALES: ${structuredText.totales}`;
+
+        } catch (error) {
+            console.error('Error extrayendo zonas de imagen:', error);
+            return null; // Fallback a texto plano
+        }
+    }
+
+    extractZonesFromTesseractData(tesseractData) {
+        // Extraer zonas de IMAGENES (JPEG, PNG, etc) usando coordenadas de Tesseract
+        // Similar a extractPDFText pero para imágenes
+        try {
+            if (!tesseractData.words || tesseractData.words.length === 0) {
+                return null; // Sin datos de palabras, usar texto plano
+            }
+
+            const words = tesseractData.words;
+            const imageWidth = tesseractData.width || 1000;
+            const imageHeight = tesseractData.height || 1000;
+
+            console.log('🎯 Aplicando extracción con ZONAS a imagen (JPEG/PNG/etc)...');
+
+            // Definir zonas (igual que PDF.js)
+            const zones = {
+                topLeft: [],      // Proveedor (x < 50%, y < 30%)
+                topRight: [],     // Cliente (x >= 50%, y < 30%)
+                center: [],       // Detalle (30% < y < 70%)
+                bottom: []        // Totales (y >= 70%)
+            };
+
+            // Clasificar cada palabra por coordenadas
+            words.forEach(word => {
+                const text = word.text.trim();
+                if (!text || word.confidence < 30) return; // Ignorar palabras con baja confianza
+
+                const bbox = word.bbox;
+                const x = bbox.x0; // Posición X (izquierda)
+                const y = bbox.y0; // Posición Y (arriba)
+
+                // Normalizar coordenadas (0-1)
+                const normalX = x / imageWidth;
+                const normalY = y / imageHeight;
+
+                // Clasificar por zona (Y en imágenes: menor = arriba)
+                if (normalY < 0.3) { // Arriba (30% superior)
+                    if (normalX < 0.5) {
+                        zones.topLeft.push({ text, x, y });
+                    } else {
+                        zones.topRight.push({ text, x, y });
+                    }
+                } else if (normalY < 0.7) { // Centro
+                    zones.center.push({ text, x, y });
+                } else { // Abajo (totales)
+                    zones.bottom.push({ text, x, y });
+                }
+            });
+
+            // Ordenar cada zona por Y (ascendente) y luego por X
+            Object.keys(zones).forEach(zoneKey => {
+                zones[zoneKey].sort((a, b) => {
+                    const yDiff = a.y - b.y; // Menor Y primero (arriba)
+                    if (Math.abs(yDiff) > 10) return yDiff;
+                    return a.x - b.x; // Mismo Y → orden X
+                });
+            });
+
+            // Reconstruir texto estructurado
+            const structuredText = {
+                proveedor: zones.topLeft.map(i => i.text).join(' '),
+                cliente: zones.topRight.map(i => i.text).join(' '),
+                detalle: zones.center.map(i => i.text).join(' '),
+                totales: zones.bottom.map(i => i.text).join(' ')
+            };
+
+            console.log('📋 Zonas extraídas de imagen:');
+            console.log('  Proveedor (arriba-izq):', structuredText.proveedor.substring(0, 100) + '...');
+            console.log('  Cliente (arriba-der):', structuredText.cliente.substring(0, 100) + '...');
+            console.log('  Totales (abajo):', structuredText.totales.substring(0, 100) + '...');
+
+            // Devolver texto estructurado (igual que PDF.js)
+            return `ZONA_PROVEEDOR: ${structuredText.proveedor}\n\nZONA_CLIENTE: ${structuredText.cliente}\n\nZONA_DETALLE: ${structuredText.detalle}\n\nZONA_TOTALES: ${structuredText.totales}`;
+
+        } catch (error) {
+            console.error('Error extrayendo zonas de imagen:', error);
+            return null; // Fallback a texto plano
+        }
+    }
+
     async extractPDFText(pdfFile) {
-        // Intentar extraer texto embebido del PDF (sin OCR)
+        // Extraer texto embebido del PDF CON COORDENADAS para separar zonas
         try {
             if (typeof pdfjsLib === 'undefined') {
                 return null;
@@ -2161,18 +2392,86 @@ class App {
             if (!pdf || pdf.numPages === 0) return null;
 
             const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 1.0 });
             const textContent = await page.getTextContent();
             
-            // Extraer texto de los items
-            const textItems = textContent.items.map(item => item.str).join(' ');
-            
-            // Si el texto es sustancial (>100 caracteres), el PDF tiene texto embebido
-            if (textItems.trim().length > 100) {
-                console.log('✅ PDF con texto embebido detectado, NO se necesita OCR');
-                return textItems;
+            // Si no hay texto embebido, return null para usar OCR
+            if (!textContent.items || textContent.items.length === 0) {
+                return null;
             }
             
-            return null;
+            // Calcular texto total
+            const totalText = textContent.items.map(item => item.str).join(' ').trim();
+            if (totalText.length < 100) {
+                return null; // Muy poco texto, usar OCR
+            }
+            
+            console.log('✅ PDF con texto embebido detectado, extrayendo con coordenadas...');
+            
+            // Separar texto por ZONAS usando coordenadas (x, y)
+            const pageHeight = viewport.height;
+            const pageWidth = viewport.width;
+            
+            // Definir zonas (normalizado 0-1)
+            const zones = {
+                topLeft: [],      // Arriba izquierda (proveedor)
+                topRight: [],     // Arriba derecha (cliente)
+                center: [],       // Centro (tabla de productos)
+                bottom: []        // Abajo (totales)
+            };
+            
+            // Clasificar cada item de texto en su zona
+            textContent.items.forEach(item => {
+                const x = item.transform[4]; // Posición X
+                const y = item.transform[5]; // Posición Y
+                const text = item.str.trim();
+                
+                if (!text) return;
+                
+                // Normalizar coordenadas (0-1)
+                const normalX = x / pageWidth;
+                const normalY = y / pageHeight;
+                
+                // Clasificar por zona (Y invertido: mayor Y = arriba)
+                if (normalY > 0.7) { // Arriba (70% superior)
+                    if (normalX < 0.5) {
+                        zones.topLeft.push({ text, x, y });
+                    } else {
+                        zones.topRight.push({ text, x, y });
+                    }
+                } else if (normalY > 0.3) { // Centro
+                    zones.center.push({ text, x, y });
+                } else { // Abajo (totales)
+                    zones.bottom.push({ text, x, y });
+                }
+            });
+            
+            // Ordenar cada zona por Y (descendente) y luego por X
+            Object.keys(zones).forEach(zoneKey => {
+                zones[zoneKey].sort((a, b) => {
+                    const yDiff = b.y - a.y; // Mayor Y primero (arriba)
+                    if (Math.abs(yDiff) > 5) return yDiff;
+                    return a.x - b.x; // Mismo Y → orden X
+                });
+            });
+            
+            // Reconstruir texto estructurado
+            const structuredText = {
+                proveedor: zones.topLeft.map(i => i.text).join(' '),
+                cliente: zones.topRight.map(i => i.text).join(' '),
+                detalle: zones.center.map(i => i.text).join(' '),
+                totales: zones.bottom.map(i => i.text).join(' '),
+                full: totalText
+            };
+            
+            console.log('📋 Zonas extraídas:');
+            console.log('  Proveedor (arriba-izq):', structuredText.proveedor.substring(0, 100) + '...');
+            console.log('  Cliente (arriba-der):', structuredText.cliente.substring(0, 100) + '...');
+            console.log('  Totales (abajo):', structuredText.totales.substring(0, 100) + '...');
+            
+            // Devolver texto estructurado como string especial
+            return `ZONA_PROVEEDOR: ${structuredText.proveedor}\n\nZONA_CLIENTE: ${structuredText.cliente}\n\nZONA_DETALLE: ${structuredText.detalle}\n\nZONA_TOTALES: ${structuredText.totales}`;
+            
         } catch (error) {
             console.error('Error extrayendo texto embebido:', error);
             return null;
@@ -2305,6 +2604,8 @@ class App {
         if (this.isPDFWithEmbeddedText && this.currentPDFText) {
             this.showToast('✅ Procesando texto embebido del PDF...');
             try {
+                console.log('📄 Texto PDF embebido recibido, longitud:', this.currentPDFText.length);
+                
                 // Parsear directamente el texto embebido (SIN Tesseract)
                 const extractedData = {
                     text: this.currentPDFText,
@@ -2312,11 +2613,14 @@ class App {
                     words: []
                 };
                 
+                console.log('🔍 Iniciando parseOCRTextWithConfidence...');
                 const parsedData = this.parseOCRTextWithConfidence(extractedData);
+                console.log('✅ parseOCRTextWithConfidence completado:', parsedData);
                 
                 // Detectar tipo si no hay seleccionado
                 let tipoDocumento = this.currentOCRType;
                 if (!tipoDocumento) {
+                    console.log('🔍 Detectando tipo de documento...');
                     tipoDocumento = this.detectarTipoDocumento(parsedData);
                     this.currentOCRType = tipoDocumento;
                     document.querySelectorAll('.ocr-tipo-btn').forEach(btn => {
@@ -2327,13 +2631,15 @@ class App {
                     this.showToast(`📄 Tipo detectado: ${this.getTipoLabel(tipoDocumento)}`);
                 }
                 
+                console.log('🔍 Mostrando formulario OCR...');
                 this.displayOCRForm(parsedData, tipoDocumento);
                 document.getElementById('ocrDataCard').classList.remove('hidden');
                 this.showToast('✅ Análisis completado (texto embebido)');
                 return;
             } catch (error) {
-                console.error('Error procesando texto embebido:', error);
-                this.showToast('❌ Error al procesar texto embebido', true);
+                console.error('❌ Error procesando texto embebido:', error);
+                console.error('❌ Stack trace:', error.stack);
+                this.showToast('❌ Error al procesar texto embebido: ' + error.message, true);
                 return;
             }
         }
@@ -2380,6 +2686,11 @@ class App {
                 });
                 
                 this.showToast(`📄 Tipo detectado: ${this.getTipoLabel(tipoDocumento)}`);
+            }
+            
+            // Si se extrajeron zonas, reemplazar texto plano por estructurado
+            if (textWithZones) {
+                extractedData.text = textWithZones;
             }
             
             this.displayOCRForm(extractedData, tipoDocumento);
@@ -2437,6 +2748,12 @@ class App {
             console.log('OCR Completo - Confianza:', data.confidence + '%');
             console.log('OCR Completo - Palabras detectadas:', data.words?.length || 0);
             
+            // Extraer ZONAS de imagen (igual que PDF.js)
+            const textWithZones = this.extractZonesFromTesseractData(data);
+            
+            // Si se extrajeron zonas, usar texto estructurado
+            const textoFinal = textWithZones || data.text;
+            
             // Segunda pasada SOLO para números (importes, IVA, totales)
             await worker.setParameters({
                 tessedit_char_whitelist: '0123456789,.-€%' // Whitelist numérica
@@ -2447,7 +2764,9 @@ class App {
             
             // Combinar resultados (priorizar números de segunda pasada para campos numéricos)
             const resultado = {
-                ...data,
+                text: textoFinal, // ⬅️ Usar texto con zonas si está disponible
+                confidence: data.confidence,
+                words: data.words,
                 textNumeros: dataNumeros.text,
                 confidenceNumeros: dataNumeros.confidence
             };
@@ -2528,6 +2847,29 @@ class App {
         const confidence = ocrData.confidence;
         const lines = text.split('\n');
         
+        // Detectar si el texto viene con ZONAS (PDF.js con coordenadas)
+        const tieneZonas = text.includes('ZONA_PROVEEDOR:');
+        let zonaProveedor = '';
+        let zonaCliente = '';
+        let zonaTotales = '';
+        
+        if (tieneZonas) {
+            console.log('🎯 Detectado texto con ZONAS de PDF.js, usando extracción mejorada...');
+            
+            // Extraer cada zona
+            const matchProveedor = text.match(/ZONA_PROVEEDOR:\s*([^\n]+(?:\n(?!ZONA_)[^\n]+)*)/);
+            const matchCliente = text.match(/ZONA_CLIENTE:\s*([^\n]+(?:\n(?!ZONA_)[^\n]+)*)/);
+            const matchTotales = text.match(/ZONA_TOTALES:\s*([^\n]+(?:\n(?!ZONA_)[^\n]+)*)/);
+            
+            zonaProveedor = matchProveedor ? matchProveedor[1].trim() : '';
+            zonaCliente = matchCliente ? matchCliente[1].trim() : '';
+            zonaTotales = matchTotales ? matchTotales[1].trim() : '';
+            
+            console.log('📦 Zona Proveedor:', zonaProveedor.substring(0, 80) + '...');
+            console.log('👤 Zona Cliente:', zonaCliente.substring(0, 50) + '...');
+            console.log('💰 Zona Totales:', zonaTotales.substring(0, 50) + '...');
+        }
+        
         const data = {
             text: text,
             confidence: confidence,
@@ -2538,38 +2880,183 @@ class App {
             baseImponible: { value: 0, confidence: 0 },
             iva: { value: 0, confidence: 0 },
             total: { value: 0, confidence: 0 },
+            direccion: { value: '', confidence: 0 },
+            codigoPostal: { value: '', confidence: 0 },
+            ciudad: { value: '', confidence: 0 },
+            telefono: { value: '', confidence: 0 },
+            email: { value: '', confidence: 0 },
             needsReview: false
         };
 
         // EXTRACCIÓN SEMÁNTICA CON REGEX (no por posición)
         
-        // 1. PROVEEDOR/EMPRESA (buscar antes del CIF o en encabezado)
-        const cifMatch = text.match(/(?:NIF|CIF|B)[:\s]*([A-HJ-NP-SUVW][0-9]{8})/i);
-        if (cifMatch) {
-            data.nif = { value: cifMatch[1], confidence: confidence };
-            // Buscar nombre de empresa antes del CIF
-            const textBeforeCIF = text.substring(0, text.indexOf(cifMatch[0]));
-            const lineasAntes = textBeforeCIF.split('\n').reverse();
-            for (let i = 0; i < Math.min(3, lineasAntes.length); i++) {
-                const linea = lineasAntes[i].trim();
-                if (linea.length > 3 && linea.length < 60 && !linea.match(/factura|fecha|total/i)) {
-                    data.proveedor = { value: linea, confidence: confidence };
+        // 1. CIF/NIF PRIMERO (buscar en zona proveedor si está disponible)
+        // CIF/NIF español: Letra inicial (A-H, J-N, P-S, U-W) + 7 dígitos + dígito de control
+        const textoBusquedaCIF = tieneZonas && zonaProveedor ? zonaProveedor : text;
+        const cifPatterns = [
+            /(?:NIF|CIF)[:\s]*([A-HJ-NP-SUVW][0-9]{7}[0-9A-Z])/gi,  // Con etiqueta NIF/CIF
+            /\b([A-HJ-NP-SUVW][0-9]{7}[0-9A-Z])\b/gi  // Sin etiqueta (buscar todas las ocurrencias)
+        ];
+        
+        for (const pattern of cifPatterns) {
+            const matches = [...textoBusquedaCIF.matchAll(pattern)];
+            for (const match of matches) {
+                const cifValue = match[1].toUpperCase();
+                // Validar formato: letra + 7 números + dígito/letra control
+                if (cifValue.match(/^[A-HJ-NP-SUVW][0-9]{7}[0-9A-Z]$/)) {
+                    data.nif = { value: cifValue, confidence: confidence };
+                    console.log('✓ CIF/NIF detectado:', cifValue, tieneZonas ? '(desde zona proveedor)' : '');
+                    break;
+                }
+            }
+            if (data.nif.value) break;
+        }
+        
+        // 2. PROVEEDOR/EMPRESA (buscar con múltiples patrones MEJORADOS)
+        // Patrón 0: Si tenemos zona proveedor, buscar primero ahí
+        if (tieneZonas && zonaProveedor && !data.proveedor.value) {
+            // Buscar línea con forma societaria: S.L., S.A., SLU, S.L.L., S.COOP, etc.
+            const lineasProveedor = zonaProveedor.split(/\s{2,}|\n/).filter(l => l.trim().length > 0);
+            for (const linea of lineasProveedor) {
+                const lineaTrim = linea.trim();
+                // REFUERZO: Si tiene forma societaria, ES nombre de empresa
+                if (lineaTrim.match(/\b(S\.?L\.?U\.?|S\.?L\.?L\.?|S\.?L\.?|S\.?A\.?|S\.?COOP\.?|S\.?A\.?T\.?|S\.?COM\.?|BCN|GROUP|FOODS|DELIVERY)\b/i) && 
+                    lineaTrim.length > 4 && lineaTrim.length < 100 &&
+                    !lineaTrim.match(/^(Cliente|Factura|Invoice|Total|Fecha)/i)) {
+                    data.proveedor = { value: lineaTrim, confidence: confidence };
+                    console.log('✓ Proveedor detectado (zona proveedor con forma societaria):', lineaTrim);
+                    break;
+                }
+                // Si no tiene forma societaria pero es nombre en mayúsculas
+                if (!data.proveedor.value && lineaTrim.match(/^[A-ZÁÉÍÓÚÑ]/i) && 
+                    lineaTrim.length > 4 && lineaTrim.length < 60 &&
+                    !lineaTrim.match(/^(Cliente|Factura|Invoice|Total|Fecha|Tel|Email|NIF|CIF)/i)) {
+                    data.proveedor = { value: lineaTrim, confidence: confidence * 0.9 };
+                    console.log('✓ Proveedor detectado (zona proveedor, nombre capitalizado):', lineaTrim);
                     break;
                 }
             }
         }
         
-        // 2. NÚMERO DE FACTURA (patrones comunes)
+        // Patrón 1: Buscar línea antes del CIF (PRIORIDAD ALTA)
+        if (data.nif.value && !data.proveedor.value) {
+            const indexCIF = text.indexOf(data.nif.value);
+            if (indexCIF > 0) {
+                const textBeforeCIF = text.substring(0, indexCIF);
+                const lineasAntes = textBeforeCIF.split('\n').reverse();
+                
+                for (let i = 0; i < Math.min(8, lineasAntes.length); i++) {
+                    const linea = lineasAntes[i].trim();
+                    // Buscar líneas que parezcan nombre de empresa
+                    // EXCLUIR: palabras clave de factura, "Cliente:", emails, URLs, direcciones obvias
+                    if (linea.length > 3 && linea.length < 100 && 
+                        !linea.match(/^(factura|invoice|fecha|date|total|subtotal|cliente:|email|www\.|http|tel[eé]fono|calle|avenida|plaza|carrer|c\/)/i) &&
+                        !linea.match(/^\d+[\.,]\d+\s*€?$/) && // No es un número/precio
+                        !linea.match(/^\+?\d+/) && // No empieza con teléfono
+                        (linea.match(/[A-ZÁÉÍÓÚÑ]{3,}/) || linea.match(/S\.?L\.?|SL|S\.?A\.?|SA|BCN|GROUP|FOODS|RESTAURANT|DELIVERY|DELIVERYIFY/i))) {
+                        data.proveedor = { value: linea, confidence: confidence };
+                        console.log('✓ Proveedor detectado (antes de CIF):', linea);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Patrón 1.5: Buscar "NOMBRE S.L." o "NOMBRE S.A." en líneas mixtas (con dirección)
+        // Para casos como: "DELIVERYIFY S.L. Carrer Rossend Arús 20..."
+        if (!data.proveedor.value) {
+            // Buscar patrón: PALABRAS_MAYUSCULAS S.L. (o SL, S.A., SA) seguido de dirección
+            const empresaMixta = text.match(/\b([A-ZÁÉÍÓÚÑ][A-ZÀ-ÿa-z0-9\s&\.\-]{3,50}?\s*(?:S\.?L\.?|S\.?A\.?))\s+(?:Carrer|Calle|C\/|Avda|Avenida)/i);
+            if (empresaMixta && empresaMixta[1]) {
+                const nombreEmpresa = empresaMixta[1].trim();
+                data.proveedor = { value: nombreEmpresa, confidence: confidence };
+                console.log('✓ Proveedor detectado (línea mixta con dirección):', nombreEmpresa);
+            }
+        }
+        
+        // Patrón 2: Buscar después de palabras clave "Proveedor:", "Empresa:", "Razón Social:"
+        // EXCLUIR explícitamente "Cliente:" (que somos nosotros)
+        if (!data.proveedor.value) {
+            const proveedorMatch = text.match(/(?:Proveedor|Empresa|Razón\s+Social|Emisor)[:\s]+([A-ZÀ-ÿ0-9][^\n]{3,80})/i);
+            if (proveedorMatch && proveedorMatch[1]) {
+                const nombre = proveedorMatch[1].trim();
+                // Limpiar posibles artefactos al final
+                const nombreLimpio = nombre.replace(/\s+(NIF|CIF|Tel[eé]fono).*$/i, '').trim();
+                if (nombreLimpio.length > 2) {
+                    data.proveedor = { value: nombreLimpio, confidence: confidence };
+                    console.log('✓ Proveedor detectado (palabra clave):', nombreLimpio);
+                }
+            }
+        }
+        
+        // Patrón 3: Buscar en las primeras 10 líneas del documento (cabecera) - MEJORADO
+        if (!data.proveedor.value) {
+            const primerasLineas = text.split('\n').slice(0, 10);
+            for (const linea of primerasLineas) {
+                const lineaTrim = linea.trim();
+                // Buscar líneas con nombres de empresa típicos (MAYOR TOLERANCIA)
+                if (lineaTrim.length > 4 && lineaTrim.length < 100 &&
+                    !lineaTrim.match(/^(factura|invoice|fecha|total|cliente:|NIF|CIF|tel|email|www|http|carrer|calle)/i) &&
+                    !lineaTrim.match(/^\d+[\.,]\d+/) && // No es precio
+                    !lineaTrim.match(/^\+?\d+/) && // No es teléfono
+                    (lineaTrim.match(/S\.?L\.?|SL|S\.?A\.?|SA|BCN|GROUP|FOODS|RESTAURANT|DELIVERY|DELIVERYIFY|SUMINISTROS|DISTRIBUCIONES/i) || 
+                     (lineaTrim.match(/^[A-ZÁÉÍÓÚÑ][A-ZÀ-ÿa-z0-9\s&\.\-]{2,}$/) && lineaTrim.split(' ').length <= 8))) {
+                    data.proveedor = { value: lineaTrim, confidence: confidence * 0.8 };
+                    console.log('✓ Proveedor detectado (cabecera):', lineaTrim);
+                    break;
+                }
+            }
+        }
+        
+        // Patrón 4: ÚLTIMO RECURSO - Tomar primera línea con mayúsculas significativas
+        if (!data.proveedor.value) {
+            const primerasLineas = text.split('\n').slice(0, 15);
+            for (const linea of primerasLineas) {
+                const lineaTrim = linea.trim();
+                // Buscar cualquier línea que tenga al menos 2 palabras capitalizadas
+                const palabrasMayusculas = lineaTrim.match(/\b[A-ZÁÉÍÓÚÑ][A-ZÀ-ÿ]+\b/g);
+                if (palabrasMayusculas && palabrasMayusculas.length >= 2 && 
+                    lineaTrim.length > 5 && lineaTrim.length < 100 &&
+                    !lineaTrim.match(/^(factura|invoice|fecha|cliente)/i)) {
+                    data.proveedor = { value: lineaTrim, confidence: confidence * 0.6 };
+                    console.log('⚠️ Proveedor detectado (último recurso):', lineaTrim);
+                    break;
+                }
+            }
+        }
+        
+        // 3. NÚMERO DE FACTURA (patrones MEJORADOS) - MANTENER COMPLETO con letras, números, guiones, barras
         const numeroPatterns = [
-            /(?:N[úu]mero|Factura|Invoice|Número\s*#?)\s*[:\s]*([A-Z0-9\-\/]+)/i,
-            /(?:PCK|FCK|FAC|INV)[\-]?([0-9]+)/i,
-            /(?:Número|N[úu]m)\s*[:\s]*([A-Z0-9]+)/i
+            /\b(PCK\d{3,})\b/i,  // PRIORIDAD: PCK seguido de números (PCK215)
+            /\b(FCK\d{3,})\b/i,  // FCK seguido de números
+            /\b(FAC[\-\/]?\d{3,})\b/i,  // FAC-123 o FAC123
+            /(?:N[úu]mero|Invoice|Num)\s*[:\s#]*([A-Z]{2,}[\-\/]?[0-9]+)/i,  // "Número: ABC123"
+            /Factura\s+N[úu]mero\s+\d+\s+([A-Z0-9]+)/i,  // "Factura Número 4 PCK215" → captura PCK215
+            /(?:PCK|FCK|FAC|INV|ALB|DL|PED|ORD)[\-\/]?([0-9\-\/]+)/i,  // Códigos comunes con números
+            /\b([A-Z]{2,4}[\-\/]\d{3,}[\-\/]?\d*)\b/,  // Formato prefijo-números: ABC-12345
+            /\b([A-Z]{3,}[0-9]{3,})\b/  // Formato pegado: PCK215, FAC20240001
         ];
         for (const pattern of numeroPatterns) {
             const match = text.match(pattern);
-            if (match && match[1] && match[1].length > 2) {
-                data.numero = { value: match[1], confidence: confidence };
-                break;
+            if (match) {
+                // Extraer el grupo capturado (puede ser 1 o el match completo)
+                let numeroCompleto = (match[1] || match[0]).trim();
+                
+                // Si capturó solo números después de prefijo, añadir prefijo
+                if (numeroCompleto.match(/^\d+$/) && match[0].match(/^(PCK|FCK|FAC)/i)) {
+                    const prefijo = match[0].match(/^(PCK|FCK|FAC)/i)[1];
+                    numeroCompleto = prefijo + numeroCompleto;
+                }
+                
+                // Validar que no sea un CIF, fecha u otro dato
+                if (numeroCompleto.length > 2 && numeroCompleto.length < 30 &&
+                    !numeroCompleto.match(/^[A-HJ-NP-SUVW]\d{7}[A-Z0-9]$/i) && // No es CIF
+                    !numeroCompleto.match(/^\d{1,2}[\-\/]\d{1,2}[\-\/]\d{2,4}$/) && // No es fecha
+                    !numeroCompleto.match(/^[0-9]+$/)) { // No es solo números sin letras
+                    data.numero = { value: numeroCompleto, confidence: confidence };
+                    console.log('✓ Número factura detectado:', numeroCompleto);
+                    break;
+                }
             }
         }
         
@@ -2639,6 +3126,132 @@ class App {
             data.fecha = { value: new Date().toISOString().split('T')[0], confidence: 0 };
         }
         
+        // 7. DIRECCIÓN (buscar patrón de calle/avenida/plaza)
+        const direccionPatterns = [
+            /(?:Direcci[oó]n|Domicilio|Address)[:\s]*([A-ZÀ-ÿ][A-ZÀ-ÿ0-9\s,\.\/\-]{10,100})/i,
+            /\b((?:Calle|C\/|Avda|Avenida|Plaza|Pl\.|Paseo|Carrer)[A-ZÀ-ÿ0-9\s,\.\/\-]{5,80})/i
+        ];
+        for (const pattern of direccionPatterns) {
+            const match = text.match(pattern);
+            if (match && match[1]) {
+                let direccion = match[1].trim();
+                // Limpiar: cortar si encuentra CP, ciudad o país
+                direccion = direccion.replace(/\s*\d{5}\s*[A-ZÀ-ÿ]+.*$/i, '').trim();
+                direccion = direccion.replace(/\s*(Tel[eé]fono|Tel|Email).*$/i, '').trim();
+                if (direccion.length > 5 && direccion.length < 150) {
+                    data.direccion = { value: direccion, confidence: confidence * 0.85 };
+                    console.log('✓ Dirección detectada:', direccion);
+                    break;
+                }
+            }
+        }
+        
+        // 8. CÓDIGO POSTAL (5 dígitos españoles)
+        const cpMatch = text.match(/\b(\d{5})\b/);
+        if (cpMatch && cpMatch[1]) {
+            // Validar que sea un CP español (00001-52999)
+            const cp = cpMatch[1];
+            const cpNum = parseInt(cp);
+            if (cpNum >= 1000 && cpNum <= 52999) {
+                data.codigoPostal = { value: cp, confidence: confidence };
+                console.log('✓ Código Postal detectado:', cp);
+            }
+        }
+        
+        // 9. CIUDAD (después del código postal o en línea con palabras clave)
+        if (data.codigoPostal.value) {
+            // Buscar texto después del CP
+            const indexCP = text.indexOf(data.codigoPostal.value);
+            const textoDespuesCP = text.substring(indexCP + 5, indexCP + 100);
+            const ciudadMatch = textoDespuesCP.match(/\s+([A-ZÁÉÍÓÚÑ][A-ZÀ-ÿa-z\s]{2,40}?)(?:\n|,|\.|Tel|Email|España|Spain)/i);
+            if (ciudadMatch && ciudadMatch[1]) {
+                const ciudad = ciudadMatch[1].trim();
+                data.ciudad = { value: ciudad, confidence: confidence };
+                console.log('✓ Ciudad detectada:', ciudad);
+            }
+        }
+        
+        // Si no encontró ciudad con CP, buscar palabras clave
+        if (!data.ciudad.value) {
+            const ciudadPatterns = [
+                /(?:Ciudad|Población|City)[:\s]*([A-ZÁÉÍÓÚÑ][A-ZÀ-ÿa-z\s]{2,40})/i,
+                /\b(Barcelona|Madrid|Valencia|Sevilla|Zaragoza|Málaga|Murcia|Palma|Bilbao|Alicante|Córdoba|Granada|Valladolid)\b/i
+            ];
+            for (const pattern of ciudadPatterns) {
+                const match = text.match(pattern);
+                if (match && match[1]) {
+                    data.ciudad = { value: match[1].trim(), confidence: confidence * 0.9 };
+                    console.log('✓ Ciudad detectada (palabra clave):', match[1]);
+                    break;
+                }
+            }
+        }
+        
+        // 10. TELÉFONO (formatos españoles e internacionales)
+        // REFUERZO: si tiene 9 números seguidos, es un teléfono
+        const textoBusquedaTelefono = tieneZonas && zonaProveedor ? zonaProveedor : text;
+        const telefonoPatterns = [
+            /(?:Tel[eé]fono|Tel|Phone|Móvil)[:\s]*([\+\d][\d\s\-\(\)]{8,20})/i,  // Con etiqueta
+            /\b(\+34\s?[6-9]\d{2}\s?\d{3}\s?\d{3})\b/,  // +34 6XX XXX XXX
+            /\b([6-9]\d{2}[\s\-]?\d{3}[\s\-]?\d{3})\b/,  // 6XX XXX XXX o 6XXXXXXXX
+            /\b(\d{3}[\s\-]?\d{2}[\s\-]?\d{2}[\s\-]?\d{2})\b/,  // 93 XXX XX XX
+            /\b(\+?[0-9]{9,15})\b/  // Cualquier número de 9-15 dígitos
+        ];
+        for (const pattern of telefonoPatterns) {
+            const match = textoBusquedaTelefono.match(pattern);
+            if (match && match[1]) {
+                let telefono = match[1].trim();
+                // Limpiar y normalizar formato
+                telefono = telefono.replace(/[\s\-\(\)]/g, '');
+                
+                // Validar longitud: 9 dígitos españoles o 10-15 internacional
+                if (telefono.startsWith('+')) {
+                    // Internacional: +34XXXXXXXXX (12 chars) o similar
+                    if (telefono.length >= 11 && telefono.length <= 15) {
+                        data.telefono = { value: telefono, confidence: confidence };
+                        console.log('✓ Teléfono detectado (internacional):', telefono, tieneZonas ? '(desde zona proveedor)' : '');
+                        break;
+                    }
+                } else {
+                    // Español: 9 dígitos exactos
+                    if (telefono.length === 9) {
+                        // Validar que empiece por 6, 7, 8 o 9 (móviles y fijos españoles)
+                        if (telefono.match(/^[6-9]/)) {
+                            telefono = '+34' + telefono; // Añadir prefijo español
+                            data.telefono = { value: telefono, confidence: confidence };
+                            console.log('✓ Teléfono detectado (español):', telefono, tieneZonas ? '(desde zona proveedor)' : '');
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 11. EMAIL (REFUERZO: si tiene @, es un email)
+        const textoBusquedaEmail = tieneZonas && zonaProveedor ? zonaProveedor : text;
+        console.log('🔍 Buscando email en texto (longitud:', textoBusquedaEmail.length, ')');
+        console.log('🔍 ¿Tiene @?', textoBusquedaEmail.includes('@'));
+        
+        const emailPatterns = [
+            /(?:Email|E-mail|Correo)[:\s]*([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,  // Con etiqueta
+            /\b([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/gi  // Sin etiqueta (buscar todas)
+        ];
+        for (const pattern of emailPatterns) {
+            const matches = [...textoBusquedaEmail.matchAll(pattern)];
+            console.log('🔍 Matches encontrados con patrón:', matches.length);
+            for (const match of matches) {
+                const email = match[1].toLowerCase().trim();
+                console.log('🔍 Email candidato:', email);
+                // Validar formato básico: tiene @ y dominio válido
+                if (email.includes('@') && email.includes('.') && email.length > 5 && email.length < 100) {
+                    data.email = { value: email, confidence: confidence };
+                    console.log('✓ Email detectado:', email, tieneZonas ? '(desde zona proveedor)' : '');
+                    break;
+                }
+            }
+            if (data.email.value) break;
+        }
+
         // VALIDACIÓN DE COHERENCIA: base + IVA ≈ total
         this.validateInvoiceCoherence(data);
 
@@ -2770,17 +3383,111 @@ class App {
             // Si tenemos total pero no base, calcular base NETA (asumiendo 10% IVA)
             const baseNeta = baseImponible > 0 ? baseImponible : totalConIva > 0 ? (totalConIva / 1.10) : 0;
 
+            // Verificar si el proveedor ya existe (exacto o similar)
+            let proveedorExistente = null;
+            let proveedoresSimilares = [];
+            
+            // DEBUG: Mostrar cuántos proveedores hay en la base de datos
+            console.log('🔍 DEBUG OCR - Total proveedores en DB:', this.db.proveedores.length);
+            console.log('🔍 DEBUG OCR - Proveedores:', this.db.proveedores.map(p => ({id: p.id, nombre: p.nombreFiscal, cif: p.nifCif})));
+            console.log('🔍 DEBUG OCR - Buscando proveedor:', data.proveedor.value, '| CIF:', data.nif.value);
+            
+            // Búsqueda por CIF (exacta)
+            if (data.nif.value) {
+                proveedorExistente = this.db.proveedores.find(p => p.nifCif === data.nif.value);
+                console.log('🔍 DEBUG OCR - Búsqueda por CIF:', proveedorExistente ? 'ENCONTRADO' : 'NO ENCONTRADO');
+            }
+            
+            // Búsqueda por nombre (exacta)
+            if (!proveedorExistente && data.proveedor.value) {
+                proveedorExistente = this.db.proveedores.find(p => 
+                    p.nombreFiscal.toLowerCase() === data.proveedor.value.toLowerCase()
+                );
+                console.log('🔍 DEBUG OCR - Búsqueda por nombre:', proveedorExistente ? 'ENCONTRADO' : 'NO ENCONTRADO');
+            }
+            
+            // Búsqueda de similares (para sugerir)
+            if (!proveedorExistente && data.proveedor.value && data.proveedor.value.length > 3) {
+                const nombreBuscado = data.proveedor.value.toLowerCase();
+                proveedoresSimilares = this.db.proveedores.filter(p => {
+                    const nombreProveedor = p.nombreFiscal.toLowerCase();
+                    // Similitud: contiene parte del nombre o viceversa
+                    return nombreProveedor.includes(nombreBuscado.substring(0, Math.min(5, nombreBuscado.length))) ||
+                           nombreBuscado.includes(nombreProveedor.substring(0, Math.min(5, nombreProveedor.length)));
+                }).slice(0, 3); // Máximo 3 sugerencias
+            }
+            
+            const esProveedorNuevo = !proveedorExistente;
+            const nombreProveedor = proveedorExistente ? proveedorExistente.nombreFiscal : data.proveedor.value;
+            const haySimilares = proveedoresSimilares.length > 0;
+            
             html += `
                 <div class="form-row">
                     <div class="form-group">
                         <label>Proveedor ${getConfidenceBadge(data.proveedor.confidence)}</label>
-                        <input type="text" id="ocr_proveedor" value="${data.proveedor.value}" required>
+                        <input type="text" id="ocr_proveedor" value="${nombreProveedor}" required onchange="app.verificarProveedorSimilar()">
+                        ${esProveedorNuevo ? (haySimilares ? '<small style="color: #e67e22; font-weight: 600;">⚠️ Proveedores similares encontrados - verificar abajo</small>' : '<small style="color: #e67e22; font-weight: 600;">⚠️ Proveedor nuevo - se creará automáticamente</small>') : '<small style="color: #27ae60; font-weight: 600;">✓ Proveedor existente</small>'}
                     </div>
                     <div class="form-group">
                         <label>NIF/CIF ${getConfidenceBadge(data.nif.confidence)}</label>
                         <input type="text" id="ocr_nif" value="${data.nif.value}">
                     </div>
                 </div>
+                
+                ${haySimilares && esProveedorNuevo ? `
+                <div style="background: #fff3cd; border-left: 4px solid #e67e22; padding: 15px; margin: 15px 0; border-radius: 6px;">
+                    <h4 style="margin: 0 0 10px 0; color: #d68910; font-size: 14px;">🔍 Proveedores Similares Encontrados</h4>
+                    <p style="margin: 0 0 10px 0; color: #7f8c8d; font-size: 13px;">¿El proveedor detectado es uno de estos?</p>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        ${proveedoresSimilares.map(p => `
+                            <label style="display: flex; align-items: center; padding: 8px; background: white; border: 1px solid #e3e8ef; border-radius: 4px; cursor: pointer;">
+                                <input type="radio" name="proveedor_similar" value="${p.id}" onchange="app.seleccionarProveedorExistente('${p.id}', '${p.nombreFiscal.replace(/'/g, "\\'")}')"> 
+                                <span style="margin-left: 8px; font-weight: 600;">${p.nombreFiscal}</span>
+                                ${p.nifCif ? `<small style="margin-left: 8px; color: #7f8c8d;">(${p.nifCif})</small>` : ''}
+                            </label>
+                        `).join('')}
+                        <label style="display: flex; align-items: center; padding: 8px; background: white; border: 2px solid #e67e22; border-radius: 4px; cursor: pointer;">
+                            <input type="radio" name="proveedor_similar" value="nuevo" onchange="app.confirmarProveedorNuevo()" checked>
+                            <span style="margin-left: 8px; font-weight: 600; color: #e67e22;">✨ Crear nuevo proveedor</span>
+                        </label>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div id="ocr_datos_adicionales_proveedor" style="display: ${esProveedorNuevo && !haySimilares ? 'block' : 'none'};">
+                ${esProveedorNuevo ? `
+                <div style="background: #fff3cd; border-left: 4px solid #e67e22; padding: 15px; margin: 15px 0; border-radius: 6px;">
+                    <h4 style="margin: 0 0 10px 0; color: #d68910; font-size: 14px;">📋 Datos Adicionales del Nuevo Proveedor</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email ${data.email && data.email.value ? getConfidenceBadge(data.email.confidence) : ''}</label>
+                            <input type="email" id="ocr_proveedor_email" placeholder="contacto@empresa.com" value="${data.email ? data.email.value : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono ${data.telefono && data.telefono.value ? getConfidenceBadge(data.telefono.confidence) : ''}</label>
+                            <input type="tel" id="ocr_proveedor_telefono" placeholder="+34 XXX XXX XXX" value="${data.telefono ? data.telefono.value : ''}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Dirección ${data.direccion && data.direccion.value ? getConfidenceBadge(data.direccion.confidence) : ''}</label>
+                        <input type="text" id="ocr_proveedor_direccion" placeholder="Calle, número..." value="${data.direccion ? data.direccion.value : ''}">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Código Postal ${data.codigoPostal && data.codigoPostal.value ? getConfidenceBadge(data.codigoPostal.confidence) : ''}</label>
+                            <input type="text" id="ocr_proveedor_cp" placeholder="08001" value="${data.codigoPostal ? data.codigoPostal.value : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Ciudad ${data.ciudad && data.ciudad.value ? getConfidenceBadge(data.ciudad.confidence) : ''}</label>
+                            <input type="text" id="ocr_proveedor_ciudad" placeholder="Barcelona" value="${data.ciudad ? data.ciudad.value : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Provincia</label>
+                            <input type="text" id="ocr_proveedor_provincia" placeholder="Barcelona" value="${data.ciudad ? data.ciudad.value : ''}">
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
                 <div class="form-row">
                     <div class="form-group">
                         <label>Nº Factura ${getConfidenceBadge(data.numero.confidence)}</label>
@@ -2905,12 +3612,55 @@ class App {
                     this.showModal('⚠️ Validación', 'La base imponible neta debe ser mayor que 0', 'warning');
                     return;
                 }
+                
+                const nombreProveedor = document.getElementById('ocr_proveedor').value;
+                const nifCif = document.getElementById('ocr_nif').value;
+                
+                // Verificar si el proveedor existe
+                let proveedorExiste = false;
+                if (nifCif) {
+                    proveedorExiste = this.db.proveedores.some(p => p.nifCif === nifCif);
+                }
+                if (!proveedorExiste && nombreProveedor) {
+                    proveedorExiste = this.db.proveedores.some(p => 
+                        p.nombreFiscal.toLowerCase() === nombreProveedor.toLowerCase()
+                    );
+                }
+                
+                // Si es proveedor nuevo, crearlo automáticamente
+                if (!proveedorExiste && nombreProveedor) {
+                    const emailInput = document.getElementById('ocr_proveedor_email');
+                    const telefonoInput = document.getElementById('ocr_proveedor_telefono');
+                    const direccionInput = document.getElementById('ocr_proveedor_direccion');
+                    const cpInput = document.getElementById('ocr_proveedor_cp');
+                    const ciudadInput = document.getElementById('ocr_proveedor_ciudad');
+                    const provinciaInput = document.getElementById('ocr_proveedor_provincia');
+                    
+                    const nuevoProveedor = {
+                        nombreFiscal: nombreProveedor,
+                        nombreComercial: nombreProveedor,
+                        nifCif: nifCif || '',
+                        tipo: 'Comida', // Por defecto
+                        email: emailInput ? emailInput.value : '',
+                        telefono: telefonoInput ? telefonoInput.value : '',
+                        direccion: direccionInput ? direccionInput.value : '',
+                        codigoPostal: cpInput ? cpInput.value : '',
+                        ciudad: ciudadInput ? ciudadInput.value : '',
+                        provincia: provinciaInput ? provinciaInput.value : '',
+                        periodo: this.currentPeriod,
+                        creadoDesdeOCR: true
+                    };
+                    
+                    const proveedorCreado = this.db.add('proveedores', nuevoProveedor);
+                    console.log('✅ Nuevo proveedor creado desde OCR:', proveedorCreado);
+                    console.log('✅ Total proveedores después de crear:', this.db.proveedores.length);
+                }
 
                 const factura = {
                     fecha: document.getElementById('ocr_fecha').value,
-                    proveedor: document.getElementById('ocr_proveedor').value,
+                    proveedor: nombreProveedor,
                     numeroFactura: document.getElementById('ocr_numero').value,
-                    nifCif: document.getElementById('ocr_nif').value,
+                    nifCif: nifCif,
                     baseImponible: baseNeta,
                     total: parseFloat(document.getElementById('ocr_total').value) || baseNeta * 1.10,
                     categoria: 'Comida',
@@ -2920,7 +3670,9 @@ class App {
                 };
                 
                 this.db.add('facturas', factura);
-                this.showModal('✅ Éxito', 'Factura guardada en COMPRAS correctamente con base NETA sin IVA', 'success');
+                
+                const mensajeProveedor = !proveedorExiste ? ' + Proveedor nuevo creado automáticamente' : '';
+                this.showModal('✅ Éxito', `Factura guardada en COMPRAS correctamente con base NETA sin IVA${mensajeProveedor}`, 'success');
                 
             } else if (tipo === 'albaran') {
                 const albaran = {
@@ -2971,6 +3723,280 @@ class App {
         } catch (error) {
             console.error('Error guardando OCR:', error);
             this.showModal('❌ Error', 'Error al guardar los datos. Verifica los campos.', 'error');
+        }
+    }
+
+    seleccionarProveedorExistente(proveedorId, nombreFiscal) {
+        // Usuario seleccionó un proveedor existente de la lista
+        document.getElementById('ocr_proveedor').value = nombreFiscal;
+        
+        // Buscar el proveedor y rellenar el CIF si no está
+        const proveedor = this.db.proveedores.find(p => p.id === parseInt(proveedorId));
+        if (proveedor && proveedor.nifCif) {
+            document.getElementById('ocr_nif').value = proveedor.nifCif;
+        }
+        
+        // Ocultar formulario de datos adicionales
+        const datosAdicionalesDiv = document.getElementById('ocr_datos_adicionales_proveedor');
+        if (datosAdicionalesDiv) {
+            datosAdicionalesDiv.style.display = 'none';
+        }
+        
+        this.showToast('✓ Proveedor existente seleccionado');
+    }
+
+    confirmarProveedorNuevo() {
+        // Usuario confirmó que es un proveedor nuevo
+        const datosAdicionalesDiv = document.getElementById('ocr_datos_adicionales_proveedor');
+        if (datosAdicionalesDiv) {
+            datosAdicionalesDiv.style.display = 'block';
+        }
+        
+        this.showToast('📋 Completa los datos adicionales del nuevo proveedor');
+    }
+
+    verificarProveedorSimilar() {
+        // Si el usuario edita manualmente el nombre, re-verificar similares
+        // (Función placeholder para futuras mejoras)
+    }
+
+    abrirModalEditarFactura(factura) {
+        console.log('🔍 abrirModalEditarFactura llamado con factura:', factura);
+        
+        if (!factura) {
+            console.error('❌ Error: factura es undefined');
+            this.showToast('❌ Error al abrir factura para editar', true);
+            return;
+        }
+        
+        // Crear modal dinámico para editar factura
+        const modalHTML = `
+            <div id="modalEditarFactura" class="modal-overlay">
+                <div class="modal-content" style="max-width: 600px;">
+                    <h3>✏️ Editar Factura</h3>
+                    <form id="editarFacturaForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Proveedor *</label>
+                                <input type="text" id="edit_proveedor" value="${factura.proveedor}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>NIF/CIF</label>
+                                <input type="text" id="edit_nif" value="${factura.nifCif || ''}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nº Factura *</label>
+                                <input type="text" id="edit_numero" value="${factura.numeroFactura}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha *</label>
+                                <input type="date" id="edit_fecha" value="${factura.fecha}" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Base Imponible NETA (€) *</label>
+                                <input type="number" step="0.01" id="edit_base" value="${factura.baseImponible}" required>
+                                <small class="form-help">Sin IVA</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Total CON IVA (€)</label>
+                                <input type="number" step="0.01" id="edit_total" value="${factura.total}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="edit_categoria">
+                                <option value="Comida" ${factura.categoria === 'Comida' ? 'selected' : ''}>Comida</option>
+                                <option value="Bebida" ${factura.categoria === 'Bebida' ? 'selected' : ''}>Bebida</option>
+                                <option value="Otros" ${factura.categoria === 'Otros' ? 'selected' : ''}>Otros</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn-secondary" onclick="app.cerrarModalEditarFactura()">Cancelar</button>
+                            <button type="submit" class="btn-primary">✓ Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        document.getElementById('editarFacturaForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.guardarEdicionFactura(factura.id);
+        });
+    }
+
+    cerrarModalEditarFactura() {
+        const modal = document.getElementById('modalEditarFactura');
+        if (modal) modal.remove();
+    }
+
+    async guardarEdicionFactura(facturaId) {
+        const proveedor = document.getElementById('edit_proveedor').value;
+        const nifCif = document.getElementById('edit_nif').value;
+        
+        // Verificar si el proveedor existe y si los datos cambiaron
+        const proveedorExistente = this.db.proveedores.find(p => 
+            p.nombreFiscal.toLowerCase() === proveedor.toLowerCase() || 
+            (nifCif && p.nifCif === nifCif)
+        );
+        
+        if (proveedorExistente) {
+            // Verificar si hay cambios en los datos del proveedor
+            const hayCambiosNombre = proveedorExistente.nombreFiscal !== proveedor;
+            const hayCambiosCIF = nifCif && proveedorExistente.nifCif && proveedorExistente.nifCif !== nifCif;
+            
+            if (hayCambiosNombre || hayCambiosCIF) {
+                // Preguntar qué datos conservar
+                const confirmar = await this.mostrarModalConfirmacionProveedor(
+                    proveedorExistente,
+                    { nombre: proveedor, nif: nifCif }
+                );
+                
+                if (!confirmar) return; // Usuario canceló
+            }
+        }
+        
+        // Actualizar factura
+        const facturaActualizada = {
+            proveedor: proveedor,
+            nifCif: nifCif,
+            numeroFactura: document.getElementById('edit_numero').value,
+            fecha: document.getElementById('edit_fecha').value,
+            baseImponible: parseFloat(document.getElementById('edit_base').value),
+            total: parseFloat(document.getElementById('edit_total').value),
+            categoria: document.getElementById('edit_categoria').value
+        };
+        
+        this.db.update('facturas', facturaId, facturaActualizada);
+        this.cerrarModalEditarFactura();
+        this.render();
+        this.showToast('✓ Factura actualizada correctamente');
+    }
+
+    abrirModalEditarAlbaran(albaran) {
+        // Similar a factura pero para albaranes
+        const modalHTML = `
+            <div id="modalEditarAlbaran" class="modal-overlay">
+                <div class="modal-content" style="max-width: 600px;">
+                    <h3>✏️ Editar Albarán</h3>
+                    <form id="editarAlbaranForm">
+                        <div class="form-group">
+                            <label>Proveedor *</label>
+                            <input type="text" id="edit_albaran_proveedor" value="${albaran.proveedor}" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nº Albarán *</label>
+                                <input type="text" id="edit_albaran_numero" value="${albaran.numeroAlbaran}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha *</label>
+                                <input type="date" id="edit_albaran_fecha" value="${albaran.fecha}" required>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn-secondary" onclick="app.cerrarModalEditarAlbaran()">Cancelar</button>
+                            <button type="submit" class="btn-primary">✓ Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        document.getElementById('editarAlbaranForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.guardarEdicionAlbaran(albaran.id);
+        });
+    }
+
+    cerrarModalEditarAlbaran() {
+        const modal = document.getElementById('modalEditarAlbaran');
+        if (modal) modal.remove();
+    }
+
+    guardarEdicionAlbaran(albaranId) {
+        const albaranActualizado = {
+            proveedor: document.getElementById('edit_albaran_proveedor').value,
+            numeroAlbaran: document.getElementById('edit_albaran_numero').value,
+            fecha: document.getElementById('edit_albaran_fecha').value
+        };
+        
+        this.db.update('albaranes', albaranId, albaranActualizado);
+        this.cerrarModalEditarAlbaran();
+        this.render();
+        this.showToast('✓ Albarán actualizado correctamente');
+    }
+
+    mostrarModalConfirmacionProveedor(proveedorExistente, datosNuevos) {
+        return new Promise((resolve) => {
+            const modalHTML = `
+                <div id="modalConfirmacionProveedor" class="modal-overlay">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <h3>⚠️ Datos de Proveedor Diferentes</h3>
+                        <p>El proveedor existe pero los datos son diferentes. ¿Qué datos deseas conservar?</p>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                            <h4 style="margin: 0 0 10px 0; color: #1f2d3d;">📋 Datos Actuales (Base de Datos)</h4>
+                            <p style="margin: 5px 0;"><strong>Nombre:</strong> ${proveedorExistente.nombreFiscal}</p>
+                            <p style="margin: 5px 0;"><strong>CIF:</strong> ${proveedorExistente.nifCif || 'Sin CIF'}</p>
+                        </div>
+                        
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                            <h4 style="margin: 0 0 10px 0; color: #d68910;">📝 Datos en Factura</h4>
+                            <p style="margin: 5px 0;"><strong>Nombre:</strong> ${datosNuevos.nombre}</p>
+                            <p style="margin: 5px 0;"><strong>CIF:</strong> ${datosNuevos.nif || 'Sin CIF'}</p>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                            <button class="btn-primary" onclick="app.confirmarDatosProveedor('existente')">
+                                ✓ Conservar datos actuales (Base de Datos)
+                            </button>
+                            <button class="btn-secondary" onclick="app.confirmarDatosProveedor('nuevos')">
+                                📝 Actualizar con datos de factura
+                            </button>
+                            <button class="btn-delete" onclick="app.confirmarDatosProveedor('cancelar')">
+                                ✗ Cancelar edición
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            this.confirmacionProveedorCallback = (opcion) => {
+                const modal = document.getElementById('modalConfirmacionProveedor');
+                if (modal) modal.remove();
+                
+                if (opcion === 'cancelar') {
+                    resolve(false);
+                } else if (opcion === 'nuevos') {
+                    // Actualizar proveedor en base de datos con datos nuevos
+                    this.db.update('proveedores', proveedorExistente.id, {
+                        nombreFiscal: datosNuevos.nombre,
+                        nifCif: datosNuevos.nif
+                    });
+                    this.showToast('✓ Proveedor actualizado con datos de factura');
+                    resolve(true);
+                } else {
+                    // Conservar datos existentes (no hacer nada)
+                    resolve(true);
+                }
+            };
+        });
+    }
+
+    confirmarDatosProveedor(opcion) {
+        if (this.confirmacionProveedorCallback) {
+            this.confirmacionProveedorCallback(opcion);
         }
     }
 
@@ -3059,30 +4085,12 @@ class App {
         const descTrans = transContadas - posTrans;
         const descTotal = descEfectivo + descTarjetas + descBizum + descTrans;
 
-        // Actualizar UI
-        this.updateDescuadre('descuadreEfectivo', descEfectivo);
-        this.updateDescuadre('descuadreTarjetas', descTarjetas);
-        this.updateDescuadre('descuadreBizum', descBizum);
-        this.updateDescuadre('descuadreTransferencias', descTrans);
-        this.updateDescuadre('descuadreTotal', descTotal);
-        
         // Actualizar resumen en tiempo real
         this.actualizarResumenTiempoReal({
             posEfectivo, posTarjetas, posBizum, posTrans,
             totalEfectivo, totalDatafonos, bizumContado, transContadas,
             descEfectivo, descTarjetas, descBizum, descTrans, descTotal
         });
-    }
-
-    updateDescuadre(elementId, valor) {
-        const element = document.getElementById(elementId);
-        element.textContent = valor.toFixed(2) + '€';
-        element.classList.remove('positive', 'negative', 'zero');
-        if (Math.abs(valor) < 0.01) {
-            element.classList.add('zero');
-        } else {
-            element.classList.add(valor > 0 ? 'positive' : 'negative');
-        }
     }
     
     actualizarResumenTiempoReal(datos) {
@@ -3246,8 +4254,21 @@ class App {
                 break;
 
             case 'facturas':
+                console.log('🔍 Caso facturas - editando item:', item);
+                // Cambiar a vista Compras y abrir modal de edición
+                this.currentView = 'compras';
+                this.render();
+                // Usar setTimeout para que el modal se abra después del render
+                console.log('🔍 Llamando a abrirModalEditarFactura en 100ms...');
+                setTimeout(() => this.abrirModalEditarFactura(item), 100);
+                return;
+                
             case 'albaranes':
-                this.showToast('⚠️ Edición manual no disponible - usar OCR para modificar', true);
+                // Cambiar a vista Compras y abrir modal de edición
+                this.currentView = 'compras';
+                this.render();
+                // Usar setTimeout para que el modal se abra después del render
+                setTimeout(() => this.abrirModalEditarAlbaran(item), 100);
                 return;
 
             case 'proveedores':
