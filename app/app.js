@@ -82,12 +82,15 @@ class App {
             tempProductoAltaRapida: null // Para cuando se crea producto desde inventario
         };
         
-        // IMPORTANTE: Cerrar modales que puedan estar bloqueados
+        // IMPORTANTE: Cerrar SOLO modales bloqueados al inicio (antes de que app esté lista)
+        // Después de 100ms, marcar que la app ya está inicializada
+        this.appInicializada = false;
         setTimeout(() => {
             document.querySelectorAll('.modal, .modal-overlay').forEach(m => {
                 m.classList.remove('show');
                 m.style.display = 'none';
             });
+            this.appInicializada = true; // Ahora los modales pueden abrirse normalmente
         }, 100);
         
         // Variables OCR mejoradas
@@ -4796,42 +4799,53 @@ class App {
     }
 
     showConfirm(title, message, onConfirm, confirmText = 'Confirmar', cancelText = 'Cancelar') {
-        const modal = document.getElementById('confirmModal');
-        const modalTitle = document.getElementById('confirmTitle');
-        const modalMessage = document.getElementById('confirmMessage');
-        const btnConfirm = document.getElementById('confirmBtn');
-        const btnCancel = document.getElementById('cancelBtn');
-        
-        if (!modal || !modalTitle || !modalMessage || !btnConfirm || !btnCancel) {
-            console.error('❌ Confirm modal elements not found');
-            if (confirm(`${title}\n\n${message}`)) {
-                onConfirm();
+        // Esperar a que la app esté inicializada (después del setTimeout del constructor)
+        const mostrarModal = () => {
+            const modal = document.getElementById('confirmModal');
+            const modalTitle = document.getElementById('confirmTitle');
+            const modalMessage = document.getElementById('confirmMessage');
+            const btnConfirm = document.getElementById('confirmBtn');
+            const btnCancel = document.getElementById('cancelBtn');
+            
+            if (!modal || !modalTitle || !modalMessage || !btnConfirm || !btnCancel) {
+                console.error('❌ Confirm modal elements not found');
+                if (confirm(`${title}\n\n${message}`)) {
+                    onConfirm();
+                }
+                return;
             }
-            return;
+            
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message;
+            btnConfirm.textContent = confirmText;
+            btnCancel.textContent = cancelText;
+            
+            // Limpiar listeners previos
+            const newBtnConfirm = btnConfirm.cloneNode(true);
+            btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
+            const newBtnCancel = btnCancel.cloneNode(true);
+            btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+            
+            // Añadir nuevos listeners
+            document.getElementById('confirmBtn').addEventListener('click', () => {
+                modal.classList.remove('show');
+                onConfirm();
+            });
+            
+            document.getElementById('cancelBtn').addEventListener('click', () => {
+                modal.classList.remove('show');
+            });
+            
+            modal.classList.add('show');
+        };
+        
+        // Si la app ya está inicializada, mostrar inmediatamente
+        // Si no, esperar 150ms para evitar que el setTimeout del constructor lo cierre
+        if (this.appInicializada) {
+            mostrarModal();
+        } else {
+            setTimeout(mostrarModal, 150);
         }
-        
-        modalTitle.textContent = title;
-        modalMessage.innerHTML = message;
-        btnConfirm.textContent = confirmText;
-        btnCancel.textContent = cancelText;
-        
-        // Limpiar listeners previos
-        const newBtnConfirm = btnConfirm.cloneNode(true);
-        btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
-        const newBtnCancel = btnCancel.cloneNode(true);
-        btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
-        
-        // Añadir nuevos listeners
-        document.getElementById('confirmBtn').addEventListener('click', () => {
-            modal.classList.remove('show');
-            onConfirm();
-        });
-        
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-            modal.classList.remove('show');
-        });
-        
-        modal.classList.add('show');
     }
 }
 
