@@ -1465,8 +1465,8 @@ body {
 }
 
 /* MODAL */
-.modal {
-    display: none;
+.modal, .modal-overlay {
+    display: flex;
     position: fixed;
     z-index: 10000;
     left: 0;
@@ -1476,6 +1476,8 @@ body {
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
     animation: fadeIn 0.2s ease;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal.show {
