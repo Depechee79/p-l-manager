@@ -1475,9 +1475,10 @@ class App {
                     📅 ${f.fecha} | 🏷️ ${f.categoria}
                 </div>
                 <div class="list-item-actions">
-                    <button class="btn-verify-factura" onclick="app.verificarFacturaAlbaranes(${f.id})">🔍</button>
-                    <button class="btn-edit" onclick="app.editItem('facturas', ${f.id})">✏️</button>
-                    <button class="btn-delete" onclick="app.deleteItem('facturas', ${f.id})">🗑️</button>
+                    ${f.archivoData ? `<button class="btn-view" onclick="app.verArchivoFactura(${f.id})" title="Ver archivo">🔍</button>` : ''}
+                    <button class="btn-verify-factura" onclick="app.verificarFacturaAlbaranes(${f.id})" title="Verificar albaranes">🔍</button>
+                    <button class="btn-edit" onclick="app.editItem('facturas', ${f.id})" title="Editar">✏️</button>
+                    <button class="btn-delete" onclick="app.deleteItem('facturas', ${f.id})" title="Eliminar">🗑️</button>
                 </div>
             </div>
         `).join('') : '<p class="empty-state">No hay facturas registradas</p>';
@@ -1570,6 +1571,44 @@ class App {
             mensajeHTML,
             coincide ? 'success' : 'warning'
         );
+    }
+
+    verArchivoFactura(facturaId) {
+        const factura = this.db.facturas.find(f => f.id === facturaId);
+        if (!factura) {
+            this.showToast('❌ Factura no encontrada', true);
+            return;
+        }
+
+        if (!factura.archivoData) {
+            this.showToast('❌ Esta factura no tiene archivo adjunto', true);
+            return;
+        }
+
+        // Crear modal para mostrar el archivo
+        const modalHTML = `
+            <div id="modalVisorArchivo" class="modal-overlay" style="z-index: 10000;">
+                <div class="modal-content" style="max-width: 90vw; max-height: 90vh; width: 900px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>📄 ${factura.archivoNombre || 'Archivo de Factura'}</h3>
+                        <button onclick="app.cerrarVisorArchivo()" class="btn-secondary">✕ Cerrar</button>
+                    </div>
+                    <div style="overflow: auto; max-height: 75vh; border: 1px solid #e3e8ef; border-radius: 6px; background: #f8f9fa;">
+                        ${factura.archivoNombre && factura.archivoNombre.toLowerCase().endsWith('.pdf') 
+                            ? `<iframe src="${factura.archivoData}" style="width: 100%; height: 70vh; border: none;"></iframe>`
+                            : `<img src="${factura.archivoData}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;">`
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+
+    cerrarVisorArchivo() {
+        const modal = document.getElementById('modalVisorArchivo');
+        if (modal) modal.remove();
     }
 
     renderProveedores() {
@@ -3768,7 +3807,9 @@ class App {
             categoria: 'Comida',
             periodo: this.currentPeriod,
             ocrProcessed: true,
-            ocrConfidence: this.currentOCRExtractedData.confidence
+            ocrConfidence: this.currentOCRExtractedData.confidence,
+            archivoNombre: this.currentOCRFile ? this.currentOCRFile.name : null,
+            archivoData: this.currentOCRFileData || null
         };
         
         this.db.add('facturas', factura);
@@ -4588,7 +4629,7 @@ class App {
         const modalIcon = document.getElementById('modalIcon');
         
         modalTitle.textContent = title;
-        modalMessage.textContent = message;
+        modalMessage.innerHTML = message;
         
         // Iconos según tipo
         const icons = {
