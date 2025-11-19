@@ -1,6 +1,6 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versión:** 4.27.4 OCR Detección Duplicados Mejorada (Noviembre 2025)  
+**Versión:** 4.27.5 Dinero B Integrado en Otros Medios (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hostelería profesional (restaurantes, cafeterías)  
 **Estado:** ✅ APLICACIÓN FUNCIONAL - OCR INTELIGENTE COMPLETO + INVENTARIO PROFESIONAL + UX MEJORADA
@@ -8,6 +8,101 @@
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.27.5 - DINERO B INTEGRADO EN OTROS MEDIOS DE PAGO (Noviembre 19, 2025)
+
+**REORGANIZACIÓN DE CIERRES - DINERO B:**
+
+**Antes:**
+- Dinero B era una sección independiente con fondo amarillo
+- Campo separado `<input id="dineroB">`
+- Listener independiente
+
+**Después:**
+- ✅ **Dinero B ahora es una opción más** en el selector de "Otros Medios de Pago"
+- ✅ **Selector con nueva opción:** `💵 Dinero B (sin IVA)`
+- ✅ **Estilos especiales automáticos:**
+  - Al seleccionar "Dinero B", el item se pone con **fondo amarillo**
+  - **Borde dorado** (`#ffc107`)
+  - **Warning visible:** "⚠️ Este importe NO computa IVA en ningún cálculo"
+- ✅ **Comportamiento coherente:** Se trata como cualquier otro medio de pago pero con advertencia visual
+
+**Implementación técnica:**
+
+**HTML (index.html):**
+```html
+<!-- ANTES: Sección independiente eliminada -->
+<div class="cierre-section" style="background: #fff3cd;">
+    <h4>💵 Dinero B (Sin IVA)</h4>
+    <input type="number" id="dineroB" value="0" min="0">
+</div>
+
+<!-- DESPUÉS: Integrado en Otros Medios -->
+<select class="otro-medio-tipo">
+    <option value="Bizum">Bizum</option>
+    <option value="Transferencia">Transferencia</option>
+    <option value="Dinero B (sin IVA)">💵 Dinero B (sin IVA)</option>
+    ...
+</select>
+```
+
+**JavaScript (app.js líneas ~264-280):**
+```javascript
+const aplicarEstiloDineroB = () => {
+    if (selectTipo.value === 'Dinero B (sin IVA)') {
+        item.style.background = '#fff3cd';
+        item.style.border = '2px solid #ffc107';
+        // Añadir warning dinámico
+        const warning = document.createElement('small');
+        warning.textContent = '⚠️ Este importe NO computa IVA en ningún cálculo';
+        item.appendChild(warning);
+    } else {
+        // Limpiar estilos si cambia a otro tipo
+        item.style.background = '';
+        item.style.border = '';
+    }
+};
+
+selectTipo.addEventListener('change', aplicarEstiloDineroB);
+```
+
+**Cálculo de Dinero B (app.js líneas ~358-359):**
+```javascript
+// ANTES: Campo independiente
+dineroB: parseFloat(document.getElementById('dineroB').value) || 0,
+
+// DESPUÉS: Desde otrosMedios
+const dineroB = otrosMedios.find(m => m.tipo === 'Dinero B (sin IVA)')?.importe || 0;
+```
+
+**Resumen en tiempo real (app.js líneas ~4208-4217):**
+```javascript
+// Buscar Dinero B en otrosMedios dinámicamente
+let dineroB = 0;
+document.querySelectorAll('.otro-medio-item').forEach(item => {
+    if (item.querySelector('.otro-medio-tipo').value === 'Dinero B (sin IVA)') {
+        dineroB += parseFloat(item.querySelector('.otro-medio-importe').value) || 0;
+    }
+});
+```
+
+**ARCHIVOS MODIFICADOS:**
+- `app/index.html` (-12 líneas)
+  - Eliminada sección independiente de Dinero B
+- `app/app.js` (+35 líneas)
+  - Opción "Dinero B (sin IVA)" añadida al select
+  - Función `aplicarEstiloDineroB()` para estilos automáticos
+  - Cálculo de Dinero B desde `otrosMedios` en lugar de campo independiente
+  - Listeners eliminados del campo antiguo
+
+**BENEFICIOS:**
+- ✅ **Interfaz más limpia:** Un solo lugar para todos los medios de pago
+- ✅ **Menos confusión:** Dinero B no parece especial, es un medio de pago más
+- ✅ **Mismas características:** Mantiene fondo amarillo y advertencia "sin IVA"
+- ✅ **Más flexible:** Puedes añadir múltiples items de Dinero B si es necesario
+- ✅ **Consistencia:** Todo bajo "Otros Medios de Pago"
+
+---
 
 ### VERSIÓN 4.27.4 - DETECCIÓN DUPLICADOS OCR MEJORADA Y CORRECCIONES UX (Noviembre 19, 2025)
 

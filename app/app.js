@@ -252,22 +252,45 @@ class App {
                     <option value="Transferencia">Transferencia</option>
                     <option value="Cheque">Cheque</option>
                     <option value="Pagaré">Pagaré</option>
+                    <option value="Dinero B (sin IVA)">💵 Dinero B (sin IVA)</option>
                     <option value="Otro">Otro</option>
                 </select>
                 <input type="number" step="0.01" value="0" min="0" placeholder="Importe" class="otro-medio-importe">
                 <button type="button" class="btn-remove" onclick="this.parentElement.remove(); app.renderDatosPOS(); app.calcularTotalesCierre()">✗</button>
             `;
             container.appendChild(item);
-            item.querySelector('.otro-medio-tipo').addEventListener('change', () => this.renderDatosPOS());
+            
+            const selectTipo = item.querySelector('.otro-medio-tipo');
+            const aplicarEstiloDineroB = () => {
+                if (selectTipo.value === 'Dinero B (sin IVA)') {
+                    item.style.background = '#fff3cd';
+                    item.style.border = '2px solid #ffc107';
+                    item.style.padding = '10px';
+                    item.style.borderRadius = '6px';
+                    if (!item.querySelector('.dinero-b-warning')) {
+                        const warning = document.createElement('small');
+                        warning.className = 'dinero-b-warning';
+                        warning.style.cssText = 'display: block; color: #856404; font-size: 11px; margin-top: 5px; font-weight: 600;';
+                        warning.textContent = '⚠️ Este importe NO computa IVA en ningún cálculo';
+                        item.appendChild(warning);
+                    }
+                } else {
+                    item.style.background = '';
+                    item.style.border = '';
+                    item.style.padding = '';
+                    item.style.borderRadius = '';
+                    const warning = item.querySelector('.dinero-b-warning');
+                    if (warning) warning.remove();
+                }
+            };
+            
+            selectTipo.addEventListener('change', () => {
+                aplicarEstiloDineroB();
+                this.renderDatosPOS();
+            });
             item.querySelector('.otro-medio-importe').addEventListener('input', () => this.calcularTotalesCierre());
             this.renderDatosPOS();
         });
-
-        // Listener para dineroB
-        const dineroB = document.getElementById('dineroB');
-        if (dineroB) {
-            dineroB.addEventListener('input', () => this.calcularTotalesCierre());
-        }
 
         // Renderizar campos POS inicialmente (solo Efectivo y Tarjetas)
         this.renderDatosPOS();
@@ -330,6 +353,9 @@ class App {
 
             const totalOtrosMedios = otrosMedios.reduce((sum, m) => sum + m.importe, 0);
             const totalDatafonos = datafonos.reduce((sum, d) => sum + d.importe, 0);
+            
+            // Calcular Dinero B desde otrosMedios
+            const dineroB = otrosMedios.find(m => m.tipo === 'Dinero B (sin IVA)')?.importe || 0;
 
             const cierre = {
                 fecha: document.getElementById('cierreFecha').value,
@@ -344,7 +370,7 @@ class App {
                 totalOtrosMedios: totalOtrosMedios,
                 
                 // Dinero B (sin IVA)
-                dineroB: parseFloat(document.getElementById('dineroB').value) || 0,
+                dineroB: dineroB,
                 
                 // Datos POS
                 posEfectivo: parseFloat(document.getElementById('posEfectivo').value) || 0,
@@ -4182,8 +4208,15 @@ class App {
         document.getElementById('resumenRealTrans').textContent = transContadas.toFixed(2) + ' €';
         this.updateDeltaResumen('resumenDeltaTrans', descTrans);
         
-        // Dinero B (sin IVA - solo informativo)
-        const dineroB = parseFloat(document.getElementById('dineroB').value) || 0;
+        // Dinero B (sin IVA - solo informativo) - desde otrosMedios
+        let dineroB = 0;
+        document.querySelectorAll('.otro-medio-item').forEach(item => {
+            const tipo = item.querySelector('.otro-medio-tipo').value;
+            const importe = parseFloat(item.querySelector('.otro-medio-importe').value) || 0;
+            if (tipo === 'Dinero B (sin IVA)') {
+                dineroB += importe;
+            }
+        });
         document.getElementById('resumenDineroB').textContent = dineroB.toFixed(2) + ' €';
         
         // TOTAL
