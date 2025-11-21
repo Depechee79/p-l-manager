@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P&L Manager - Sistema de Gestión</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.gstatic.com https://apis.google.com https://www.googletagmanager.com blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https:; worker-src 'self' blob:;">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,56 +13,46 @@
 </head>
 <body>
     <div class="container">
-        <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>📊 P&L Manager</h2>
-                <div class="period-selector">
-                    <select id="periodSelector">
-                        <option value="dia">Hoy</option>
-                        <option value="semana">Esta Semana</option>
-                        <option value="mes" selected>Este Mes</option>
-                        <option value="anio">Este Año</option>
-                    </select>
-                </div>
             </div>
             
             <nav class="nav-menu">
-                <button class="nav-item active" data-view="ocr">📸 OCR</button>
+                <button class="nav-item active" data-view="ocr">📄 Escáner</button>
                 <button class="nav-item" data-view="cierres">🧾 Cierres</button>
                 <button class="nav-item" data-view="compras">📦 Compras</button>
                 <button class="nav-item" data-view="proveedores">🏢 Proveedores</button>
                 <button class="nav-item" data-view="productos">🥘 Productos</button>
                 <button class="nav-item" data-view="escandallos">📋 Escandallos</button>
-                <button class="nav-item" data-view="inventario">📊 Inventario</button>
+                <button class="nav-item" data-view="inventario">📦 Control de Stock</button>
                 <button class="nav-item" data-view="delivery">🛵 Delivery</button>
                 <button class="nav-item" data-view="pnl">💰 P&L</button>
             </nav>
         </aside>
 
-        <!-- MAIN CONTENT -->
         <main class="main-content">
             <div class="header">
-                <h1 id="viewTitle">OCR - Registro Manual</h1>
-                <div class="header-stats">
-                    <span id="totalPeriodo">0€</span>
-                </div>
+                <h1 id="viewTitle">P&L Manager</h1>
+                <div id="headerActions" class="header-actions"></div>
             </div>
 
-            <!-- OCR VIEW -->
             <div id="ocrView" class="view">
-                <div class="ocr-header-card">
-                    <h2>📸 Sistema OCR Profesional</h2>
-                    <p>Extracción automática de datos con Tesseract OCR - Conversión automática a precios NETOS sin IVA</p>
+                <div style="margin-bottom: 30px;">
+                    <h2 style="color: #1f2d3d; font-size: 24px; font-weight: 700; margin-bottom: 8px;">📄 Escáner de Documentos</h2>
+                    <p style="color: #64748b; font-size: 14px; margin: 0;">Digitaliza facturas, albaranes y tickets automáticamente usando Inteligencia Artificial.</p>
                 </div>
 
-                <!-- SELECTOR TIPO DOCUMENTO -->
-                <div class="form-card">
-                    <h3>1️⃣ Selecciona el Tipo de Documento</h3>
+                <div class="form-card" style="border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <h3 style="font-size: 16px; color: #475569; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">1️⃣ ¿Qué vas a subir?</h3>
                     <div class="ocr-tipo-selector">
                         <button type="button" class="ocr-tipo-btn" data-tipo="factura">
                             <span class="ocr-tipo-icon">🧾</span>
                             <span class="ocr-tipo-label">Factura Proveedor</span>
+                        </button>
+                        <button type="button" class="ocr-tipo-btn" data-tipo="ticket">
+                            <span class="ocr-tipo-icon">🛒</span>
+                            <span class="ocr-tipo-label">Ticket Compra</span>
                         </button>
                         <button type="button" class="ocr-tipo-btn" data-tipo="albaran">
                             <span class="ocr-tipo-icon">📦</span>
@@ -68,66 +60,79 @@
                         </button>
                         <button type="button" class="ocr-tipo-btn" data-tipo="cierre">
                             <span class="ocr-tipo-icon">💰</span>
-                            <span class="ocr-tipo-label">Cierre de Caja</span>
-                        </button>
-                        <button type="button" class="ocr-tipo-btn" data-tipo="delivery">
-                            <span class="ocr-tipo-icon">🛵</span>
-                            <span class="ocr-tipo-label">Delivery</span>
+                            <span class="ocr-tipo-label">Cierre / Delivery</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- CARGA Y ANÁLISIS -->
-                <div id="ocrUploadCard" class="form-card hidden">
-                    <h3>2️⃣ Cargar y Analizar Documento</h3>
-                    <div class="form-group">
-                        <label>📤 Seleccionar Imagen o Hacer Foto</label>
-                        <input type="file" id="ocrFile" accept="image/jpeg,image/jpg,image/png,image/webp,image/bmp,image/tiff,application/pdf" capture="environment" class="file-input">
-                        <small class="form-help">Formatos: JPG, PNG, WEBP, BMP, TIFF • Máximo 10MB • Puedes hacer foto directa desde cámara • NO soporta PDF</small>
+                <div id="ocrUploadCard" class="form-card hidden" style="border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <h3 style="font-size: 16px; color: #475569; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">2️⃣ Sube tu archivo</h3>
+                    
+                    <div class="file-upload-zone" onclick="document.getElementById('ocrFile').click()">
+                        <span class="upload-icon">☁️</span>
+                        <p style="font-size: 16px; font-weight: 600; color: #334155; margin-bottom: 5px;">Arrastra tu documento aquí o haz clic</p>
+                        <p style="font-size: 13px; color: #94a3b8;">Soporta: PDF, JPG, PNG, TIFF (Max 10MB)</p>
+                        <input type="file" id="ocrFile" class="hidden" accept="image/jpeg,image/jpg,image/png,image/webp,image/bmp,image/tiff,application/pdf" capture="environment">
                     </div>
-                    <div id="ocrPreviewContainer" class="ocr-preview-container hidden">
-                        <div class="ocr-preview-image">
+
+                    <!-- Botón Cancelar (Visible solo cuando NO hay archivo seleccionado) -->
+                    <div id="ocrUploadCancelContainer" style="margin-top: 15px; text-align: center;">
+                        <button type="button" id="ocrCancelUploadBtn" class="btn-secondary" style="width: 100%;">Cancelar</button>
+                    </div>
+
+                    <div id="fileSelectedInfo" class="hidden" style="margin-top: 20px; background: #f1f5f9; padding: 15px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📄</span>
+                            <div>
+                                <p id="fileNameDisplay" style="font-weight: 600; margin: 0; color: #334155;">archivo.pdf</p>
+                                <p style="font-size: 12px; margin: 0; color: #64748b;">Listo para analizar</p>
+                            </div>
+                        </div>
+                        <button type="button" id="btnRemoveFile" style="background: none; border: none; color: #ef4444; font-weight: 600; cursor: pointer;">✕ Quitar</button>
+                    </div>
+
+                    <div id="ocrPreviewContainer" class="ocr-preview-container hidden" style="margin-top: 25px;">
+                        <div class="ocr-preview-image" style="border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
                             <img id="ocrPreviewImg" src="" alt="Vista previa">
                         </div>
-                        <button type="button" id="ocrAnalyzeBtn" class="btn-primary btn-large">
-                            🔍 Analizar con OCR (Tesseract)
-                        </button>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <!-- Botón Cancelar eliminado para evitar duplicidad con el botón 'X Quitar' superior -->
+                            <button type="button" id="ocrAnalyzeBtn" class="btn-primary btn-large" style="flex: 2; display: flex; justify-content: center; align-items: center; gap: 10px;">
+                                ✨ Extraer Datos Automáticamente
+                            </button>
+                        </div>
                     </div>
                     <div id="ocrProgressBar" class="ocr-progress hidden">
                         <div class="progress-bar">
                             <div id="ocrProgressFill" class="progress-fill"></div>
                         </div>
-                        <p id="ocrProgressText">Analizando documento...</p>
+                        <p id="ocrProgressText" style="color: #64748b; font-size: 13px; margin-top: 5px;">Procesando...</p>
                     </div>
                 </div>
 
-                <!-- FORMULARIO DINÁMICO POR TIPO -->
+                <div id="recentDocumentsList" style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                    <h4 style="font-size: 14px; color: #64748b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">🕒 Últimos documentos subidos</h4>
+                    <div id="recentDocsContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+
                 <div id="ocrDataCard" class="form-card hidden">
-                    <h3>3️⃣ Verificar y Corregir Datos Extraídos</h3>
-                    <p class="ocr-confidence-legend">
-                        <span class="confidence-high">🟢 Alta confianza</span>
-                        <span class="confidence-medium">🟡 Revisar</span>
-                        <span class="confidence-low">🔴 Corregir obligatorio</span>
-                    </p>
+                    <h3 style="font-size: 16px; color: #475569; margin-bottom: 15px;">3️⃣ Revisa los datos</h3>
                     <div id="ocrDynamicForm"></div>
-                    <div class="form-actions">
-                        <button type="button" id="ocrSaveBtn" class="btn-primary btn-large" disabled>
-                            ✓ Guardar e Integrar Datos
-                        </button>
-                        <button type="button" id="ocrCancelBtn" class="btn-secondary">
-                            ✗ Cancelar
-                        </button>
+                    <div class="form-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+                        <button type="button" id="ocrCancelBtn" class="btn-secondary" style="flex: 1;">Cancelar</button>
+                        <button type="button" id="ocrSaveBtn" class="btn-primary" style="flex: 2;" disabled>✓ Guardar en Sistema</button>
                     </div>
                 </div>
             </div>
 
-            <!-- CIERRES VIEW -->
             <div id="cierresView" class="view hidden">
-                <button id="toggleCierreForm" class="btn-primary" style="margin-bottom: 20px;">+ Nuevo Cierre</button>
-                
-                <div id="cierreFormCard" class="form-card hidden">
+                <div id="cierreFormCard" class="form-card hidden" style="background: #fff; border-left: 4px solid #1171ef;">
                     <h3>🧾 Nuevo Cierre de Caja</h3>
-                    <form id="cierreForm">
+                    
+                    <!-- PASO 1: FECHA Y TURNO -->
+                    <div id="cierreStep1">
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Fecha</label>
@@ -135,782 +140,366 @@
                             </div>
                             <div class="form-group">
                                 <label>Turno</label>
-                                <select id="cierreTurno" required>
+                                <select id="cierreTurno">
+                                    <option value="dia_completo" selected>Día Completo</option>
                                     <option value="comida">Comida</option>
                                     <option value="cena">Cena</option>
-                                    <option value="todo el día">Todo el día</option>
                                 </select>
                             </div>
                         </div>
-
-                        <!-- CONTEO EFECTIVO -->
-                        <div class="cierre-section">
-                            <h4>💵 Conteo de Efectivo</h4>
-                            <div class="billetes-grid-compact">
-                                <div class="billete-item-compact"><label>500€</label><input type="number" id="b500" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>200€</label><input type="number" id="b200" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>100€</label><input type="number" id="b100" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>50€</label><input type="number" id="b50" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>20€</label><input type="number" id="b20" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>10€</label><input type="number" id="b10" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>5€</label><input type="number" id="b5" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>2€</label><input type="number" id="m2" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>1€</label><input type="number" id="m1" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>0.50€</label><input type="number" id="m050" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>0.20€</label><input type="number" id="m020" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>0.10€</label><input type="number" id="m010" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>0.05€</label><input type="number" id="m005" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>0.02€</label><input type="number" id="m002" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                                <div class="billete-item-compact"><label>0.01€</label><input type="number" id="m001" value="0" min="0" class="billete-input"><span class="billete-total">0€</span></div>
-                            </div>
-                            <div class="total-efectivo">
-                                <strong>Total Efectivo Contado:</strong>
-                                <span id="totalEfectivoContado">0.00€</span>
-                            </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="btn-secondary" onclick="window.app.collapseForm('cierre')">Cancelar</button>
+                            <button type="button" class="btn-primary" onclick="window.app.iniciarCierre()">Comenzar Cierre</button>
                         </div>
+                    </div>
 
-                        <!-- DATÁFONOS -->
+                    <!-- PASO 2: FORMULARIO COMPLETO (Oculto inicialmente) -->
+                    <form id="cierreForm" class="hidden">
                         <div class="cierre-section">
-                            <h4>💳 Datáfonos</h4>
-                            <div id="datafonosContainer">
-                                <div class="datafono-item">
-                                    <input type="text" placeholder="Nombre TPV" class="datafono-nombre">
-                                    <input type="number" step="0.01" value="0" min="0" placeholder="Importe" class="datafono-importe">
-                                    <button type="button" class="btn-remove" onclick="this.parentElement.remove(); app.calcularTotalesCierre()">✗</button>
+                            <h4 style="margin-bottom:15px; color:#2c3e50;">💶 Arqueo de Caja (Conteo Real)</h4>
+                            <div style="display: flex; gap: 20px;">
+                                <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <h5 style="margin:0 0 10px 0; font-size:13px; color:#7f8c8d;">BILLETES</h5>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                                        <div class="input-money-wrapper"><span class="currency-symbol">500€</span><input type="number" id="b500" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">200€</span><input type="number" id="b200" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">100€</span><input type="number" id="b100" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">50€</span><input type="number" id="b50" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">20€</span><input type="number" id="b20" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">10€</span><input type="number" id="b10" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">5€</span><input type="number" id="b5" class="billete-input" placeholder="0"></div>
+                                    </div>
+                                </div>
+                                <div style="flex: 1; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                    <h5 style="margin:0 0 10px 0; font-size:13px; color:#7f8c8d;">MONEDAS</h5>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                                        <div class="input-money-wrapper"><span class="currency-symbol">2€</span><input type="number" id="m2" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">1€</span><input type="number" id="m1" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">0.50</span><input type="number" id="m050" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">0.20</span><input type="number" id="m020" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">0.10</span><input type="number" id="m010" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">0.05</span><input type="number" id="m005" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">0.02</span><input type="number" id="m002" class="billete-input" placeholder="0"></div>
+                                        <div class="input-money-wrapper"><span class="currency-symbol">0.01</span><input type="number" id="m001" class="billete-input" placeholder="0"></div>
+                                    </div>
                                 </div>
                             </div>
-                            <button type="button" id="addDatafono" class="btn-secondary">+ Añadir Datáfono</button>
-                            <div class="total-efectivo">
-                                <strong>Total Datáfonos:</strong>
-                                <span id="totalDatafonos">0.00€</span>
+                            <div class="total-efectivo-bar" style="margin-top: 15px; background: #2c3e50; color: white; padding: 10px 20px; border-radius: 6px; display: flex; justify-content: space-between; font-weight: 600;">
+                                <span>TOTAL EFECTIVO REAL</span>
+                                <span id="totalEfectivoDisplay">0.00 €</span>
                             </div>
                         </div>
 
-                        <!-- OTROS MEDIOS -->
                         <div class="cierre-section">
-                            <h4>📱 Otros Medios de Pago</h4>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                <h4>💳 Datáfonos / TPVs (Real)</h4>
+                                <button type="button" id="addDatafono" class="btn-secondary" style="padding: 5px 10px; font-size:12px;">+ Añadir TPV</button>
+                            </div>
+                            <div id="datafonosContainer"></div>
+                            <div class="total-efectivo-bar" style="margin-top: 15px; background: #2c3e50; color: white; padding: 10px 20px; border-radius: 6px; display: flex; justify-content: space-between; font-weight: 600;">
+                                <span>TOTAL DATÁFONOS</span>
+                                <span id="totalDatafonosDisplay">0.00 €</span>
+                            </div>
+                        </div>
+
+                        <div class="cierre-section">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                <h4>📲 Otros Medios de Pago (Real)</h4>
+                                <button type="button" id="addOtroMedio" class="btn-secondary" style="padding: 5px 10px; font-size:12px;">+ Añadir Medio</button>
+                            </div>
                             <div id="otrosMediosContainer"></div>
-                            <button type="button" id="addOtroMedio" class="btn-secondary">+ Añadir Otro Medio</button>
-                            <div class="total-efectivo" style="margin-top: 10px;">
-                                <strong>Total Otros Medios:</strong>
-                                <span id="totalOtrosMedios">0.00€</span>
+                            <div class="total-efectivo-bar" style="margin-top: 15px; background: #2c3e50; color: white; padding: 10px 20px; border-radius: 6px; display: flex; justify-content: space-between; font-weight: 600;">
+                                <span>TOTAL OTROS MEDIOS</span>
+                                <span id="totalOtrosDisplay">0.00 €</span>
                             </div>
                         </div>
 
-                        <!-- DATOS POS (DINÁMICO) -->
-                        <div class="cierre-section">
-                            <h4>🖥️ Datos del POS (Sistema)</h4>
+                        <div class="cierre-section" style="border-left-color: #34c759;">
+                            <h4>🖥️ Datos del POS (Ticket de Caja)</h4>
+                            <p style="font-size:12px; color:#666; margin-bottom:10px;">Introduce lo que dice tu máquina registradora para calcular el cuadre.</p>
                             <div id="datosPOSContainer">
-                                <!-- Se renderiza dinámicamente según otrosMedios -->
+                                </div>
+                            <div class="form-group">
+                                <label>Nº Tickets / Comensales</label>
+                                <input type="number" id="posTickets" value="0">
                             </div>
                         </div>
 
-                        <!-- RESUMEN EN TIEMPO REAL -->
                         <div class="resumen-tiempo-real">
-                            <h4>📊 Resumen de Cuadre (en tiempo real)</h4>
+                            <h4>✅ BALANCE CIERRE DE CAJA</h4>
                             <table class="tabla-resumen-cierre">
-                                <thead>
-                                    <tr>
-                                        <th>Método</th>
-                                        <th>POS declarado</th>
-                                        <th>Real contado</th>
-                                        <th>Diferencia</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="resumenTbody">
-                                    <!-- Se renderiza dinámicamente según otrosMedios -->
-                                </tbody>
+                                <tbody id="resumenTbody"></tbody>
                             </table>
                         </div>
 
-                        <!-- DINERO B SEPARADO (NO COMPUTA) -->
-                        <div id="resumenDineroBContainer" class="resumen-dinero-b hidden" style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                            <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 16px;">💵 Dinero B (sin IVA)</h4>
-                            <p style="margin: 0 0 10px 0; font-size: 13px; color: #856404;">⚠️ Este importe <strong>NO computa IVA</strong> en ningún cálculo de la aplicación</p>
-                            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px; border-radius: 6px; border: 1px solid #ffc107;">
-                                <span style="font-weight: 600; color: #333;">Importe contado:</span>
-                                <span id="resumenDineroB" style="font-size: 18px; font-weight: 700; color: #856404;">0.00 €</span>
-                            </div>
+                        <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                            <button type="button" class="btn-secondary" onclick="window.app.collapseForm('cierre')">Cancelar</button>
+                            <button type="submit" class="btn-primary">✓ Guardar Cierre</button>
                         </div>
-
-                        <button type="submit" class="btn-primary">✓ Guardar Cierre</button>
                     </form>
                 </div>
-                <div class="list-section">
-                    <h3>Cierres del Periodo</h3>
-                    <div id="listaCierres"></div>
-                </div>
+                <div id="listaCierres"></div>
             </div>
 
-            <!-- COMPRAS VIEW -->
-            <div id="comprasView" class="view hidden">
-                <div class="form-card">
-                    <h3>🔍 Filtros de Búsqueda</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Proveedor</label>
-                            <input type="text" id="filtroProveedor" list="datalistProveedores" placeholder="Buscar por proveedor...">
-                            <datalist id="datalistProveedores"></datalist>
-                        </div>
-                        <div class="form-group">
-                            <label>Desde Fecha</label>
-                            <input type="date" id="filtroFechaDesde">
-                        </div>
-                        <div class="form-group">
-                            <label>Hasta Fecha</label>
-                            <input type="date" id="filtroFechaHasta">
-                        </div>
-                    </div>
-                    <button type="button" id="btnFiltrarCompras" class="btn-primary">🔍 Filtrar</button>
-                    <button type="button" id="btnLimpiarFiltros" class="btn-secondary">✗ Limpiar</button>
-                </div>
+            <div id="comprasView" class="view hidden"><div id="listaFacturas"></div><div id="listaAlbaranes"></div></div>
 
-                <div class="tabs">
-                    <button class="tab-btn active" data-tab="facturas">📄 Facturas</button>
-                    <button class="tab-btn" data-tab="albaranes">📦 Albaranes</button>
-                </div>
-
-                <!-- FACTURAS TAB -->
-                <div id="facturasTab" class="tab-content">
-                    <div class="list-section">
-                        <h3>Facturas</h3>
-                        <div id="listaFacturas"></div>
-                    </div>
-                </div>
-
-                <!-- ALBARANES TAB -->
-                <div id="albaranesTab" class="tab-content hidden">
-                    <div class="list-section">
-                        <h3>Albaranes</h3>
-                        <div id="listaAlbaranes"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PROVEEDORES VIEW -->
             <div id="proveedoresView" class="view hidden">
-                <button id="toggleProveedorForm" class="btn-primary" style="margin-bottom: 20px;" onclick="app.toggleForm('proveedor')">+ Nuevo Proveedor</button>
-                <div class="form-card hidden" id="proveedorFormCard">
-                    <h3>Nuevo Proveedor</h3>
+                <div id="proveedorFormCard" class="form-card hidden">
+                    <h3>🏢 Ficha de Proveedor</h3>
                     <form id="proveedorForm">
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Nombre Fiscal *</label>
-                                <input type="text" id="proveedorNombreFiscal" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Nombre Comercial</label>
-                                <input type="text" id="proveedorNombreComercial">
-                            </div>
+                            <div class="form-group"><label>Nombre Comercial *</label><input type="text" id="proveedorNombreComercial" required></div>
+                            <div class="form-group"><label>Razón Social</label><input type="text" id="proveedorRazonSocial"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>NIF/CIF *</label>
-                                <input type="text" id="proveedorNifCif" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Tipo *</label>
-                                <select id="proveedorTipo" required>
-                                    <option value="Comida">Comida</option>
-                                    <option value="Bebida">Bebida</option>
-                                    <option value="Mixto">Mixto</option>
-                                    <option value="Otros">Otros</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Dirección</label>
-                            <input type="text" id="proveedorDireccion">
+                            <div class="form-group"><label>NIF/CIF *</label><input type="text" id="proveedorNifCif" required></div>
+                            <div class="form-group"><label>Persona Contacto</label><input type="text" id="proveedorPersonaContacto"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Código Postal</label>
-                                <input type="text" id="proveedorCodigoPostal">
-                            </div>
-                            <div class="form-group">
-                                <label>Ciudad</label>
-                                <input type="text" id="proveedorCiudad">
-                            </div>
-                            <div class="form-group">
-                                <label>Provincia</label>
-                                <input type="text" id="proveedorProvincia">
-                            </div>
+                            <div class="form-group"><label>Teléfono</label><input type="text" id="proveedorTelefono"></div>
+                            <div class="form-group"><label>Email</label><input type="email" id="proveedorEmail"></div>
+                        </div>
+                        <div class="form-group"><label>Web</label><input type="text" id="proveedorWeb"></div>
+                        
+                        <div class="form-row">
+                            <div class="form-group"><label>Dirección Fiscal</label><input type="text" id="proveedorDireccionFiscal"></div>
+                            <div class="form-group"><label>Dirección Envío</label><input type="text" id="proveedorDireccionEnvioHabitual"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Teléfono</label>
-                                <input type="tel" id="proveedorTelefono">
-                            </div>
-                            <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" id="proveedorEmail">
-                            </div>
-                            <div class="form-group">
-                                <label>Persona Contacto</label>
-                                <input type="text" id="proveedorContacto">
-                            </div>
+                            <div class="form-group"><label>C.P.</label><input type="text" id="proveedorCodigoPostal"></div>
+                            <div class="form-group"><label>Ciudad</label><input type="text" id="proveedorCiudad"></div>
+                            <div class="form-group"><label>País</label><input type="text" id="proveedorPais"></div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Forma de Pago</label>
-                                <select id="proveedorFormaPago">
-                                    <option value="Transferencia">Transferencia</option>
-                                    <option value="Domiciliación">Domiciliación</option>
-                                    <option value="Contado">Contado</option>
-                                    <option value="Otros">Otros</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Condiciones Pago</label>
-                                <input type="text" id="proveedorCondicionesPago" placeholder="ej: 30 días, 60 días">
-                            </div>
-                            <div class="form-group">
-                                <label>Frecuencia Pedido</label>
-                                <select id="proveedorFrecuencia">
-                                    <option value="Diario">Diario</option>
-                                    <option value="Semanal">Semanal</option>
-                                    <option value="Quincenal">Quincenal</option>
-                                    <option value="Mensual">Mensual</option>
-                                    <option value="Bajo pedido">Bajo pedido</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Observaciones</label>
-                            <textarea id="proveedorObservaciones" rows="2"></textarea>
-                        </div>
-                        <button type="submit" class="btn-primary">✓ Guardar Proveedor</button>
-                    </form>
-                </div>
-                <div class="list-section">
-                    <h3>Lista de Proveedores</h3>
-                    <div id="listaProveedores"></div>
-                </div>
-            </div>
 
-            <!-- PRODUCTOS VIEW -->
-            <div id="productosView" class="view hidden">
-                <button id="toggleProductoForm" class="btn-primary" style="margin-bottom: 20px;" onclick="app.toggleForm('producto')">+ Nuevo Producto</button>
-                <div class="form-card hidden" id="productoFormCard">
-                    <h3>Nuevo Producto</h3>
-                    <form id="productoForm">
-                        <div class="form-group">
-                            <label>Nombre *</label>
-                            <input type="text" id="productoNombre" required>
+                        <div class="form-row">
+                            <div class="form-group"><label>Método Pago Preferido</label><input type="text" id="proveedorMetodoPagoPreferido"></div>
+                            <div class="form-group"><label>Plazo Pago (días)</label><input type="number" id="proveedorPlazoPagoDias"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Proveedor *</label>
-                                <select id="productoProveedorId" required>
-                                    <option value="">Seleccionar...</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Precio Neto (€) *</label>
-                                <input type="number" step="0.01" id="productoPrecio" required>
-                            </div>
+                            <div class="form-group"><label>Descuento (%)</label><input type="number" id="proveedorDescuentoAcordadoPorcentaje" step="0.01"></div>
+                            <div class="form-group"><label>IBAN</label><input type="text" id="proveedorIban"></div>
                         </div>
+                        <div class="form-group"><label>Banco</label><input type="text" id="proveedorBanco"></div>
+                        
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Unidad Base *</label>
-                                <select id="productoUnidadBase" required>
-                                    <option value="kg">kg (kilogramo)</option>
-                                    <option value="g">g (gramo)</option>
-                                    <option value="L">L (litro)</option>
-                                    <option value="ml">ml (mililitro)</option>
-                                    <option value="ud">ud (unidad)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Stock Actual</label>
-                                <input type="number" step="0.001" id="productoStockActual" value="0">
-                            </div>
+                            <div class="form-group"><label>Categoría Principal</label><input type="text" id="proveedorCategoriaPrincipalCompra"></div>
+                            <div class="form-group"><label>Subcategorías</label><input type="text" id="proveedorSubcategoriasCompra"></div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>¿Viene empaquetado?</label>
-                                <select id="productoEsEmpaquetado" onchange="app.toggleEmpaqueFields()">
-                                    <option value="false">No</option>
-                                    <option value="true">Sí</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="empaqueFields" class="hidden">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Tipo Empaque *</label>
-                                    <select id="productoTipoEmpaque" onchange="app.updateResumenEmpaque()">
-                                        <option value="Caja">Caja</option>
-                                        <option value="Pack">Pack</option>
-                                        <option value="Malla">Malla</option>
-                                        <option value="Rack">Rack</option>
-                                        <option value="Palé">Palé</option>
-                                        <option value="Botella">Botella</option>
-                                        <option value="Lata">Lata</option>
-                                        <option value="Bandeja">Bandeja</option>
-                                        <option value="Saco">Saco</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Unidades por Empaque *</label>
-                                    <input type="number" step="0.001" id="productoUnidadesPorEmpaque" oninput="app.updateResumenEmpaque()" min="0.001">
-                                    <small class="form-help">Número de <strong>unidades base</strong> que trae 1 empaque</small>
-                                </div>
-                            </div>
-                            <div id="resumenEmpaque" style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px; margin-top: 10px; border-radius: 4px; display: none;">
-                                <strong style="color: #2e7d32;">📦 Resumen empaque:</strong>
-                                <div id="resumenEmpaqueTexto" style="font-size: 15px; margin-top: 5px; color: #1f2d3d;"></div>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn-primary">✓ Guardar Producto</button>
-                    </form>
-                </div>
-                <div class="list-section">
-                    <h3>Catálogo de Productos</h3>
-                    <div id="listaProductos"></div>
-                </div>
-            </div>
 
-            <!-- ESCANDALLOS VIEW -->
-            <div id="escandallosView" class="view hidden">
-                <button id="toggleEscandalloForm" class="btn-primary" style="margin-bottom: 20px;">+ Nuevo Escandallo</button>
-                
-                <div id="escandalloFormCard" class="form-card hidden">
-                    <h3>📝 Nuevo Escandallo</h3>
-                    <form id="escandalloForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Nombre del Plato</label>
-                                <input type="text" id="escandalloNombre" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Código (opcional)</label>
-                                <input type="text" id="escandalloCodigo">
-                            </div>
-                        </div>
+                        <div class="form-group"><label>Notas Condiciones</label><textarea id="proveedorNotasCondiciones"></textarea></div>
+                        <div class="form-group"><label>Notas Internas</label><textarea id="proveedorNotasInternas"></textarea></div>
                         
                         <div class="form-row">
                             <div class="form-group">
-                                <label>PVP con IVA (€) *</label>
-                                <input type="number" step="0.01" id="escandalloPVPConIVA" required oninput="app.calcularPVPNeto()">
+                                <label>Estado</label>
+                                <select id="proveedorEstado">
+                                    <option value="Activo">Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
+                                </select>
                             </div>
-                            <div class="form-group">
-                                <label>IVA Venta (fijo hostelería)</label>
-                                <input type="text" id="escandalloTipoIVA" value="10" readonly style="background: #ecf0f1; cursor: not-allowed;">
-                            </div>
-                            <div class="form-group">
-                                <label>PVP Neto (sin IVA) (€)</label>
-                                <input type="number" step="0.01" id="escandalloPVPNeto" readonly style="background: #e8f5e9;">
-                            </div>
+                            <div class="form-group"><label>Fecha Alta</label><input type="date" id="proveedorFechaAlta" readonly style="background: #f0f0f0;"></div>
                         </div>
-
-                        <h4 style="margin-top: 20px;">🧂 Ingredientes</h4>
-                        <div id="ingredientesContainer"></div>
-                        <button type="button" id="addIngrediente" class="btn-secondary" style="margin: 10px 0;">+ Añadir Ingrediente</button>
-
-                        <div class="form-row" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-                            <div class="form-group">
-                                <label>Coste Total Neto (€)</label>
-                                <input type="number" step="0.01" id="escandalloCosteTotalNeto" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>Food Cost %</label>
-                                <input type="number" step="0.01" id="escandalloFC" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>Margen Bruto %</label>
-                                <input type="number" step="0.01" id="escandalloMargen" readonly>
-                            </div>
+                        
+                        <div class="form-actions" style="text-align: right;">
+                            <button type="button" class="btn-secondary" onclick="window.app.toggleForm('proveedor')">Cancelar</button>
+                            <button type="submit" class="btn-primary">✓ Guardar Proveedor</button>
                         </div>
-
-                        <button type="submit" class="btn-primary" style="margin-top: 15px;">✓ Guardar Escandallo</button>
                     </form>
                 </div>
-                
-                <div class="list-section">
-                    <h3>Lista de Escandallos</h3>
-                    <div id="listaEscandallos"></div>
-                </div>
+                <div id="listaProveedores"></div>
             </div>
 
-            <!-- INVENTARIO VIEW -->
+            <div id="productosView" class="view hidden">
+                <div id="productoFormCard" class="form-card hidden">
+                    <h3>🥘 Ficha de Producto</h3>
+                    <form id="productoForm">
+                        <div class="form-row">
+                            <div class="form-group"><label>Nombre *</label><input type="text" id="productoNombre" required></div>
+                            <div class="form-group"><label>Proveedor</label><select id="productoProveedorId"><option value="">Cargando...</option></select></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Precio Neto Compra (€) *</label><input type="number" id="productoPrecio" step="0.001" required></div>
+                            <div class="form-group"><label>Unidad Base *</label>
+                                <select id="productoUnidadBase">
+                                    <option value="kg">Kilogramo (kg)</option>
+                                    <option value="L">Litro (L)</option>
+                                    <option value="ud">Unidad (ud)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div class="form-group">
+                                <label>¿Este producto viene empaquetado? (Ej: Caja de 6 botellas)</label>
+                                <select id="productoEsEmpaquetado" onchange="window.app.toggleEmpaqueFields()">
+                                    <option value="false">No, compro por unidades sueltas</option>
+                                    <option value="true">Sí, compro por cajas/packs</option>
+                                </select>
+                            </div>
+                            <div id="empaqueFields" class="hidden">
+                                <div class="form-row">
+                                    <div class="form-group"><label>Tipo de Empaque</label><input type="text" id="productoTipoEmpaque" placeholder="Ej: Caja, Pack, Malla"></div>
+                                    <div class="form-group"><label>Unidades por Empaque</label><input type="number" id="productoUnidadesPorEmpaque" step="0.01" placeholder="Ej: 6, 12, 24"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group"><label>Stock Actual (Estimado)</label><input type="number" id="productoStockActual" step="0.01"></div>
+                        
+                        <div class="form-actions" style="text-align: right;">
+                            <button type="button" class="btn-secondary" onclick="window.app.toggleForm('producto')">Cancelar</button>
+                            <button type="submit" class="btn-primary">✓ Guardar Producto</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="listaProductos"></div>
+            </div>
+
+            <div id="escandallosView" class="view hidden">
+                <div id="escandalloFormCard" class="form-card hidden">
+                    <h3>📋 Nuevo Escandallo</h3>
+                    <form id="escandalloForm">
+                        <div class="form-row">
+                            <div class="form-group"><label>Nombre del Plato *</label><input type="text" id="escandalloNombre" required></div>
+                            <div class="form-group"><label>Precio Venta (PVP) *</label><input type="number" id="escandalloPVP" step="0.01" required></div>
+                        </div>
+                        <div class="form-group"><label>Descripción / Notas</label><textarea id="escandalloNotas"></textarea></div>
+                        
+                        <div class="form-actions" style="text-align: right;">
+                            <button type="button" class="btn-secondary" onclick="window.app.expandForm('escandallo')">Cancelar</button>
+                            <button type="submit" class="btn-primary">✓ Guardar Escandallo</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="listaEscandallos"></div>
+            </div>
+            
             <div id="inventarioView" class="view hidden">
-                <div class="form-card">
-                    <h3>Nuevo Inventario</h3>
+                <div id="inventarioFormCard" class="form-card hidden" style="border-left: 4px solid #e67e22;">
+                    <h3>📦 Nuevo Inventario Físico</h3>
                     <form id="inventarioForm">
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Fecha *</label>
+                                <label>Fecha del Conteo</label>
                                 <input type="date" id="inventarioFecha" required>
                             </div>
                             <div class="form-group">
-                                <label>Familia</label>
-                                <select id="inventarioFamilia" required>
-                                    <option value="Todos">Todos los productos</option>
-                                    <option value="Comida">Comida</option>
-                                    <option value="Bebida">Bebida</option>
-                                    <option value="Otros">Otros</option>
+                                <label>Zona / Familia</label>
+                                <select id="inventarioFamilia">
+                                    <option value="Todo">Todo el local</option>
+                                    <option value="Barra">Barra / Bebidas</option>
+                                    <option value="Cocina">Cocina / Alimentos</option>
+                                    <option value="Almacen">Almacén Seco</option>
                                 </select>
                             </div>
                         </div>
-                        <h4 style="margin-top: 20px;">📦 Conteo por Producto</h4>
-                        <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 15px;">Completa el conteo de cada producto antes de añadir el siguiente.</p>
-                        <div id="inventarioProductosContainer"></div>
-                        <button type="button" id="addProductoInventario" class="btn-secondary" style="margin: 10px 0;">+ Añadir Producto</button>
-                        <button type="submit" class="btn-primary" style="margin-top: 15px;">✓ Guardar Inventario</button>
+                        
+                        <div id="inventarioProductosContainer">
+                            </div>
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button type="button" id="addProductoInventario" class="btn-secondary" style="width: 100%; padding: 15px; border: 2px dashed #cbd5e1;">
+                                + Contar Siguiente Producto
+                            </button>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 30px; text-align: right; border-top: 1px solid #eee; padding-top: 20px;">
+                            <button type="button" class="btn-secondary" onclick="window.app.collapseForm('inventario')">Cancelar</button>
+                            <button type="submit" class="btn-primary">✓ Finalizar y Guardar Stock</button>
+                        </div>
                     </form>
                 </div>
-                <div class="list-section">
-                    <h3>Historial de Inventarios</h3>
-                    <div id="listaInventarios"></div>
-                </div>
+                <div id="listaInventarios"></div>
             </div>
-
-            <!-- DELIVERY VIEW -->
+            
             <div id="deliveryView" class="view hidden">
-                <div class="form-card">
-                    <h3>Nuevo Pedido Delivery</h3>
+                <div id="deliveryFormCard" class="form-card hidden">
+                    <h3>🛵 Nuevo Registro Delivery</h3>
                     <form id="deliveryForm">
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Fecha</label>
-                                <input type="date" id="deliveryFecha" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Plataforma</label>
+                            <div class="form-group"><label>Plataforma *</label>
                                 <select id="deliveryPlataforma" required>
-                                    <option value="Just Eat">Just Eat</option>
                                     <option value="Uber Eats">Uber Eats</option>
                                     <option value="Glovo">Glovo</option>
+                                    <option value="Just Eat">Just Eat</option>
+                                    <option value="Propio">Reparto Propio</option>
                                 </select>
                             </div>
+                            <div class="form-group"><label>Fecha *</label><input type="date" id="deliveryFecha" required></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>Ventas Brutas (€)</label>
-                                <input type="number" step="0.01" id="deliveryVentas" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Comisión (%)</label>
-                                <input type="number" step="0.1" id="deliveryComision" required>
-                            </div>
+                            <div class="form-group"><label>Ventas Brutas (€) *</label><input type="number" id="deliveryVentas" step="0.01" required></div>
+                            <div class="form-group"><label>Comisión (%)</label><input type="number" id="deliveryComision" step="0.01" value="30"></div>
                         </div>
-                        <button type="submit" class="btn-primary">✓ Guardar Delivery</button>
+                        
+                        <div class="form-actions" style="text-align: right;">
+                            <button type="button" class="btn-secondary" onclick="window.app.expandForm('delivery')">Cancelar</button>
+                            <button type="submit" class="btn-primary">✓ Guardar Registro</button>
+                        </div>
                     </form>
                 </div>
-                <div class="list-section">
-                    <h3>Pedidos del Periodo</h3>
-                    <div id="listaDelivery"></div>
-                </div>
+                <div id="listaDelivery"></div>
             </div>
+            <div id="pnlView" class="view hidden"></div>
 
-            <!-- P&L VIEW -->
-            <div id="pnlView" class="view hidden">
-                <div class="pnl-header">
-                    <h2>📊 Cuenta de Explotación Profesional</h2>
-                    <p style="color: #7f8c8d; font-size: 14px;">Todos los valores SIN IVA · Período actual vs comparativa</p>
-                </div>
-
-                <!-- KPIs Principales -->
-                <div class="pnl-kpis-grid">
-                    <div class="pnl-kpi-card">
-                        <div class="pnl-kpi-label">Ingresos Netos</div>
-                        <div class="pnl-kpi-value" id="kpiIngresos">0€</div>
-                        <div class="pnl-kpi-compare" id="kpiIngresosCompare"></div>
-                    </div>
-                    <div class="pnl-kpi-card">
-                        <div class="pnl-kpi-label">Food Cost %</div>
-                        <div class="pnl-kpi-value" id="kpiFoodCost">0%</div>
-                        <div class="pnl-kpi-compare" id="kpiFoodCostCompare"></div>
-                    </div>
-                    <div class="pnl-kpi-card">
-                        <div class="pnl-kpi-label">Margen Bruto %</div>
-                        <div class="pnl-kpi-value" id="kpiMargen">0%</div>
-                        <div class="pnl-kpi-compare" id="kpiMargenCompare"></div>
-                    </div>
-                    <div class="pnl-kpi-card">
-                        <div class="pnl-kpi-label">EBITDA %</div>
-                        <div class="pnl-kpi-value" id="kpiEBITDA">0%</div>
-                        <div class="pnl-kpi-compare" id="kpiEBITDACompare"></div>
-                    </div>
-                </div>
-
-                <!-- Cuenta Detallada -->
-                <div class="pnl-cuenta-card">
-                    <!-- 1. INGRESOS NETOS -->
-                    <div class="pnl-section">
-                        <h3 class="pnl-section-title">1. INGRESOS NETOS (SIN IVA)</h3>
-                        <div class="pnl-line">
-                            <span>Ventas Local (Cierres)</span>
-                            <span id="plVentasLocal">0€</span>
-                        </div>
-                        <div class="pnl-line">
-                            <span>Ventas Delivery</span>
-                            <span id="plVentasDelivery">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-total">
-                            <span><strong>TOTAL INGRESOS NETOS</strong></span>
-                            <span id="plTotalIngresos"><strong>0€</strong></span>
-                        </div>
-                    </div>
-
-                    <!-- 2. COGS -->
-                    <div class="pnl-section">
-                        <h3 class="pnl-section-title">2. COSTES DIRECTOS (COGS)</h3>
-                        <div class="pnl-line pnl-indent">
-                            <span>Inventario Inicial</span>
-                            <span id="plInvInicial">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>(+) Compras Netas (sin IVA)</span>
-                            <span id="plComprasNetas">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>(−) Inventario Final</span>
-                            <span id="plInvFinal">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-subtotal">
-                            <span><strong>COGS Total</strong></span>
-                            <span id="plCOGSTotal"><strong>0€</strong></span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span class="pnl-ratio">└─ COGS Comida</span>
-                            <span id="plCOGSComida">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span class="pnl-ratio">└─ COGS Bebida</span>
-                            <span id="plCOGSBebida">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-ratio-line">
-                            <span>Food Cost %</span>
-                            <span id="plFoodCostPct" class="pnl-ratio-value">0%</span>
-                        </div>
-                    </div>
-
-                    <!-- 3. MARGEN BRUTO -->
-                    <div class="pnl-section">
-                        <h3 class="pnl-section-title">3. MARGEN BRUTO</h3>
-                        <div class="pnl-line pnl-total pnl-margen">
-                            <span><strong>MARGEN BRUTO (Ingresos − COGS)</strong></span>
-                            <span id="plMargenBruto"><strong>0€</strong></span>
-                        </div>
-                        <div class="pnl-line pnl-ratio-line">
-                            <span>Margen Bruto %</span>
-                            <span id="plMargenPct" class="pnl-ratio-value">0%</span>
-                        </div>
-                    </div>
-
-                    <!-- 4. GASTOS DE PERSONAL -->
-                    <div class="pnl-section">
-                        <h3 class="pnl-section-title">4. GASTOS DE PERSONAL</h3>
-                        <div class="pnl-line pnl-indent">
-                            <span>Salarios Brutos</span>
-                            <span id="plSalarios">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Seguridad Social</span>
-                            <span id="plSeguridadSocial">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-subtotal">
-                            <span><strong>TOTAL PERSONAL</strong></span>
-                            <span id="plTotalPersonal"><strong>0€</strong></span>
-                        </div>
-                        <div class="pnl-line pnl-ratio-line">
-                            <span>Personal % s/Ventas</span>
-                            <span id="plPersonalPct" class="pnl-ratio-value">0%</span>
-                        </div>
-                    </div>
-
-                    <!-- 5. GASTOS OPERATIVOS -->
-                    <div class="pnl-section">
-                        <h3 class="pnl-section-title">5. GASTOS OPERATIVOS (OPEX)</h3>
-                        <div class="pnl-line pnl-indent">
-                            <span>Alquiler / Hipoteca</span>
-                            <span id="plAlquiler">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Suministros (Luz, Agua, Gas)</span>
-                            <span id="plSuministros">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Servicios (Gestoría, Asesoría)</span>
-                            <span id="plServicios">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Marketing y Publicidad</span>
-                            <span id="plMarketing">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Comisiones TPV/Delivery</span>
-                            <span id="plComisiones">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Limpieza y Mantenimiento</span>
-                            <span id="plLimpieza">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Seguros</span>
-                            <span id="plSeguros">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Otros Gastos Operativos</span>
-                            <span id="plOtrosOpex">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-subtotal">
-                            <span><strong>TOTAL OPEX</strong></span>
-                            <span id="plTotalOpex"><strong>0€</strong></span>
-                        </div>
-                        <div class="pnl-line pnl-ratio-line">
-                            <span>OPEX % s/Ventas</span>
-                            <span id="plOpexPct" class="pnl-ratio-value">0%</span>
-                        </div>
-                    </div>
-
-                    <!-- 6. EBITDA -->
-                    <div class="pnl-section">
-                        <h3 class="pnl-section-title">6. EBITDA (Resultado Operativo)</h3>
-                        <div class="pnl-line pnl-total pnl-ebitda">
-                            <span><strong>EBITDA (Margen Bruto − Personal − OPEX)</strong></span>
-                            <span id="plEBITDA"><strong>0€</strong></span>
-                        </div>
-                        <div class="pnl-line pnl-ratio-line">
-                            <span>EBITDA % s/Ventas</span>
-                            <span id="plEBITDAPct" class="pnl-ratio-value">0%</span>
-                        </div>
-                    </div>
-
-                    <!-- 7. FINANCIEROS Y AMORTIZACIONES -->
-                    <div class="pnl-section">
-                        <h3 class="pnl-section-title">7. FINANCIEROS Y AMORTIZACIONES</h3>
-                        <div class="pnl-line pnl-indent">
-                            <span>Gastos Financieros (intereses)</span>
-                            <span id="plFinancieros">0€</span>
-                        </div>
-                        <div class="pnl-line pnl-indent">
-                            <span>Amortizaciones</span>
-                            <span id="plAmortizaciones">0€</span>
-                        </div>
-                    </div>
-
-                    <!-- 8. BENEFICIO NETO -->
-                    <div class="pnl-section">
-                        <h3 class="pnl-section-title">8. BENEFICIO NETO</h3>
-                        <div class="pnl-line pnl-total pnl-beneficio">
-                            <span><strong>BENEFICIO NETO (BAI)</strong></span>
-                            <span id="plBeneficioNeto"><strong>0€</strong></span>
-                        </div>
-                        <div class="pnl-line pnl-ratio-line">
-                            <span>Margen Neto %</span>
-                            <span id="plMargenNetoPct" class="pnl-ratio-value">0%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Alertas -->
-                <div id="pnlAlertas" class="pnl-alertas"></div>
-            </div>
-        </main>
-    </div>
-
-    <div id="toast" class="toast"></div>
-
-    <!-- Modal Informativo -->
-    <div id="appModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span id="modalIcon" class="modal-icon"></span>
-                <h3 id="modalTitle"></h3>
-            </div>
-            <div class="modal-body">
-                <p id="modalMessage"></p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-primary" onclick="document.getElementById('appModal').classList.remove('show')">Aceptar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Confirmación -->
     <div id="confirmModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="modal-icon">⚠️</span>
-                <h3 id="confirmTitle"></h3>
+        <div class="modal-content confirmation-card">
+            <div class="modal-header-simple">
+                <div class="icon-box" id="confirmIconBox">⚠️</div>
+                <h3 id="confirmTitle">Título</h3>
             </div>
-            <div class="modal-body">
-                <p id="confirmMessage"></p>
+            <div class="modal-body-simple">
+                <p id="confirmMessage">Mensaje</p>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer-simple" id="confirmFooter">
                 <button id="cancelBtn" class="btn-secondary">Cancelar</button>
                 <button id="confirmBtn" class="btn-danger">Confirmar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Alta Rápida de Producto desde Inventario -->
-    <div id="modalAltaRapidaProducto" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 500px;">
-            <h3>➕ Alta Rápida de Producto</h3>
-            <form id="altaRapidaProductoForm">
-                <div class="form-group">
-                    <label>Nombre del Producto *</label>
-                    <input type="text" id="altaRapidaNombre" required>
+    <div id="universalModal" class="modal">
+        <div class="modal-content form-modal-card">
+            <div class="modal-header-pro">
+                <h3 id="universalModalTitle">✏️ Editar Registro</h3>
+                <button class="close-modal-btn" onclick="document.getElementById('universalModal').classList.remove('show')">×</button>
+            </div>
+            <div id="universalModalBody" class="modal-body-pro">
                 </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <div id="loginOverlay" class="login-overlay hidden">
+        <div class="login-card">
+            <div class="login-header">
+                <h2>🔐 P&L Manager</h2>
+                <p>Acceso Seguro</p>
+            </div>
+            <form id="loginForm">
                 <div class="form-group">
-                    <label>Unidad Base *</label>
-                    <select id="altaRapidaUnidadBase" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="kg">kg (kilogramo)</option>
-                        <option value="g">g (gramo)</option>
-                        <option value="L">L (litro)</option>
-                        <option value="ml">ml (mililitro)</option>
-                        <option value="ud">ud (unidad)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>¿Viene empaquetado?</label>
-                    <select id="altaRapidaEsEmpaquetado" onchange="app.toggleAltaRapidaEmpaque()">
-                        <option value="false">No</option>
-                        <option value="true">Sí (cajas, packs, mallas, etc.)</option>
-                    </select>
-                </div>
-                <div id="altaRapidaEmpaqueFields" class="hidden">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Tipo de Empaque *</label>
-                            <select id="altaRapidaTipoEmpaque">
-                                <option value="Caja">Caja</option>
-                                <option value="Pack">Pack</option>
-                                <option value="Malla">Malla</option>
-                                <option value="Bolsa">Bolsa</option>
-                                <option value="Bandeja">Bandeja</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Unidades por Empaque *</label>
-                            <input type="number" step="0.001" id="altaRapidaUnidadesPorEmpaque" min="0.001">
-                        </div>
-                    </div>
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="usuario@ejemplo.com" required>
                 </div>
                 <div class="form-group">
-                    <label>Precio Neto (€, opcional)</label>
-                    <input type="number" step="0.01" id="altaRapidaPrecioNeto" min="0">
-                    <small style="color: #7f8c8d;">Puedes dejarlo vacío y completarlo más tarde.</small>
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="button" class="btn-secondary" onclick="app.cerrarModalAltaRapida()">Cancelar</button>
-                    <button type="submit" class="btn-primary">✓ Crear Producto</button>
-                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">Entrar al Sistema</button>
             </form>
+            <div id="loginError" class="login-error hidden"></div>
+            <div class="login-footer">
+                <small>Sistema v4.27.8 Cloud-Ready</small>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        // Configurar PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
-    <script src="app.js"></script>
+
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

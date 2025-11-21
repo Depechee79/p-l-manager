@@ -1531,9 +1531,16 @@ body {
     background: #f3f6fa;
     border-radius: 0 0 16px 16px;
 }
-    cursor: pointer;
+
+.btn-danger {
+    background: #ff3b30;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
+    cursor: pointer;
     transition: background 0.2s;
 }
 
@@ -1772,3 +1779,424 @@ body {
     transform: none;
     box-shadow: none;
 }
+/* ===============================================
+   LOGIN SCREEN
+   =============================================== */
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #1d3041; /* Mismo azul oscuro del sidebar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20000; /* Por encima de todo */
+    transition: opacity 0.3s ease;
+}
+
+.login-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.login-card {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    animation: slideUp 0.4s ease-out;
+}
+
+.login-header h2 {
+    color: #1f2d3d;
+    margin-bottom: 5px;
+    font-size: 24px;
+}
+
+.login-header p {
+    color: #6b7b8c;
+    margin-bottom: 30px;
+}
+
+.login-error {
+    margin-top: 15px;
+    padding: 10px;
+    background: #fbeaea;
+    color: #d9534f;
+    border-radius: 6px;
+    font-size: 13px;
+    border: 1px solid #ebccd1;
+}
+
+.login-footer {
+    margin-top: 30px;
+    color: #a0aec0;
+    font-size: 12px;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ==========================================
+   SISTEMA DE MODALES UNIFICADO (v4.27.8)
+   ========================================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(29, 48, 65, 0.6);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.modal.show {
+    display: flex !important;
+    opacity: 1;
+}
+
+.modal-content {
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.95) translateY(10px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* TIPO 1: CONFIRMACIÓN */
+.confirmation-card {
+    background: white;
+    width: 400px;
+    max-width: 90vw;
+    border-radius: 16px;
+    padding: 30px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    border: 1px solid #e3e8ef;
+}
+
+.icon-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin: 0 auto 20px;
+}
+.icon-box.warning { background: #fff3cd; color: #f59f00; }
+.icon-box.danger { background: #ffe3e3; color: #e03131; }
+.icon-box.success { background: #d4edda; color: #28a745; }
+.icon-box.info { background: #d1ecf1; color: #17a2b8; }
+
+.modal-header-simple h3 { margin: 0 0 10px; color: #1f2d3d; font-size: 20px; font-weight: 700; }
+.modal-body-simple p { color: #6b7b8c; line-height: 1.6; margin-bottom: 25px; font-size: 15px; }
+
+.modal-footer-simple {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.modal-footer-simple.single-button {
+    grid-template-columns: 1fr;
+}
+
+/* TIPO 2: FORMULARIO GRANDE */
+.form-modal-card {
+    background: white;
+    width: 600px;
+    max-width: 95vw;
+    max-height: 90vh;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.modal-header-pro {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e3e8ef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+}
+
+.modal-header-pro h3 { margin: 0; font-size: 18px; color: #1f2d3d; font-weight: 600; }
+
+.close-modal-btn {
+    background: none; border: none; font-size: 28px; color: #9aa5b1; cursor: pointer;
+    padding: 0 8px; line-height: 1;
+}
+.close-modal-btn:hover { color: #1f2d3d; }
+
+.modal-body-pro {
+    padding: 24px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.modal-body-pro .form-group { margin-bottom: 16px; }
+.modal-body-pro label { font-size: 13px; margin-bottom: 6px; }
+
+/* Form Styles inside Modal */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.full-width { grid-column: span 2; }
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #475569;
+    font-size: 13px;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* --- NUEVA DROPZONE Y ESTILOS ESCÁNER (v4.27.9) --- */
+
+.file-upload-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+}
+
+.file-upload-zone:hover {
+    border-color: #1171ef;
+    background-color: #eff6ff;
+    transform: translateY(-2px);
+}
+
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    display: block;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Ajuste de botones tipo documento */
+.ocr-tipo-selector {
+    gap: 15px; 
+}
+
+.ocr-tipo-btn {
+    border: 1px solid #e2e8f0;
+    background: white;
+    padding: 20px 10px;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.ocr-tipo-btn:hover {
+    border-color: #1171ef;
+    box-shadow: 0 4px 6px -1px rgba(17, 113, 239, 0.2);
+}
+
+.ocr-tipo-btn.active {
+    border-color: #1171ef;
+    background-color: #eff6ff;
+    color: #1171ef;
+    box-shadow: 0 0 0 2px rgba(17, 113, 239, 0.2);
+}
+
+.ocr-tipo-btn.active .ocr-tipo-label {
+    color: #1171ef;
+}
+
+/* --- NUEVO ESTILO DE INPUT PARA CONTEO DE DINERO --- */
+.input-money-wrapper {
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.currency-symbol {
+    background: #e9ecef;
+    color: #495057;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 50px;
+    text-align: center;
+}
+.input-money-wrapper input {
+    border: none;
+    padding: 6px;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+}
+.input-money-wrapper input:focus {
+    outline: none;
+    background: #f0f8ff;
+}
+
+/* --- ESTILO BARRA DE TOTAL COMPACTA --- */
+.total-efectivo-bar {
+    margin-top: 15px; 
+    background: #2c3e50; 
+    color: white; 
+    padding: 10px 20px; 
+    border-radius: 6px; 
+    display: flex; 
+    justify-content: space-between; 
+    font-weight: 600;
+}
+
+/* Inline Edit Styles */
+.inline-edit-form {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin: -10px -15px -10px -15px; /* Negative margin to fill the list item */
+}
+
+.inline-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.inline-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.inline-field label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.inline-input {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.inline-input:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inline-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 15px;
+}
+
+.btn-save {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-save:hover {
+    background: #059669;
+}
+
+.btn-cancel {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-cancel:hover {
+    background: #dc2626;
+}
+
+
+.inline-input.readonly-field {
+    background-color: #e9ecef;
+    color: #7f8c8d;
+    cursor: not-allowed;
+    border-color: #dcdcdc;
+}
+
+
+/* Fix for inline edit layout */
+.list-item:has(.inline-edit-form) {
+    display: block; /* Override flex to allow full width */
+}
+
+.inline-edit-form {
+    width: 100%;
+}
+
