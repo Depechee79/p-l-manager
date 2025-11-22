@@ -16,12 +16,12 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>📊 P&L Manager</h2>
+                <button id="mobileMenuBtn" class="mobile-menu-btn">☰</button>
             </div>
             
             <nav class="nav-menu">
-                <button class="nav-item active" data-view="ocr">📄 Escáner</button>
+                <button class="nav-item active" data-view="ocr">📄 Escáner y Documentos</button>
                 <button class="nav-item" data-view="cierres">🧾 Cierres</button>
-                <button class="nav-item" data-view="compras">📦 Compras</button>
                 <button class="nav-item" data-view="proveedores">🏢 Proveedores</button>
                 <button class="nav-item" data-view="productos">🥘 Productos</button>
                 <button class="nav-item" data-view="escandallos">📋 Escandallos</button>
@@ -38,21 +38,26 @@
             </div>
 
             <div id="ocrView" class="view">
-                <div style="margin-bottom: 30px;">
-                    <h2 style="color: #1f2d3d; font-size: 24px; font-weight: 700; margin-bottom: 8px;">📄 Escáner de Documentos</h2>
-                    <p style="color: #64748b; font-size: 14px; margin: 0;">Digitaliza facturas, albaranes y tickets automáticamente usando Inteligencia Artificial.</p>
+                <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: #1f2d3d; font-size: 24px; font-weight: 700; margin-bottom: 8px;">📄 Escáner y Documentos</h2>
+                        <p style="color: #64748b; font-size: 14px; margin: 0;">Gestiona y digitaliza tus documentos.</p>
+                    </div>
+                    <button id="btnShowScanOptions" class="btn-primary" style="display: flex; align-items: center; gap: 8px;">
+                        <span>📷</span> Escanear Documento
+                    </button>
                 </div>
 
-                <div class="form-card" style="border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                    <h3 style="font-size: 16px; color: #475569; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">1️⃣ ¿Qué vas a subir?</h3>
+                <div id="scanOptionsCard" class="form-card hidden" style="border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px;">
+                    <h3 style="font-size: 16px; color: #475569; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Selecciona tipo de documento</h3>
                     <div class="ocr-tipo-selector">
                         <button type="button" class="ocr-tipo-btn" data-tipo="factura">
                             <span class="ocr-tipo-icon">🧾</span>
-                            <span class="ocr-tipo-label">Factura Proveedor</span>
+                            <span class="ocr-tipo-label">Factura</span>
                         </button>
                         <button type="button" class="ocr-tipo-btn" data-tipo="ticket">
                             <span class="ocr-tipo-icon">🛒</span>
-                            <span class="ocr-tipo-label">Ticket Compra</span>
+                            <span class="ocr-tipo-label">Ticket</span>
                         </button>
                         <button type="button" class="ocr-tipo-btn" data-tipo="albaran">
                             <span class="ocr-tipo-icon">📦</span>
@@ -60,8 +65,11 @@
                         </button>
                         <button type="button" class="ocr-tipo-btn" data-tipo="cierre">
                             <span class="ocr-tipo-icon">💰</span>
-                            <span class="ocr-tipo-label">Cierre / Delivery</span>
+                            <span class="ocr-tipo-label">Cierre</span>
                         </button>
+                    </div>
+                    <div style="margin-top: 15px; text-align: right;">
+                        <button type="button" id="btnCancelScan" class="btn-secondary">Cancelar</button>
                     </div>
                 </div>
 
@@ -125,6 +133,9 @@
                         <button type="button" id="ocrSaveBtn" class="btn-primary" style="flex: 2;" disabled>✓ Guardar en Sistema</button>
                     </div>
                 </div>
+
+                <div id="listaFacturas"></div>
+                <div id="listaAlbaranes"></div>
             </div>
 
             <div id="cierresView" class="view hidden">
@@ -241,7 +252,7 @@
                 <div id="listaCierres"></div>
             </div>
 
-            <div id="comprasView" class="view hidden"><div id="listaFacturas"></div><div id="listaAlbaranes"></div></div>
+            <div id="comprasView" class="view hidden"></div>
 
             <div id="proveedoresView" class="view hidden">
                 <div id="proveedorFormCard" class="form-card hidden">
@@ -359,9 +370,61 @@
                     <h3>📋 Nuevo Escandallo</h3>
                     <form id="escandalloForm">
                         <div class="form-row">
-                            <div class="form-group"><label>Nombre del Plato *</label><input type="text" id="escandalloNombre" required></div>
-                            <div class="form-group"><label>Precio Venta (PVP) *</label><input type="number" id="escandalloPVP" step="0.01" required></div>
+                            <div class="form-group">
+                                <label>Nombre del Plato *</label>
+                                <input type="text" id="escandalloNombre" required placeholder="Ej: Hamburguesa Completa">
+                            </div>
+                            <div class="form-group">
+                                <label>Código (Opcional)</label>
+                                <input type="text" id="escandalloCodigo" placeholder="Ej: PL-001">
+                            </div>
                         </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>PVP con IVA (€) *</label>
+                                <input type="number" id="escandalloPVPConIVA" step="0.01" required oninput="window.app.calcularPVPNeto()">
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo IVA (%) *</label>
+                                <select id="escandalloTipoIVA" required onchange="window.app.calcularPVPNeto()">
+                                    <option value="10" selected>10% (Restauración)</option>
+                                    <option value="21">21% (Alcohol/Otros)</option>
+                                    <option value="4">4% (Superreducido)</option>
+                                    <option value="0">0% (Exento)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>PVP Neto (€)</label>
+                                <input type="number" id="escandalloPVPNeto" step="0.01" readonly style="background-color: #f8f9fa;">
+                            </div>
+                        </div>
+
+                        <div class="escandallo-ingredientes-section" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0;">🧂 Ingredientes</h4>
+                                <button type="button" class="btn-secondary" onclick="window.app.addIngredienteRow()">+ Añadir Ingrediente</button>
+                            </div>
+                            <div id="ingredientesContainer">
+                                <!-- Las filas se añaden dinámicamente -->
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="background: #e8f6f3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label>Coste Total Neto (€)</label>
+                                <input type="number" id="escandalloCosteTotalNeto" readonly style="font-weight: bold;">
+                            </div>
+                            <div class="form-group">
+                                <label>Food Cost (%)</label>
+                                <input type="number" id="escandalloFC" readonly style="font-weight: bold;">
+                            </div>
+                            <div class="form-group">
+                                <label>Margen Bruto (%)</label>
+                                <input type="number" id="escandalloMargen" readonly style="font-weight: bold;">
+                            </div>
+                        </div>
+
                         <div class="form-group"><label>Descripción / Notas</label><textarea id="escandalloNotas"></textarea></div>
                         
                         <div class="form-actions" style="text-align: right;">

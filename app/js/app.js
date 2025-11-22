@@ -29,6 +29,21 @@ export class App {
         // Variables OCR mejoradas
         this.currentPDFText = null;
         this.isPDFWithEmbeddedText = false;
+
+        // Ocultar opciones de escaneo si est�n abiertas
+        const scanOptionsCard = document.getElementById('scanOptionsCard');
+        if (scanOptionsCard) {
+             scanOptionsCard.classList.add('hidden');
+             scanOptionsCard.style.display = 'none';
+        }
+
+        // Mostrar listas de nuevo
+        const listaFacturas = document.getElementById('listaFacturas');
+        const listaAlbaranes = document.getElementById('listaAlbaranes');
+        const recentDocs = document.getElementById('recentDocumentsList');
+        if (listaFacturas) listaFacturas.classList.remove('hidden');
+        if (listaAlbaranes) listaAlbaranes.classList.remove('hidden');
+        if (recentDocs) recentDocs.classList.remove('hidden');
         this.initializeEventListeners();
         this.render();
     }
@@ -66,10 +81,30 @@ export class App {
         if (formCard) {
             formCard.classList.add('hidden');
             formCard.style.display = 'none';
+            
+            // Limpiar estado de edición
+            const form = document.getElementById(`${type}Form`);
+            if (form) {
+                form.reset();
+                delete form.dataset.editId;
+                // Resetear título si existe
+                const title = formCard.querySelector('h3, .card-title');
+                if (title) title.textContent = labels[type].replace('+ ', '');
+            }
         }
         
         if (toggleBtn) {
             toggleBtn.textContent = labels[type] || `+ Nuevo ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            toggleBtn.style.display = ''; // Restaurar visibilidad (por si se ocultó)
+        }
+
+        // Restaurar lista de cierres si se ocultó
+        if (type === 'cierre') {
+            const lista = document.getElementById('listaCierres');
+            if (lista) lista.style.display = 'block';
+            
+            // Resetear pasos del formulario de cierre
+            this.resetCierreForm();
         }
     }
 
@@ -85,13 +120,21 @@ export class App {
                 if (isHidden) {
                     formCard.classList.remove('hidden');
                     formCard.style.display = 'block';
-                    if (toggleBtn) toggleBtn.textContent = '− Cancelar';
                     
-                    // Resetear formulario al abrir
+                    // Lógica específica por tipo
+                    if (type === 'cierre') {
+                        // Ocultar botón "Nuevo Cierre" y la lista para evitar conflictos
+                        if (toggleBtn) toggleBtn.style.display = 'none';
+                        const lista = document.getElementById('listaCierres');
+                        if (lista) lista.style.display = 'none';
+                    } else {
+                        if (toggleBtn) toggleBtn.textContent = '− Cancelar';
+                    }
+                    
+                    // Resetear formulario al abrir (si no es edición, que se gestiona aparte)
                     const form = document.getElementById(`${type}Form`);
-                    if (form) {
+                    if (form && !form.dataset.editId) {
                         form.reset();
-                        delete form.dataset.editId;
                     }
                     
                     if (type === 'cierre') {
@@ -122,6 +165,43 @@ export class App {
             if (el) el.addEventListener(event, handler);
         };
 
+        // Mobile Menu Toggle
+        addSafeListener('mobileMenuBtn', 'click', () => {
+            const navMenu = document.querySelector('.nav-menu');
+            if (navMenu) navMenu.classList.toggle('open');
+        });
+
+        // OCR - Toggle Scan Options
+        addSafeListener('btnShowScanOptions', 'click', () => {
+            const optionsCard = document.getElementById('scanOptionsCard');
+            const listaFacturas = document.getElementById('listaFacturas');
+            const listaAlbaranes = document.getElementById('listaAlbaranes');
+            const recentDocs = document.getElementById('recentDocumentsList');
+            
+            if (optionsCard) {
+                optionsCard.classList.remove('hidden');
+                optionsCard.style.display = 'block';
+            }
+            if (listaFacturas) listaFacturas.classList.add('hidden');
+            if (listaAlbaranes) listaAlbaranes.classList.add('hidden');
+            if (recentDocs) recentDocs.classList.add('hidden');
+        });
+
+        addSafeListener('btnCancelScan', 'click', () => {
+            const optionsCard = document.getElementById('scanOptionsCard');
+            const listaFacturas = document.getElementById('listaFacturas');
+            const listaAlbaranes = document.getElementById('listaAlbaranes');
+            const recentDocs = document.getElementById('recentDocumentsList');
+
+            if (optionsCard) {
+                optionsCard.classList.add('hidden');
+                optionsCard.style.display = 'none';
+            }
+            if (listaFacturas) listaFacturas.classList.remove('hidden');
+            if (listaAlbaranes) listaAlbaranes.classList.remove('hidden');
+            if (recentDocs) recentDocs.classList.remove('hidden');
+        });
+
         // --- DELEGACIÓN DE EVENTOS GLOBAL (CRÍTICO) ---
         // Este oyente maneja todos los botones con 'window.app'
         document.body.addEventListener('click', (e) => {
@@ -132,6 +212,12 @@ export class App {
                 e.target.classList.add('active');
                 this.currentView = e.target.dataset.view;
                 this.render();
+
+                // Close mobile menu if open
+                const navMenu = document.querySelector('.nav-menu');
+                if (navMenu && navMenu.classList.contains('open')) {
+                    navMenu.classList.remove('open');
+                }
             }
 
             // 2. OCR - Selector de Tipo (Factura, Ticket, etc.)
@@ -157,6 +243,9 @@ export class App {
             }
             
             // 3. Botones de Acción (Añadir Nuevo)
+            // Eliminamos la delegación automática por ID para evitar doble ejecución
+            // ya que los botones generados en render() tienen onclick explícito.
+            /*
             const btn = e.target.closest('button');
             if (btn) {
                 if (btn.id === 'toggleCierreForm') window.app.expandForm('cierre');
@@ -166,10 +255,11 @@ export class App {
                 if (btn.id === 'btnCrearInventario') window.app.expandForm('inventario');
                 if (btn.id === 'btnCalcularCOGS') window.app.calcularCOGS();
             }
+            */
 
             // 4. Botones de Stock (Legacy IDs check just in case)
-            if (e.target.id === 'btnCrearInventario') window.app.expandForm('inventario');
-            if (e.target.id === 'btnCalcularCOGS') window.app.calcularCOGS();
+            // if (e.target.id === 'btnCrearInventario') window.app.expandForm('inventario');
+            // if (e.target.id === 'btnCalcularCOGS') window.app.calcularCOGS();
             
             // 5. Botones de Edición Dinámicos (Clases ya existentes)
             if (e.target.classList.contains('btn-edit')) {
@@ -305,6 +395,21 @@ export class App {
         this.currentOCRExtractedData = null;
         this.currentPDFText = null;
         this.isPDFWithEmbeddedText = false;
+
+        // Ocultar opciones de escaneo si est�n abiertas
+        const scanOptionsCard = document.getElementById('scanOptionsCard');
+        if (scanOptionsCard) {
+             scanOptionsCard.classList.add('hidden');
+             scanOptionsCard.style.display = 'none';
+        }
+
+        // Mostrar listas de nuevo
+        const listaFacturas = document.getElementById('listaFacturas');
+        const listaAlbaranes = document.getElementById('listaAlbaranes');
+        const recentDocs = document.getElementById('recentDocumentsList');
+        if (listaFacturas) listaFacturas.classList.remove('hidden');
+        if (listaAlbaranes) listaAlbaranes.classList.remove('hidden');
+        if (recentDocs) recentDocs.classList.remove('hidden');
         
         this.showToast('🔄 Escáner reiniciado');
     }
@@ -798,7 +903,7 @@ export class App {
         const viewMap = {
             'ocr': 'ocrView', 'cierres': 'cierresView', 'compras': 'comprasView',
             'proveedores': 'proveedoresView', 'productos': 'productosView',
-            'escandallos': 'escandalloView', 'inventario': 'inventarioView',
+            'escandallos': 'escandallosView', 'inventario': 'inventarioView',
             'delivery': 'deliveryView', 'pnl': 'pnlView'
         };
         const currentViewId = viewMap[this.currentView];
@@ -852,7 +957,7 @@ export class App {
 
         // 3. Renderizar Contenido
         switch(this.currentView) {
-            case 'ocr': this.renderRecentDocuments(); break;
+            case 'ocr': this.renderCompras(); break;
             case 'cierres': this.renderCierres(); this.collapseForm('cierre'); break;
             case 'compras': this.renderCompras(); break;
             case 'proveedores': this.renderProveedores(); this.collapseForm('proveedor'); break;
@@ -862,6 +967,81 @@ export class App {
             case 'delivery': this.renderDelivery(); break;
             case 'pnl': this.renderPnL(); break;
         }
+    }
+
+    abrirModalEditarCierre(id) {
+        const cierre = this.db.cierres.find(c => c.id === id);
+        if (!cierre) return;
+
+        // 1. Abrir formulario
+        this.expandForm('cierre');
+        
+        // 2. Llenar datos básicos
+        document.getElementById('cierreFecha').value = cierre.fecha;
+        document.getElementById('cierreTurno').value = cierre.turno;
+        
+        // 3. Simular paso 1 -> paso 2
+        this.iniciarCierre();
+        
+        // 4. Llenar desglose de efectivo
+        if (cierre.desgloseEfectivo) {
+            Object.keys(cierre.desgloseEfectivo).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) el.value = cierre.desgloseEfectivo[key];
+            });
+        }
+        
+        // 5. Llenar Datafonos
+        const containerDatafonos = document.getElementById('datafonosContainer');
+        if (containerDatafonos) {
+            containerDatafonos.innerHTML = '';
+            if (cierre.datafonos && cierre.datafonos.length > 0) {
+                cierre.datafonos.forEach(d => {
+                    const row = document.createElement('div');
+                    row.className = 'datafono-item';
+                    row.innerHTML = `
+                        <input type="text" class="datafono-nombre" placeholder="Nombre (ej: Visa)" value="${d.nombre}">
+                        <input type="number" class="datafono-importe" step="0.01" placeholder="0.00" value="${d.importe}">
+                        <button type="button" class="btn-delete-row" onclick="this.parentElement.remove(); window.app.calcularTotalesCierre()">🗑️</button>
+                    `;
+                    containerDatafonos.appendChild(row);
+                });
+            }
+        }
+
+        // 6. Llenar Otros Medios
+        const containerOtros = document.getElementById('otrosMediosContainer');
+        if (containerOtros) {
+            containerOtros.innerHTML = '';
+            if (cierre.otrosMedios && cierre.otrosMedios.length > 0) {
+                cierre.otrosMedios.forEach(m => {
+                    const row = document.createElement('div');
+                    row.className = 'otro-medio-item';
+                    row.innerHTML = `
+                        <input type="text" class="otro-medio-tipo" placeholder="Tipo (ej: Glovo)" value="${m.tipo}">
+                        <input type="number" class="otro-medio-importe" step="0.01" placeholder="0.00" value="${m.importe}">
+                        <button type="button" class="btn-delete-row" onclick="this.parentElement.remove(); window.app.calcularTotalesCierre()">🗑️</button>
+                    `;
+                    containerOtros.appendChild(row);
+                });
+            }
+        }
+
+        // 7. Llenar POS
+        if (document.getElementById('posEfectivo')) document.getElementById('posEfectivo').value = cierre.posEfectivo || 0;
+        if (document.getElementById('posTarjetas')) document.getElementById('posTarjetas').value = cierre.posTarjetas || 0;
+        if (document.getElementById('posTickets')) document.getElementById('posTickets').value = cierre.posTickets || 0;
+        
+        // 8. Configurar estado de edición
+        const form = document.getElementById('cierreForm');
+        form.dataset.editId = cierre.id;
+        const btn = document.getElementById('toggleCierreForm');
+        if(btn) btn.textContent = 'Guardar Cambios';
+        
+        // Recalcular totales
+        this.calcularTotalesCierre();
+        
+        this.showToast('✏️ Editando cierre del ' + cierre.fecha);
     }
 
     renderCierres() {
@@ -1880,6 +2060,21 @@ export class App {
                     document.getElementById('ocrPreviewImg').src = imageData;
                 } else {
                     this.isPDFWithEmbeddedText = false;
+
+        // Ocultar opciones de escaneo si est�n abiertas
+        const scanOptionsCard = document.getElementById('scanOptionsCard');
+        if (scanOptionsCard) {
+             scanOptionsCard.classList.add('hidden');
+             scanOptionsCard.style.display = 'none';
+        }
+
+        // Mostrar listas de nuevo
+        const listaFacturas = document.getElementById('listaFacturas');
+        const listaAlbaranes = document.getElementById('listaAlbaranes');
+        const recentDocs = document.getElementById('recentDocumentsList');
+        if (listaFacturas) listaFacturas.classList.remove('hidden');
+        if (listaAlbaranes) listaAlbaranes.classList.remove('hidden');
+        if (recentDocs) recentDocs.classList.remove('hidden');
                     const imageData = await this.convertPDFToImage(file);
                     this.currentImageData = imageData;
                     document.getElementById('ocrPreviewImg').src = imageData;
@@ -2512,120 +2707,148 @@ export class App {
         // EXTRACCIÓN SEMÁNTICA CON REGEX (no por posición)
         
         // 1. CIF/NIF PRIMERO (buscar en zona proveedor si está disponible)
-        // CIF/NIF español: Letra inicial (A-H, J-N, P-S, U-W) + 7 dígitos + dígito de control
+        // CIF/NIF español: Letra inicial + 7 dígitos + dígito de control
         const textoBusquedaCIF = tieneZonas && zonaProveedor ? zonaProveedor : text;
         const cifPatterns = [
-            /(?:NIF|CIF)[:\s]*([A-HJ-NP-SUVW][0-9]{7}[0-9A-Z])/gi,  // Con etiqueta NIF/CIF
-            /\b([A-HJ-NP-SUVW][0-9]{7}[0-9A-Z])\b/gi  // Sin etiqueta (buscar todas las ocurrencias)
+            /(?:NIF|CIF|RUT)[:\s]*([A-Z][0-9]{7}[0-9A-Z])/gi,  // Con etiqueta
+            /\b([A-Z][0-9]{7}[0-9A-Z])\b/gi,  // Estándar (B12345678)
+            /\b([A-Z]-[0-9]{7}-[0-9A-Z])\b/gi // Con guiones
         ];
         
         for (const pattern of cifPatterns) {
             const matches = [...textoBusquedaCIF.matchAll(pattern)];
             for (const match of matches) {
-                const cifValue = match[1].toUpperCase();
-                // Validar formato: letra + 7 números + dígito/letra control
-                if (cifValue.match(/^[A-HJ-NP-SUVW][0-9]{7}[0-9A-Z]$/)) {
+                let cifValue = match[1].toUpperCase().replace(/[^A-Z0-9]/g, ''); // Limpiar guiones
+                // Validar formato estricto: letra + 7 números + dígito/letra control
+                if (cifValue.match(/^[A-Z][0-9]{7}[0-9A-Z]$/)) {
                     data.nif = { value: cifValue, confidence: confidence };
-                    console.log('✓ CIF/NIF detectado:', cifValue, tieneZonas ? '(desde zona proveedor)' : '');
+                    console.log('✓ CIF/NIF detectado:', cifValue);
                     break;
                 }
             }
             if (data.nif.value) break;
         }
         
-        // 2. PROVEEDOR/EMPRESA (buscar con múltiples patrones MEJORADOS)
-        // Patrón 0: Si tenemos zona proveedor, buscar primero ahí
-        if (tieneZonas && zonaProveedor && !data.proveedor.value) {
-            // Buscar línea con forma societaria: S.L., S.A., SLU, S.L.L., S.COOP, etc.
-            const lineasProveedor = zonaProveedor.split(/\s{2,}|\n/).filter(l => l.trim().length > 0);
-            for (const linea of lineasProveedor) {
-                const lineaTrim = linea.trim();
-                // REFUERZO: Si tiene forma societaria, ES nombre de empresa
-                if (lineaTrim.match(/\b(S\.?L\.?U\.?|S\.?L\.?L\.?|S\.?L\.?|S\.?A\.?|S\.?COOP\.?|S\.?A\.?T\.?|S\.?COM\.?|BCN|GROUP|FOODS|DELIVERY)\b/i) && 
-                    lineaTrim.length > 4 && lineaTrim.length < 100 &&
-                    !lineaTrim.match(/^(Cliente|Factura|Invoice|Total|Fecha)/i)) {
-                    data.proveedor = { value: lineaTrim, confidence: confidence };
-                    break;
-                }
-                // Si no tiene forma societaria pero es nombre en mayúsculas
-                if (!data.proveedor.value && lineaTrim.match(/^[A-ZÁÉÍÓÚÑ]/i) && 
-                    lineaTrim.length > 4 && lineaTrim.length < 60 &&
-                    !lineaTrim.match(/^(Cliente|Factura|Invoice|Total|Fecha|Tel|Email|NIF|CIF)/i)) {
-                    data.proveedor = { value: lineaTrim, confidence: confidence * 0.9 };
-                    console.log('✓ Proveedor detectado (zona proveedor, nombre capitalizado):', lineaTrim);
-                    break;
-                }
-            }
-        }
+        // 2. PROVEEDOR/EMPRESA (Lógica Mejorada)
         
-        // Patrón 1: Buscar línea antes del CIF (PRIORIDAD ALTA)
-        if (data.nif.value && !data.proveedor.value) {
-            const indexCIF = text.indexOf(data.nif.value);
-            if (indexCIF > 0) {
-                const textBeforeCIF = text.substring(0, indexCIF);
-                const lineasAntes = textBeforeCIF.split('\n').reverse();
+        // ESTRATEGIA A: Buscar sufijos societarios (S.L., S.A., etc.) -> ALTA PROBABILIDAD
+        // Esta es la prueba más fuerte de que una línea es una empresa
+        if (!data.proveedor.value) {
+            // Regex mejorada para capturar variaciones y sufijos comunes
+            const sufijosSocietarios = /\b(S\.?L\.?U\.?|S\.?L\.?L\.?|S\.?L\.?|S\.?A\.?U\.?|S\.?A\.?|S\.?C\.?|S\.?COOP\.?|C\.?B\.?|S\.?R\.?L\.?|LIMITED|LTD|GMBH|S\.?A\.?S\.?)\b/i;
+            const lineas = text.split('\n');
+            
+            // Buscar en las primeras 20 líneas (cabecera)
+            for (let i = 0; i < Math.min(20, lineas.length); i++) {
+                let linea = lineas[i].trim();
                 
-                for (let i = 0; i < Math.min(8, lineasAntes.length); i++) {
-                    const linea = lineasAntes[i].trim();
-                    // Buscar líneas que parezcan nombre de empresa
-                    // EXCLUIR: palabras clave de factura, "Cliente:", emails, URLs, direcciones obvias
-                    if (linea.length > 3 && linea.length < 100 && 
-                        !linea.match(/^(factura|invoice|fecha|total|cliente:|email|www\.|http|tel[eé]fono|calle|avenida|plaza|carrer|c\/)/i) &&
-                        !linea.match(/^\d+[\.,]\d+\s*€?$/) && // No es un número/precio
-                        !linea.match(/^\+?\d+/) && // No empieza con teléfono
-                        (linea.match(/[A-ZÁÉÍÓÚÑ]{3,}/) || linea.match(/S\.?L\.?|SL|S\.?A\.?|SA|BCN|GROUP|FOODS|RESTAURANT|DELIVERY|DELIVERYIFY/i))) {
-                        data.proveedor = { value: linea, confidence: confidence };
-                        console.log('✓ Proveedor detectado (antes de CIF):', linea);
+                // Limpiar caracteres extraños al inicio (ej: "• Empresa S.L.")
+                linea = linea.replace(/^[^A-Za-z0-9Á-Úá-ú]+/, '');
+
+                if (linea.length > 3 && linea.length < 100 && sufijosSocietarios.test(linea)) {
+                    // Limpiar prefijos comunes si existen
+                    let nombreLimpio = linea.replace(/^(Proveedor|Empresa|Razón Social|Cliente|De|From)[:\s]*/i, '').trim();
+                    
+                    // Lógica extra: Si la línea contiene el sufijo pero sigue con basura (ej: "EMPRESA S.L. - CIF..."), cortar
+                    const matchSufijo = nombreLimpio.match(sufijosSocietarios);
+                    if (matchSufijo) {
+                        const finSufijo = matchSufijo.index + matchSufijo[0].length;
+                        // Cortar todo lo que venga después del sufijo si parece basura o datos extra
+                        // (Ej: "EMPRESA S.L. - 12345" -> "EMPRESA S.L.")
+                        nombreLimpio = nombreLimpio.substring(0, finSufijo);
+                    }
+
+                    // Evitar falsos positivos (ej: "Inscrita en el registro S.L...")
+                    if (!nombreLimpio.match(/^(Inscrita|Registro|Mercantil|Tomo|Libro|Folio|Página|Page|Hoja)/i)) {
+                        data.proveedor = { value: nombreLimpio.trim(), confidence: confidence * 0.95 };
+                        console.log('✓ Proveedor detectado (Sufijo Societario):', nombreLimpio);
                         break;
                     }
                 }
             }
         }
-        
-        // Patrón 1.5: Buscar "NOMBRE S.L." o "NOMBRE S.A." en líneas mixtas (con dirección)
-        // Para casos como: "DELIVERYIFY S.L. Carrer Rossend Arús 20..."
-        if (!data.proveedor.value) {
-            // Buscar patrón: PALABRAS_MAYUSCULAS S.L. (o SL, S.A., SA) seguido de dirección
-            const empresaMixta = text.match(/\b([A-ZÁÉÍÓÚÑ][A-ZÀ-ÿa-z0-9\s&\.\-]{3,50}?\s*(?:S\.?L\.?|S\.?A\.?))\s+(?:Carrer|Calle|Avda|Avenida)/i);
-            if (empresaMixta && empresaMixta[1]) {
-                const nombreEmpresa = empresaMixta[1].trim();
-                data.proveedor = { value: nombreEmpresa, confidence: confidence };
-                console.log('✓ Proveedor detectado (línea mixta con dirección):', nombreEmpresa);
+
+        // ESTRATEGIA B: Buscar línea antes del CIF (si tenemos CIF)
+        if (data.nif.value && !data.proveedor.value) {
+            const indexCIF = text.indexOf(data.nif.value);
+            if (indexCIF >= 0) {
+                // 1. Buscar en la MISMA línea del CIF (antes del CIF)
+                const lineStart = text.lastIndexOf('\n', indexCIF);
+                const lineEnd = text.indexOf('\n', indexCIF);
+                const lineaCIF = text.substring(lineStart + 1, lineEnd !== -1 ? lineEnd : text.length).trim();
+                
+                // Si la línea empieza con texto y luego viene el CIF
+                const cifIndexInLine = lineaCIF.indexOf(data.nif.value);
+                if (cifIndexInLine > 3) {
+                    const posibleNombre = lineaCIF.substring(0, cifIndexInLine).trim().replace(/[-:,]+$/, '').trim();
+                    if (posibleNombre.length > 3 && !posibleNombre.match(/^(NIF|CIF|RUT|Tel)/i)) {
+                         data.proveedor = { value: posibleNombre, confidence: confidence * 0.9 };
+                         console.log('✓ Proveedor detectado (Misma línea CIF):', posibleNombre);
+                    }
+                }
+
+                // 2. Si no encontramos en la misma línea, buscar en líneas ANTERIORES
+                if (!data.proveedor.value) {
+                    const textBeforeCIF = text.substring(0, indexCIF);
+                    const lineasAntes = textBeforeCIF.split('\n').reverse();
+                    
+                    for (let i = 0; i < Math.min(5, lineasAntes.length); i++) {
+                        const linea = lineasAntes[i].trim();
+                        // Criterios para ser nombre de empresa:
+                        if (linea.length > 3 && linea.length < 80 && 
+                            !linea.match(/^(factura|invoice|fecha|total|cliente|nif|cif|tel|fax|email|web|pag|hoja)/i) &&
+                            !linea.match(/\b(Calle|C\/|Avda|Avenida|Plaza|Paseo|Carrer)\b/i) &&
+                            !linea.includes('@') && !linea.includes('www.')) {
+                            
+                            data.proveedor = { value: linea, confidence: confidence * 0.8 };
+                            console.log('✓ Proveedor detectado (Línea sobre CIF):', linea);
+                            break;
+                        }
+                    }
+                }
             }
         }
         
-        // Patrón 2: Buscar después de palabras clave "Proveedor:", "Empresa:", "Razón Social:"
-        // EXCLUIR explícitamente "Cliente:" (que somos nosotros)
+        // ESTRATEGIA C: Buscar palabras clave explícitas
         if (!data.proveedor.value) {
             const proveedorMatch = text.match(/(?:Proveedor|Empresa|Razón\s+Social|Emisor)[:\s]+([A-ZÀ-ÿ0-9][^\n]{3,80})/i);
-
             if (proveedorMatch && proveedorMatch[1]) {
-                const nombre = proveedorMatch[1].trim();
-                // Limpiar posibles artefactos al final
-                const nombreLimpio = nombre.replace(/\s+(NIF|CIF|Tel[eé]fono).*$/i, '').trim();
-                if (nombreLimpio.length > 2) {
-                    data.proveedor = { value: nombreLimpio, confidence: confidence };
-                    console.log('✓ Proveedor detectado (palabra clave):', nombreLimpio);
-                }
-
+                const nombre = proveedorMatch[1].trim().replace(/\s+(NIF|CIF|Tel).*$/i, '');
+                data.proveedor = { value: nombre, confidence: confidence * 0.85 };
+                console.log('✓ Proveedor detectado (Etiqueta):', nombre);
             }
         }
-        
-        // Patrón 3: Buscar en las primeras 10 líneas del documento (cabecera) - MANTENER COMPLETO
+
+        // ESTRATEGIA D: Email corporativo (dominio suele ser la empresa)
         if (!data.proveedor.value) {
-            const primerasLineas = text.split('\n').slice(0, 10);
-            for (const linea of primerasLineas) {
-                const lineaTrim = linea.trim();
-                // Buscar cualquier línea que tenga al menos 2 palabras capitalizadas
-                const palabrasMayusculas = lineaTrim.match(/\b[A-ZÁÉÍÓÚÑ][A-ZÀ-ÿ]+\b/g);
-                if (palabrasMayusculas && palabrasMayusculas.length >= 2 && 
-                    lineaTrim.length > 5 && lineaTrim.length < 100 &&
-                    !lineaTrim.match(/^(factura|invoice|fecha|cliente)/i)) {
-                    data.proveedor = { value: lineaTrim, confidence: confidence * 0.6 };
-                    console.log('⚠️ Proveedor detectado (último recurso):', lineaTrim);
-                    break;
+            const emailMatch = text.match(/\b[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/);
+            if (emailMatch && emailMatch[1]) {
+                const dominio = emailMatch[1].split('.')[0]; // "empresa" de "empresa.com"
+                if (dominio.length > 3 && !['gmail', 'hotmail', 'yahoo', 'outlook'].includes(dominio.toLowerCase())) {
+                    // Capitalizar primera letra
+                    const nombre = dominio.charAt(0).toUpperCase() + dominio.slice(1);
+                    data.proveedor = { value: nombre, confidence: confidence * 0.5 }; // Confianza baja, es una estimación
+                    console.log('⚠️ Proveedor estimado por dominio email:', nombre);
                 }
             }
+        }
+
+        // ESTRATEGIA E: Línea en MAYÚSCULAS (Fallback)
+        // Muchas empresas ponen su nombre en mayúsculas en la cabecera
+        if (!data.proveedor.value) {
+             const lineas = text.split('\n');
+             for (let i = 0; i < Math.min(10, lineas.length); i++) {
+                const linea = lineas[i].trim();
+                // Solo letras mayúsculas, espacios y quizás . o &
+                if (linea.length > 4 && linea.length < 50 && /^[A-ZÁ-Ú\s\.\&]+$/.test(linea)) {
+                     // Evitar palabras comunes que pueden estar en mayúsculas
+                     if (!linea.match(/^(FACTURA|INVOICE|ALBARAN|PRESUPUESTO|TOTAL|FECHA|CLIENTE|PROVEEDOR|PAGINA|HOJA)/i)) {
+                         data.proveedor = { value: linea, confidence: confidence * 0.6 };
+                         console.log('⚠️ Proveedor estimado (Mayúsculas):', linea);
+                         break;
+                     }
+                }
+             }
         }
         
         // 3. NÚMERO DE FACTURA (patrones MEJORADOS) - MANTENER COMPLETO con letras, números, guiones, barras
@@ -3386,6 +3609,12 @@ export class App {
                 case 'albaranes':
                     if (this.abrirModalEditarAlbaran) this.abrirModalEditarAlbaran(item);
                     break;
+                case 'cierres':
+                    if (this.abrirModalEditarCierre) this.abrirModalEditarCierre(item.id);
+                    break;
+                case 'escandallos':
+                    if (this.abrirModalEditarEscandallo) this.abrirModalEditarEscandallo(item.id);
+                    break;
                 default:
                     console.warn(`Edición no implementada para ${collection}`);
                     this.showToast(`⚠️ La edición de ${collection} aún no está disponible`);
@@ -3965,6 +4194,27 @@ export class App {
         });
     }
 
+    iniciarCierre() {
+        const fecha = document.getElementById('cierreFecha').value;
+        const turno = document.getElementById('cierreTurno').value;
+
+        if (!fecha) {
+            this.showToast('⚠️ Selecciona una fecha', true);
+            return;
+        }
+
+        // Ocultar paso 1 y mostrar paso 2
+        const step1 = document.getElementById('cierreStep1');
+        const form = document.getElementById('cierreForm');
+        
+        if (step1) step1.classList.add('hidden');
+        if (form) form.classList.remove('hidden');
+        
+        // Inicializar eventos y cálculos
+        this.conectarEventosCierre();
+        this.calcularTotalesCierre();
+    }
+
     handleCierreSubmit(e) {
         e.preventDefault();
         const form = e.target;
@@ -3980,6 +4230,16 @@ export class App {
         // Recopilar billetes y monedas (usamos ids en el cálculo, no aquí)
         const efectivoContado = readSafe('totalEfectivoDisplay', 'float'); // Lee el total calculado del display
         
+        // Recopilar desglose de efectivo (NUEVO: Guardar cantidades de billetes/monedas)
+        const desgloseEfectivo = {};
+        const idsEfectivo = ['b500', 'b200', 'b100', 'b50', 'b20', 'b10', 'b5', 'm2', 'm1', 'm050', 'm020', 'm010', 'm005', 'm002', 'm001'];
+        idsEfectivo.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.value && parseFloat(el.value) > 0) {
+                desgloseEfectivo[id] = parseFloat(el.value);
+            }
+        });
+
         // Recopilar datafonos
         const datafonos = [];
         document.querySelectorAll('.datafono-item').forEach(item => {
@@ -4022,6 +4282,7 @@ export class App {
             turno: document.getElementById('cierreTurno').value,
             
             efectivoContado: efectivoContado,
+            desgloseEfectivo: desgloseEfectivo,
             datafonos: datafonos,
             totalDatafonos: totalDatafonos,
             otrosMedios: otrosMedios,
@@ -4202,12 +4463,37 @@ export class App {
     // resetCierreForm() { /* ... */ } 
     // Si la función resetCierreForm NO existe, hay que añadirla:
     resetCierreForm() {
-        document.getElementById('cierreForm').reset();
-        document.getElementById('datafonosContainer').innerHTML = '';
-        document.getElementById('otrosMediosContainer').innerHTML = '';
-        document.getElementById('totalEfectivoDisplay').textContent = '0.00 €';
-        document.getElementById('resumenTbody').innerHTML = ''; 
+        const form = document.getElementById('cierreForm');
+        if (form) {
+            form.reset();
+            delete form.dataset.editId;
+        }
+        
+        const datafonosContainer = document.getElementById('datafonosContainer');
+        if (datafonosContainer) datafonosContainer.innerHTML = '';
+        
+        const otrosMediosContainer = document.getElementById('otrosMediosContainer');
+        if (otrosMediosContainer) otrosMediosContainer.innerHTML = '';
+        
+        const totalEfectivoDisplay = document.getElementById('totalEfectivoDisplay');
+        if (totalEfectivoDisplay) totalEfectivoDisplay.textContent = '0.00 €';
+        
+        const resumenTbody = document.getElementById('resumenTbody');
+        if (resumenTbody) resumenTbody.innerHTML = ''; 
+        
         this.renderDatosPOS(); 
+
+        // Resetear pasos
+        const step1 = document.getElementById('cierreStep1');
+        if (step1) step1.classList.remove('hidden');
+        if (form) form.classList.add('hidden');
+        
+        // Resetear título
+        const formCard = document.getElementById('cierreFormCard');
+        if (formCard) {
+            const title = formCard.querySelector('h3, .card-title');
+            if (title) title.textContent = 'Nuevo Cierre de Caja';
+        }
     }
 
     // --- NUEVAS FUNCIONES ---
@@ -4247,6 +4533,21 @@ export class App {
         this.currentOCRExtractedData = null;
         this.currentPDFText = null;
         this.isPDFWithEmbeddedText = false;
+
+        // Ocultar opciones de escaneo si est�n abiertas
+        const scanOptionsCard = document.getElementById('scanOptionsCard');
+        if (scanOptionsCard) {
+             scanOptionsCard.classList.add('hidden');
+             scanOptionsCard.style.display = 'none';
+        }
+
+        // Mostrar listas de nuevo
+        const listaFacturas = document.getElementById('listaFacturas');
+        const listaAlbaranes = document.getElementById('listaAlbaranes');
+        const recentDocs = document.getElementById('recentDocumentsList');
+        if (listaFacturas) listaFacturas.classList.remove('hidden');
+        if (listaAlbaranes) listaAlbaranes.classList.remove('hidden');
+        if (recentDocs) recentDocs.classList.remove('hidden');
         
         this.showToast('🔄 Escáner reiniciado');
     }
@@ -4740,7 +5041,7 @@ export class App {
         const viewMap = {
             'ocr': 'ocrView', 'cierres': 'cierresView', 'compras': 'comprasView',
             'proveedores': 'proveedoresView', 'productos': 'productosView',
-            'escandallos': 'escandalloView', 'inventario': 'inventarioView',
+            'escandallos': 'escandallosView', 'inventario': 'inventarioView',
             'delivery': 'deliveryView', 'pnl': 'pnlView'
         };
         const currentViewId = viewMap[this.currentView];
@@ -4794,7 +5095,7 @@ export class App {
 
         // 3. Renderizar Contenido
         switch(this.currentView) {
-            case 'ocr': this.renderRecentDocuments(); break;
+            case 'ocr': this.renderCompras(); break;
             case 'cierres': this.renderCierres(); this.collapseForm('cierre'); break;
             case 'compras': this.renderCompras(); break;
             case 'proveedores': this.renderProveedores(); this.collapseForm('proveedor'); break;
@@ -4804,6 +5105,81 @@ export class App {
             case 'delivery': this.renderDelivery(); break;
             case 'pnl': this.renderPnL(); break;
         }
+    }
+
+    abrirModalEditarCierre(id) {
+        const cierre = this.db.cierres.find(c => c.id === id);
+        if (!cierre) return;
+
+        // 1. Abrir formulario
+        this.expandForm('cierre');
+        
+        // 2. Llenar datos básicos
+        document.getElementById('cierreFecha').value = cierre.fecha;
+        document.getElementById('cierreTurno').value = cierre.turno;
+        
+        // 3. Simular paso 1 -> paso 2
+        this.iniciarCierre();
+        
+        // 4. Llenar desglose de efectivo
+        if (cierre.desgloseEfectivo) {
+            Object.keys(cierre.desgloseEfectivo).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) el.value = cierre.desgloseEfectivo[key];
+            });
+        }
+        
+        // 5. Llenar Datafonos
+        const containerDatafonos = document.getElementById('datafonosContainer');
+        if (containerDatafonos) {
+            containerDatafonos.innerHTML = '';
+            if (cierre.datafonos && cierre.datafonos.length > 0) {
+                cierre.datafonos.forEach(d => {
+                    const row = document.createElement('div');
+                    row.className = 'datafono-item';
+                    row.innerHTML = `
+                        <input type="text" class="datafono-nombre" placeholder="Nombre (ej: Visa)" value="${d.nombre}">
+                        <input type="number" class="datafono-importe" step="0.01" placeholder="0.00" value="${d.importe}">
+                        <button type="button" class="btn-delete-row" onclick="this.parentElement.remove(); window.app.calcularTotalesCierre()">🗑️</button>
+                    `;
+                    containerDatafonos.appendChild(row);
+                });
+            }
+        }
+
+        // 6. Llenar Otros Medios
+        const containerOtros = document.getElementById('otrosMediosContainer');
+        if (containerOtros) {
+            containerOtros.innerHTML = '';
+            if (cierre.otrosMedios && cierre.otrosMedios.length > 0) {
+                cierre.otrosMedios.forEach(m => {
+                    const row = document.createElement('div');
+                    row.className = 'otro-medio-item';
+                    row.innerHTML = `
+                        <input type="text" class="otro-medio-tipo" placeholder="Tipo (ej: Glovo)" value="${m.tipo}">
+                        <input type="number" class="otro-medio-importe" step="0.01" placeholder="0.00" value="${m.importe}">
+                        <button type="button" class="btn-delete-row" onclick="this.parentElement.remove(); window.app.calcularTotalesCierre()">🗑️</button>
+                    `;
+                    containerOtros.appendChild(row);
+                });
+            }
+        }
+
+        // 7. Llenar POS
+        if (document.getElementById('posEfectivo')) document.getElementById('posEfectivo').value = cierre.posEfectivo || 0;
+        if (document.getElementById('posTarjetas')) document.getElementById('posTarjetas').value = cierre.posTarjetas || 0;
+        if (document.getElementById('posTickets')) document.getElementById('posTickets').value = cierre.posTickets || 0;
+        
+        // 8. Configurar estado de edición
+        const form = document.getElementById('cierreForm');
+        form.dataset.editId = cierre.id;
+        const btn = document.getElementById('toggleCierreForm');
+        if(btn) btn.textContent = 'Guardar Cambios';
+        
+        // Recalcular totales
+        this.calcularTotalesCierre();
+        
+        this.showToast('✏️ Editando cierre del ' + cierre.fecha);
     }
 
     renderCierres() {
@@ -4832,61 +5208,44 @@ export class App {
             const tarjetasReal = c.totalDatafonos || 0;
             const deltaTarjetas = tarjetasReal - tarjetasPOS;
             
-            // Preparar filas condicionales (Bizum/Transferencias)
-            const bizumPOS = c.posBizum || 0;
-            const bizumReal = c.otrosMedios ? (c.otrosMedios.find(m => m.tipo === 'Bizum')?.importe || 0) : 0;
-            const deltaBizum = bizumReal - bizumPOS;
-            let bizumRow = '';
-            if (bizumReal > 0 || bizumPOS > 0) {
-                bizumRow = `
-                <tr>
-                    <td>📲 Bizum</td>
-                    <td>${bizumPOS.toFixed(2)} €</td>
-                    <td>${bizumReal.toFixed(2)} €</td>
-                    <td class="${this.getDeltaClass(deltaBizum)}">${deltaBizum >= 0 ? '+' : ''}${deltaBizum.toFixed(2)} €</td>
-                </tr>`;
-            }
-
-            const transPOS = c.posTransferencias || 0;
-            const transReal = c.otrosMedios ? (c.otrosMedios.find(m => m.tipo === 'Transferencia')?.importe || 0) : 0;
-            const deltaTrans = transReal - transPOS;
-            let transRow = '';
-            if (transReal > 0 || transPOS > 0) {
-                transRow = `
-                <tr>
-                    <td>🏦 Transferencias</td>
-                    <td>${transPOS.toFixed(2)} €</td>
-                    <td>${transReal.toFixed(2)} €</td>
-                    <td class="${this.getDeltaClass(deltaTrans)}">${deltaTrans >= 0 ? '+' : ''}${deltaTrans.toFixed(2)} €</td>
-                </tr>`;
-            }
-
-            // Otros medios varios
+            // Preparar filas condicionales (Bizum/Transferencias/Otros)
             let otrosRows = '';
             if (c.otrosMedios) {
-                c.otrosMedios
-                    .filter(m => m.tipo !== 'Bizum' && m.tipo !== 'Transferencia')
-                    .forEach(m => {
-                        otrosRows += `
-                        <tr>
-                            <td>💰 ${m.tipo}</td>
-                            <td>–</td>
-                            <td>${m.importe.toFixed(2)} €</td>
-                            <td class="delta-cero">–</td>
-                        </tr>`;
-                    });
+                c.otrosMedios.forEach(m => {
+                    // Intentar recuperar el valor POS si se guardó (actualmente no se guarda desglosado en DB plana, asumimos 0 o mejora futura)
+                    // Para visualización simple:
+                    const posVal = 0; // TODO: Guardar desglose POS en DB
+                    const realVal = m.importe;
+                    const delta = realVal - posVal;
+                    
+                    // Estilo especial para Dinero B
+                    let nombreMostrar = m.tipo;
+                    let estiloExtra = '';
+                    if (m.tipo === 'Dinero B (sin IVA)') {
+                        nombreMostrar = '💵 Dinero B';
+                        estiloExtra = 'background-color: #fff3cd;';
+                    }
+
+                    otrosRows += `
+                    <tr style="${estiloExtra}">
+                        <td>${nombreMostrar}</td>
+                        <td>${posVal.toFixed(2)} €</td>
+                        <td>${realVal.toFixed(2)} €</td>
+                        <td style="color: ${this.getColor(delta)}">${delta >= 0 ? '+' : ''}${delta.toFixed(2)} €</td>
+                    </tr>`;
+                });
             }
             
             // Resumen compacto
             const resumenCompacto = `POS: ${c.totalPos.toFixed(2)} €  |  REAL: ${c.totalReal.toFixed(2)} €  |  Δ: ${c.descuadreTotal >= 0 ? '+' : ''}${c.descuadreTotal.toFixed(2)} €`;
             
-            // Banda de resultado
+            // Banda de resultado (Estilo idéntico al modal de cierre)
             const bandaResultado = cuadra ? `
-                <div class="cierre-banda-cuadrado">
+                <div style="margin-top: 15px; padding: 15px; background: #d4edda; color: #155724; border-radius: 8px; text-align: center; font-weight: 600; border: 1px solid #c3e6cb;">
                     ✔ Cierre cuadrado (Real ${c.totalReal.toFixed(2)} € – POS ${c.totalPos.toFixed(2)} €)
                 </div>
             ` : `
-                <div class="cierre-banda-descuadre">
+                <div style="margin-top: 15px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 8px; text-align: center; font-weight: 600; border: 1px solid #f5c6cb;">
                     🔍 Descuadre total: <strong>${Math.abs(c.descuadreTotal).toFixed(2)} €</strong> (Real ${c.totalReal.toFixed(2)} € – POS ${c.totalPos.toFixed(2)} €)
                 </div>
             `;
@@ -4902,7 +5261,7 @@ export class App {
                     </div>
                     <div class="cierre-header-derecha">
                         <div class="cierre-badge-v2 ${badgeClass}">${badgeText}</div>
-                        <button class="btn-edit" onclick="window.app.editItem('cierres', ${c.id})" title="Editar">✏️</button>
+                        <button class="btn-edit" onclick="window.app.abrirModalEditarCierre(${c.id})" title="Editar">✏️</button>
                         <button class="btn-delete" onclick="window.app.deleteItem('cierres', ${c.id})" title="Eliminar">🗑️</button>
                         <button class="btn-toggle-detalle" onclick="this.closest('.cierre-card-compacta').classList.toggle('detalle-visible')" title="Ver detalle">▼</button>
                     </div>
@@ -4910,43 +5269,41 @@ export class App {
                 
                 <div class="cierre-detalle-desplegable">
                     <div class="cierre-tabla-wrapper">
-                        <table class="cierre-tabla-metodos">
+                        <table class="cierre-tabla-metodos" style="width: 100%; border-collapse: collapse; font-size: 14px;">
                             <thead>
-                                <tr>
-                                    <th>Método</th>
-                                    <th>POS declarado</th>
-                                    <th>Real contado</th>
-                                    <th>Diferencia</th>
+                                <tr style="background: #f1f3f5; font-weight: 600; text-align: left;">
+                                    <th style="padding: 10px;">MÉTODO</th>
+                                    <th style="padding: 10px;">POS DECLARADO</th>
+                                    <th style="padding: 10px;">REAL CONTADO</th>
+                                    <th style="padding: 10px;">DIFERENCIA</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>💶 Efectivo</td>
-                                    <td>${efectivoPOS > 0 ? efectivoPOS.toFixed(2) + ' €' : '–'}</td>
-                                    <td>${efectivoReal.toFixed(2)} €</td>
-                                    <td class="${this.getDeltaClass(deltaEfectivo)}">${deltaEfectivo >= 0 ? '+' : ''}${deltaEfectivo.toFixed(2)} €</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">💶 Efectivo</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${efectivoPOS.toFixed(2)} €</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${efectivoReal.toFixed(2)} €</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee; color: ${this.getColor(deltaEfectivo)}">${deltaEfectivo >= 0 ? '+' : ''}${deltaEfectivo.toFixed(2)} €</td>
                                 </tr>
                                 <tr>
-                                    <td>💳 Tarjetas</td>
-                                    <td>${tarjetasPOS.toFixed(2)} €</td>
-                                    <td>${tarjetasReal.toFixed(2)} €</td>
-                                    <td class="${this.getDeltaClass(deltaTarjetas)}">${deltaTarjetas >= 0 ? '+' : ''}${deltaTarjetas.toFixed(2)} €</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">💳 Tarjetas</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${tarjetasPOS.toFixed(2)} €</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${tarjetasReal.toFixed(2)} €</td>
+                                    <td style="padding: 10px; border-bottom: 1px solid #eee; color: ${this.getColor(deltaTarjetas)}">${deltaTarjetas >= 0 ? '+' : ''}${deltaTarjetas.toFixed(2)} €</td>
                                 </tr>
-                                ${bizumRow}
-                                ${transRow}
                                 ${otrosRows}
-                                <tr class="fila-total">
-                                    <td><strong>TOTAL</strong></td>
-                                    <td><strong>${c.totalPos.toFixed(2)} €</strong></td>
-                                    <td><strong>${c.totalReal.toFixed(2)} €</strong></td>
-                                    <td class="${this.getDeltaClass(c.descuadreTotal)}"><strong>${c.descuadreTotal >= 0 ? '+' : ''}${c.descuadreTotal.toFixed(2)} €</strong></td>
+                                <tr style="font-weight: 700; background: #e9ecef; border-top: 2px solid #dee2e6;">
+                                    <td style="padding: 10px;">TOTAL</td>
+                                    <td style="padding: 10px;">${c.totalPos.toFixed(2)} €</td>
+                                    <td style="padding: 10px;">${c.totalReal.toFixed(2)} €</td>
+                                    <td style="padding: 10px; color: ${this.getColor(c.descuadreTotal)}">${c.descuadreTotal >= 0 ? '+' : ''}${c.descuadreTotal.toFixed(2)} €</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     
                     <!-- INFO SECUNDARIA -->
-                    <div class="cierre-info-secundaria">
+                    <div class="cierre-info-secundaria" style="margin-top: 15px; text-align: center; color: #666;">
                         🎫 Tickets: <strong>${c.numTickets}</strong> | 🎟 Ticket medio: <strong>${ticketMedio} €</strong>
                     </div>
                     
@@ -5826,6 +6183,21 @@ export class App {
                     document.getElementById('ocrPreviewImg').src = imageData;
                 } else {
                     this.isPDFWithEmbeddedText = false;
+
+        // Ocultar opciones de escaneo si est�n abiertas
+        const scanOptionsCard = document.getElementById('scanOptionsCard');
+        if (scanOptionsCard) {
+             scanOptionsCard.classList.add('hidden');
+             scanOptionsCard.style.display = 'none';
+        }
+
+        // Mostrar listas de nuevo
+        const listaFacturas = document.getElementById('listaFacturas');
+        const listaAlbaranes = document.getElementById('listaAlbaranes');
+        const recentDocs = document.getElementById('recentDocumentsList');
+        if (listaFacturas) listaFacturas.classList.remove('hidden');
+        if (listaAlbaranes) listaAlbaranes.classList.remove('hidden');
+        if (recentDocs) recentDocs.classList.remove('hidden');
                     const imageData = await this.convertPDFToImage(file);
                     this.currentImageData = imageData;
                     document.getElementById('ocrPreviewImg').src = imageData;
@@ -6842,4 +7214,221 @@ export class App {
             container.appendChild(item);
         });
     }
+
+    handleProveedorSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        
+        const proveedor = {
+            nombreComercial: document.getElementById('proveedorNombreComercial').value,
+            nombreFiscal: document.getElementById('proveedorRazonSocial').value,
+            nifCif: document.getElementById('proveedorNifCif').value,
+            personaContacto: document.getElementById('proveedorPersonaContacto').value,
+            telefono: document.getElementById('proveedorTelefono').value,
+            email: document.getElementById('proveedorEmail').value,
+            web: document.getElementById('proveedorWeb').value,
+            direccionFiscal: document.getElementById('proveedorDireccionFiscal').value,
+            direccionEnvio: document.getElementById('proveedorDireccionEnvioHabitual').value,
+            codigoPostal: document.getElementById('proveedorCodigoPostal').value,
+            ciudad: document.getElementById('proveedorCiudad').value,
+            pais: document.getElementById('proveedorPais').value,
+            metodoPago: document.getElementById('proveedorMetodoPagoPreferido').value,
+            plazoPagoDias: parseInt(document.getElementById('proveedorPlazoPagoDias').value) || 0,
+            descuento: parseFloat(document.getElementById('proveedorDescuentoAcordadoPorcentaje').value) || 0,
+            iban: document.getElementById('proveedorIban').value,
+            banco: document.getElementById('proveedorBanco').value,
+            categoria: document.getElementById('proveedorCategoriaPrincipalCompra').value,
+            subcategorias: document.getElementById('proveedorSubcategoriasCompra').value,
+            notasCondiciones: document.getElementById('proveedorNotasCondiciones').value,
+            notasInternas: document.getElementById('proveedorNotasInternas').value,
+            estado: document.getElementById('proveedorEstado').value,
+            fechaAlta: document.getElementById('proveedorFechaAlta').value || new Date().toISOString().split('T')[0]
+        };
+
+        if (form.dataset.editId) {
+            proveedor.id = parseInt(form.dataset.editId);
+            this.db.update('proveedores', proveedor.id, proveedor);
+            this.showToast('✓ Proveedor actualizado correctamente');
+            delete form.dataset.editId;
+        } else {
+            this.db.add('proveedores', proveedor);
+            this.showToast('✓ Proveedor guardado correctamente');
+        }
+        
+        form.reset();
+        this.toggleForm('proveedor');
+        this.render();
+    }
+
+    handleProductoSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        
+        const producto = {
+            nombre: document.getElementById('productoNombre').value,
+            proveedorId: parseInt(document.getElementById('productoProveedorId').value) || null,
+            precioPromedioNeto: parseFloat(document.getElementById('productoPrecio').value),
+            unidadBase: document.getElementById('productoUnidadBase').value,
+            esEmpaquetado: document.getElementById('productoEsEmpaquetado').value === 'true',
+            tipoEmpaque: document.getElementById('productoTipoEmpaque').value,
+            unidadesPorEmpaque: parseFloat(document.getElementById('productoUnidadesPorEmpaque').value) || 0,
+            stockActualUnidades: parseFloat(document.getElementById('productoStockActual').value) || 0,
+            fechaModificacion: new Date().toISOString()
+        };
+
+        if (producto.proveedorId) {
+            const prov = this.db.proveedores.find(p => p.id === producto.proveedorId);
+            if (prov) producto.proveedorNombre = prov.nombreFiscal || prov.nombre;
+        }
+
+        if (form.dataset.editId) {
+            producto.id = parseInt(form.dataset.editId);
+            this.db.update('productos', producto.id, producto);
+            this.showToast('✓ Producto actualizado correctamente');
+            delete form.dataset.editId;
+        } else {
+            this.db.add('productos', producto);
+            this.showToast('✓ Producto guardado correctamente');
+        }
+        
+        form.reset();
+        this.toggleForm('producto');
+        this.render();
+    }
+
+    handleInventarioSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        
+        const inventario = {
+            fecha: document.getElementById('inventarioFecha').value,
+            familia: document.getElementById('inventarioFamilia').value,
+            productos: [], 
+            fechaCreacion: new Date().toISOString()
+        };
+        
+        if (form.dataset.editId) {
+            inventario.id = parseInt(form.dataset.editId);
+            this.db.update('inventarios', inventario.id, inventario);
+            this.showToast('✓ Inventario actualizado');
+            delete form.dataset.editId;
+        } else {
+            this.db.add('inventarios', inventario);
+            this.showToast('✓ Inventario guardado');
+        }
+        
+        form.reset();
+        this.collapseForm('inventario');
+        this.render();
+    }
+
+    handleDeliverySubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        
+        const ventas = parseFloat(document.getElementById('deliveryVentas').value) || 0;
+        const comisionPct = parseFloat(document.getElementById('deliveryComision').value) || 0;
+        const comisionImporte = ventas * (comisionPct / 100);
+        
+        const delivery = {
+            plataforma: document.getElementById('deliveryPlataforma').value,
+            fecha: document.getElementById('deliveryFecha').value,
+            ventasBrutas: ventas,
+            comisionPorcentaje: comisionPct,
+            comisionImporte: comisionImporte,
+            ingresoNeto: ventas - comisionImporte
+        };
+
+        if (form.dataset.editId) {
+            delivery.id = parseInt(form.dataset.editId);
+            this.db.update('delivery', delivery.id, delivery);
+            this.showToast('✓ Registro actualizado');
+            delete form.dataset.editId;
+        } else {
+            this.db.add('delivery', delivery);
+            this.showToast('✓ Registro guardado');
+        }
+        
+        form.reset();
+        this.expandForm('delivery');
+        this.render();
+    }
+
+    handleEscandalloSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        
+        // Recopilar ingredientes
+        const ingredientes = [];
+        document.querySelectorAll('.ingrediente-item').forEach(item => {
+            ingredientes.push({
+                productoId: parseInt(item.querySelector('.ingrediente-producto').value),
+                cantidad: parseFloat(item.querySelector('.ingrediente-cantidad').value),
+                unidad: item.querySelector('.ingrediente-unidad').value,
+                costeUnitario: parseFloat(item.querySelector('.ingrediente-coste-unitario').value),
+                costeTotal: parseFloat(item.querySelector('.ingrediente-coste-total').value)
+            });
+        });
+
+        const escandallo = {
+            nombre: document.getElementById('escandalloNombre').value,
+            codigo: document.getElementById('escandalloCodigo').value,
+            pvpConIva: parseFloat(document.getElementById('escandalloPVPConIVA').value),
+            tipoIva: parseFloat(document.getElementById('escandalloTipoIVA').value),
+            pvpNeto: parseFloat(document.getElementById('escandalloPVPNeto').value),
+            costeTotalNeto: parseFloat(document.getElementById('escandalloCosteTotalNeto').value),
+            foodCost: parseFloat(document.getElementById('escandalloFC').value),
+            margenPorcentaje: parseFloat(document.getElementById('escandalloMargen').value),
+            margenBruto: parseFloat(document.getElementById('escandalloPVPNeto').value) - parseFloat(document.getElementById('escandalloCosteTotalNeto').value),
+            ingredientes: ingredientes,
+            notas: document.getElementById('escandalloNotas').value,
+            fecha: new Date().toISOString().split('T')[0]
+        };
+
+        this.guardarEscandallo(escandallo, form.dataset.editId ? parseInt(form.dataset.editId) : null);
+    }
+
+    abrirModalEditarEscandallo(id) {
+        const escandallo = this.db.escandallos.find(e => e.id === id);
+        if (!escandallo) return;
+
+        this.expandForm('escandallo');
+        
+        document.getElementById('escandalloNombre').value = escandallo.nombre;
+        document.getElementById('escandalloCodigo').value = escandallo.codigo || '';
+        document.getElementById('escandalloPVPConIVA').value = escandallo.pvpConIva;
+        document.getElementById('escandalloTipoIVA').value = escandallo.tipoIva;
+        document.getElementById('escandalloPVPNeto').value = escandallo.pvpNeto;
+        document.getElementById('escandalloCosteTotalNeto').value = escandallo.costeTotalNeto;
+        document.getElementById('escandalloFC').value = escandallo.foodCost;
+        document.getElementById('escandalloMargen').value = escandallo.margenPorcentaje;
+        document.getElementById('escandalloNotas').value = escandallo.notas || '';
+
+        // Limpiar y llenar ingredientes
+        const container = document.getElementById('ingredientesContainer');
+        container.innerHTML = '';
+        
+        if (escandallo.ingredientes) {
+            escandallo.ingredientes.forEach(ing => {
+                this.addIngredienteRow();
+                // Llenar la última fila añadida
+                const rows = container.querySelectorAll('.ingrediente-item');
+                const lastRow = rows[rows.length - 1];
+                
+                lastRow.querySelector('.ingrediente-producto').value = ing.productoId;
+                lastRow.querySelector('.ingrediente-cantidad').value = ing.cantidad;
+                lastRow.querySelector('.ingrediente-unidad').value = ing.unidad;
+                lastRow.querySelector('.ingrediente-coste-unitario').value = ing.costeUnitario;
+                lastRow.querySelector('.ingrediente-coste-total').value = ing.costeTotal;
+            });
+        }
+
+        const form = document.getElementById('escandalloForm');
+        form.dataset.editId = escandallo.id;
+        
+        // Cambiar texto del botón
+        const btn = document.querySelector('#escandalloForm button[type="submit"]');
+        if(btn) btn.textContent = '✓ Actualizar Escandallo';
+    }
 }
+

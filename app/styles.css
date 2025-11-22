@@ -42,6 +42,10 @@ body {
     color: #ffffff;
 }
 
+.mobile-menu-btn {
+    display: none;
+}
+
 .period-selector select {
     width: 100%;
     padding: 10px 12px;
@@ -1594,23 +1598,55 @@ body {
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
+        height: auto;
+        min-height: 100vh;
     }
-    
+
     .sidebar {
         width: 100%;
         height: auto;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
     }
-    
-    .form-row {
-        grid-template-columns: 1fr;
+
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
     }
-    
-    .ocr-tipo-selector {
-        grid-template-columns: repeat(2, 1fr);
+
+    .mobile-menu-btn {
+        display: block;
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
     }
-    
-    .pnl-kpis-grid {
-        grid-template-columns: 1fr;
+
+    .nav-menu {
+        display: none;
+        width: 100%;
+        background: #1d3041;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-menu.open {
+        display: block;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .main-content {
+        padding: 20px 15px;
+        overflow-y: visible;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 }
 
