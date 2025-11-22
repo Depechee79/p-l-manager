@@ -397,6 +397,143 @@ export class App {
 
     // --- NUEVAS FUNCIONES ---
 
+    populateInventarioFilters() {
+        const familias = new Set();
+        const subfamilias = new Set();
+        
+        this.db.productos.forEach(p => {
+            if (p.familia) familias.add(p.familia);
+            if (p.subfamilia) subfamilias.add(p.subfamilia);
+        });
+
+        const famSelect = document.getElementById('invFamiliaFilter');
+        famSelect.innerHTML = '<option value="">Todas las Familias</option>' + 
+            Array.from(familias).map(f => `<option value="${f}">${f}</option>`).join('');
+
+        // Subfamilias se actualizarán al cambiar familia, pero inicialmente cargamos todas o vacías
+        // Para simplificar, cargamos todas las subfamilias disponibles inicialmente
+        this.updateSubfamiliaFilter();
+    }
+
+    updateSubfamiliaFilter() {
+        const selectedFam = document.getElementById('invFamiliaFilter').value;
+        const subSelect = document.getElementById('invSubfamiliaFilter');
+        const subfamilias = new Set();
+
+        this.db.productos.forEach(p => {
+            if (!selectedFam || p.familia === selectedFam) {
+                if (p.subfamilia) subfamilias.add(p.subfamilia);
+            }
+        });
+
+        subSelect.innerHTML = '<option value="">Todas las Subfamilias</option>' + 
+            Array.from(subfamilias).map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    filterInventarioTable() {
+        const search = document.getElementById('invSearch').value.toLowerCase();
+        const familia = document.getElementById('invFamiliaFilter').value;
+        const subfamilia = document.getElementById('invSubfamiliaFilter').value;
+
+        const filtered = this.db.productos.filter(p => {
+            const matchSearch = p.nombre.toLowerCase().includes(search);
+            const matchFam = !familia || p.familia === familia;
+            const matchSub = !subfamilia || p.subfamilia === subfamilia;
+            return matchSearch && matchFam && matchSub;
+        });
+
+        this.renderInventarioTable(filtered);
+    }
+
+    renderInventarioTable(products) {
+        const tbody = document.getElementById('inventarioTableBody');
+        if (!tbody) return;
+
+        if (products.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No se encontraron productos</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = products.map(p => {
+            const counted = this.inventarioState.counts[p.id];
+            const hasCount = counted !== undefined;
+            const stockTeorico = p.stockActualUnidades || 0;
+            
+            return `
+            <tr onclick="window.app.openInventarioCounter(${p.id})" style="cursor:pointer; background-color: ${hasCount ? '#e8f6f3' : 'white'}; border-bottom: 1px solid #eee;">
+                <td style="padding: 12px;">
+                    <div style="font-weight:600; color:#2c3e50;">${p.nombre}</div>
+                    <div style="font-size:0.85em; color:#7f8c8d;">${p.unidadBase} ${p.esEmpaquetado ? `(Pack x${p.unidadesPorEmpaque})` : ''}</div>
+                </td>
+                <td style="padding: 12px; text-align: right;">${stockTeorico.toFixed(2)}</td>
+                <td style="padding: 12px; text-align: right; font-weight:bold; color:${hasCount ? '#27ae60' : '#95a5a6'};">
+                    ${hasCount ? counted.toFixed(2) : '-'}
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    ${hasCount ? '✅' : '⬜'}
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    openInventarioCounter(productId) {
+        const product = this.db.productos.find(p => p.id === productId);
+        if (!product) return;
+
+        this.inventarioState.currentProduct = product;
+        
+        // Setup Modal
+        document.getElementById('invCounterTitle').textContent = product.nombre;
+        document.getElementById('invCounterTeorico').textContent = (product.stockActualUnidades || 0).toFixed(2) + ' ' + product.unidadBase;
+        
+        const currentCount = this.inventarioState.counts[productId];
+        const input = document.getElementById('invCounterInput');
+        input.value = currentCount !== undefined ? currentCount : '';
+        input.focus();
+
+        // Show Modal
+        const modal = document.getElementById('inventarioCounterModal');
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+    }
+
+    closeInventarioCounter() {
+        const modal = document.getElementById('inventarioCounterModal');
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        this.inventarioState.currentProduct = null;
+    }
+
+    confirmInventarioCount() {
+        const input = document.getElementById('invCounterInput');
+        const val = parseFloat(input.value);
+        
+        if (isNaN(val)) {
+            this.showToast('⚠️ Introduce una cantidad válida', true);
+            return;
+        }
+
+        const product = this.inventarioState.currentProduct;
+        if (product) {
+            this.inventarioState.counts[product.id] = val;
+            this.filterInventarioTable(); // Re-render to show update
+            this.closeInventarioCounter();
+            this.showToast(`✓ ${product.nombre}: ${val} ${product.unidadBase}`);
+        }
+    }
+
+    numpadInput(val) {
+        const input = document.getElementById('invCounterInput');
+        if (val === '.' && input.value.includes('.')) return;
+        input.value = input.value + val;
+    }
+
+    numpadBackspace() {
+        const input = document.getElementById('invCounterInput');
+        input.value = input.value.slice(0, -1);
+    }
+
     resetOCRForm() {
         // Limpiar input file
         const fileInput = document.getElementById('ocrFile');
@@ -4391,6 +4528,16 @@ export class App {
         
         if (step1) step1.classList.add('hidden');
         if (form) form.classList.remove('hidden');
+
+        // Inicializar estado de conteo
+        this.inventarioState.counts = {};
+        this.inventarioState.currentProduct = null;
+
+        // Poblar filtros
+        this.populateInventarioFilters();
+        
+        // Renderizar tabla inicial
+        this.filterInventarioTable();
     }
 
     handleCierreSubmit(e) {
