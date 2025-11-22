@@ -500,7 +500,7 @@ body {
 .cierre-info-secundaria {
     padding: 12px 24px;
     background: #ffffff;
-    border-bottom: 1px solid #e3e8ef;
+    border-bottom: 1px solid #e8e9eb;
     font-size: 13px;
     color: #6b7b8c;
     text-align: center;
@@ -1779,6 +1779,7 @@ body {
     transform: none;
     box-shadow: none;
 }
+
 /* ===============================================
    LOGIN SCREEN
    =============================================== */
@@ -2097,6 +2098,56 @@ body {
     font-weight: 600;
 }
 
+/* Add Field Container Styles */
+.add-field-container {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px dashed #e2e8f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.add-field-select {
+    width: 100%;
+    max-width: 300px;
+    padding: 11px 14px;
+    height: 42px;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1f2d3d;
+    background: #ffffff;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.add-field-select:focus {
+    outline: none;
+    border-color: #1171ef;
+    box-shadow: 0 0 0 3px rgba(17, 113, 239, 0.1);
+}
+
+.add-field-btn {
+    height: 42px; /* Match input height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    background: #1171ef; /* Primary color for action */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.add-field-btn:hover {
+    background: #0d5dcf;
+    transform: translateY(-1px);
+}
+
 /* Inline Edit Styles */
 .inline-edit-form {
     background: #f8f9fa;
@@ -2198,5 +2249,87 @@ body {
 
 .inline-edit-form {
     width: 100%;
+}
+
+/* Custom Select Styles */
+.custom-select-wrapper {
+    position: relative;
+    user-select: none;
+    width: 100%;
+    max-width: 300px;
+}
+
+.custom-select-trigger {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    height: 42px;
+    font-size: 14px;
+    color: #1f2d3d;
+    background: #ffffff;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.custom-select-trigger:hover {
+    border-color: #1171ef;
+}
+
+.custom-select-trigger .arrow {
+    font-size: 10px;
+    color: #64748b;
+    transition: transform 0.2s;
+}
+
+.custom-select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.custom-select-options.open-up {
+    top: auto;
+    bottom: 100%;
+    border-top: 1px solid #e0e0e0;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 -4px 6px rgba(0,0,0,0.1);
+}
+
+.custom-option {
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #1f2d3d;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.custom-option:last-child {
+    border-bottom: none;
+}
+
+.custom-option:hover {
+    background: #f8fafc;
+    color: #1171ef;
+}
+
+.custom-option.selected {
+    background: #e0f2fe;
+    color: #1171ef;
+    font-weight: 500;
 }
 

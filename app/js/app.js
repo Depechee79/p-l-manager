@@ -255,6 +255,17 @@ export class App {
                 });
             }
         });
+
+        // Global click listener for custom dropdowns (Close when clicking outside)
+        document.addEventListener('click', (e) => {
+            const wrapper = document.querySelector('.custom-select-wrapper');
+            const options = document.getElementById('customSelectOptions');
+            // If click is outside wrapper and options are visible
+            if (wrapper && !wrapper.contains(e.target) && options && !options.classList.contains('hidden')) {
+                options.classList.add('hidden');
+                options.classList.remove('open-up');
+            }
+        });
     }
 
     // --- NUEVAS FUNCIONES ---
@@ -284,7 +295,7 @@ export class App {
         const uploadZone = document.querySelector('.file-upload-zone');
         if (uploadZone) uploadZone.style.display = 'block';
         
-        // Resetear bot�n cancelar (asegurar que est� visible para la pr�xima vez)
+        // Resetear bot�n cancelar (asegurar que est� visible para la pr�xima vez)
         const cancelContainer = document.getElementById('ocrUploadCancelContainer');
         if (cancelContainer) cancelContainer.classList.remove('hidden');
         
@@ -841,6 +852,7 @@ export class App {
 
         // 3. Renderizar Contenido
         switch(this.currentView) {
+            case 'ocr': this.renderRecentDocuments(); break;
             case 'cierres': this.renderCierres(); this.collapseForm('cierre'); break;
             case 'compras': this.renderCompras(); break;
             case 'proveedores': this.renderProveedores(); this.collapseForm('proveedor'); break;
@@ -2915,16 +2927,26 @@ export class App {
                 { id: 'ocr_proveedor', label: 'Nombre Proveedor', type: 'text', required: true, field: 'proveedorNombre' },
                 { id: 'ocr_proveedor_cif', label: 'CIF Proveedor', type: 'text', required: false, field: 'proveedorCif' },
                 { id: 'ocr_proveedor_razon', label: 'Razón Social', type: 'text', required: false, field: 'proveedorRazonSocial' },
-                { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', required: true, field: 'subtotal' },
-                { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', required: false, field: 'descuentoTotal' },
-                { id: 'ocr_iva', label: 'IVA Total', type: 'number', required: true, field: 'ivaTotal' },
-                { id: 'ocr_recargos', label: 'Recargos Especiales', type: 'number', required: false, field: 'recargosEspecialesTotal' },
-                { id: 'ocr_otros_cargos', label: 'Otros Cargos', type: 'number', required: false, field: 'otrosCargos' },
-                { id: 'ocr_total', label: 'Total Factura', type: 'number', required: true, field: 'totalFactura' },
+                { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', step: '0.01', required: true, field: 'subtotal' },
+                { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', step: '0.01', required: false, field: 'descuentoTotal' },
+                { id: 'ocr_iva', label: 'IVA Total', type: 'number', step: '0.01', required: true, field: 'ivaTotal' },
+                { id: 'ocr_recargos', label: 'Recargos Especiales', type: 'number', step: '0.01', required: false, field: 'recargosEspecialesTotal' },
+                { id: 'ocr_otros_cargos', label: 'Otros Cargos', type: 'number', step: '0.01', required: false, field: 'otrosCargos' },
+                { id: 'ocr_total', label: 'Total Factura', type: 'number', step: '0.01', required: true, field: 'totalFactura' },
                 { id: 'ocr_metodo_pago', label: 'Método Pago', type: 'text', required: false, field: 'metodoPago' },
                 { id: 'ocr_vencimiento', label: 'Fecha Vencimiento', type: 'date', required: false, field: 'fechaVencimiento' },
                 { id: 'ocr_estado_pago', label: 'Estado Pago', type: 'select', options: ['Pendiente', 'Pagado'], required: false, field: 'estadoPago' },
-                { id: 'ocr_observaciones', label: 'Observaciones', type: 'textarea', required: false, field: 'observacionesRevision' }
+                { id: 'ocr_observaciones', label: 'Observaciones', type: 'textarea', required: false, field: 'observacionesRevision' },
+                
+                // B) Visible NO modificable (Informativos)
+                { id: 'ocr_impuestos_totales', label: 'Impuestos Totales', type: 'number', step: '0.01', readOnly: true, field: 'impuestosTotales' },
+                { id: 'ocr_origen', label: 'Origen', type: 'text', readOnly: true, field: 'origenRegistro' },
+                { id: 'ocr_confianza', label: 'Confianza OCR', type: 'text', readOnly: true, field: 'confianzaOcr' },
+                { id: 'ocr_estado_revision', label: 'Estado Revisión', type: 'text', readOnly: true, field: 'estadoRevision' },
+                { id: 'ocr_usuario', label: 'Usuario', type: 'text', readOnly: true, field: 'usuarioResponsable' },
+                { id: 'ocr_fecha_registro', label: 'Fecha Registro', type: 'date', readOnly: true, field: 'fechaRegistroApp' },
+                { id: 'ocr_archivo_nombre', label: 'Archivo', type: 'text', readOnly: true, field: 'archivoNombre' },
+                { id: 'ocr_archivo_url', label: 'URL Archivo', type: 'text', readOnly: true, field: 'archivoUrl' }
             ],
             'albaran': [
                 // A) Visible y modificable
@@ -2934,13 +2956,22 @@ export class App {
                 { id: 'ocr_proveedor_cif', label: 'CIF Proveedor', type: 'text', required: false, field: 'proveedorCif' },
                 { id: 'ocr_proveedor_razon', label: 'Razón Social', type: 'text', required: false, field: 'proveedorRazonSocial' },
                 { id: 'ocr_referencia', label: 'Referencia Pedido', type: 'text', required: false, field: 'referenciaPedido' },
-                { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', required: true, field: 'subtotal' },
-                { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', required: false, field: 'descuentoTotal' },
-                { id: 'ocr_iva', label: 'IVA Total', type: 'number', required: true, field: 'ivaTotal' },
-                { id: 'ocr_recargos', label: 'Recargos Especiales', type: 'number', required: false, field: 'recargosEspecialesTotal' },
-                { id: 'ocr_otros_cargos', label: 'Otros Cargos', type: 'number', required: false, field: 'otrosCargos' },
-                { id: 'ocr_total', label: 'Total Albarán', type: 'number', required: true, field: 'totalAlbaran' },
-                { id: 'ocr_observaciones', label: 'Observaciones', type: 'textarea', required: false, field: 'observacionesRevision' }
+                { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', step: '0.01', required: true, field: 'subtotal' },
+                { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', step: '0.01', required: false, field: 'descuentoTotal' },
+                { id: 'ocr_iva', label: 'IVA Total', type: 'number', step: '0.01', required: true, field: 'ivaTotal' },
+                { id: 'ocr_recargos', label: 'Recargos Especiales', type: 'number', step: '0.01', required: false, field: 'recargosEspecialesTotal' },
+                { id: 'ocr_otros_cargos', label: 'Otros Cargos', type: 'number', step: '0.01', required: false, field: 'otrosCargos' },
+                { id: 'ocr_total', label: 'Total Albarán', type: 'number', step: '0.01', required: true, field: 'totalAlbaran' },
+                { id: 'ocr_observaciones', label: 'Observaciones', type: 'textarea', required: false, field: 'observacionesRevision' },
+
+                // B) Visible NO modificable
+                { id: 'ocr_impuestos_totales', label: 'Impuestos Totales', type: 'number', step: '0.01', readOnly: true, field: 'impuestosTotales' },
+                { id: 'ocr_estado_revision', label: 'Estado Revisión', type: 'text', readOnly: true, field: 'estadoRevision' },
+                { id: 'ocr_usuario', label: 'Usuario', type: 'text', readOnly: true, field: 'usuarioResponsable' },
+                { id: 'ocr_archivo_nombre', label: 'Archivo', type: 'text', readOnly: true, field: 'archivoNombre' },
+                { id: 'ocr_origen', label: 'Origen', type: 'text', readOnly: true, field: 'origenRegistro' },
+                { id: 'ocr_confianza', label: 'Confianza OCR', type: 'text', readOnly: true, field: 'confianzaOcr' },
+                { id: 'ocr_fecha_registro', label: 'Fecha Registro', type: 'date', readOnly: true, field: 'fechaRegistroApp' }
             ],
             'ticket': [
                 // A) Visible y modificable
@@ -2952,10 +2983,14 @@ export class App {
                 { id: 'ocr_camarero', label: 'Camarero', type: 'text', required: false, field: 'camareroResponsable' },
                 { id: 'ocr_mesa', label: 'Mesa', type: 'text', required: false, field: 'mesa' },
                 { id: 'ocr_comensales', label: 'Nº Comensales', type: 'number', required: false, field: 'numeroComensales' },
-                { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', required: false, field: 'descuentoTotal' },
+                { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', step: '0.01', required: false, field: 'descuentoTotal' },
                 { id: 'ocr_metodo_pago', label: 'Método Pago', type: 'text', required: false, field: 'metodoPago' },
                 { id: 'ocr_estado_pago', label: 'Estado Pago', type: 'text', required: false, field: 'estadoPago' },
-                { id: 'ocr_total', label: 'Total Ticket', type: 'number', required: true, field: 'totalTicket' }
+                
+                // B) Visible NO modificable (pero editables en OCR por si acaso)
+                { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', step: '0.01', required: false, field: 'subtotal' },
+                { id: 'ocr_impuestos', label: 'Impuestos Total', type: 'number', step: '0.01', readOnly: true, field: 'impuestosTotal' },
+                { id: 'ocr_total', label: 'Total Ticket', type: 'number', step: '0.01', required: true, field: 'totalTicket' }
             ],
             'venta_pos': [
                 { id: 'ocr_fecha', label: 'Fecha', type: 'date', required: true, field: 'fecha' },
@@ -2997,50 +3032,60 @@ export class App {
                 fechaAlta: { label: 'Fecha Alta', type: 'date', section: 'B', readonly: true }
             },
             'facturas': {
-                fecha: { label: 'Fecha Factura', type: 'date', section: 'A' },
-                fechaVencimiento: { label: 'Fecha Vencimiento', type: 'date', section: 'A' },
+                // A) Visible y modificable
+                tipoFactura: { label: 'Tipo Factura', type: 'select', options: ['Detallada', 'Resumen Periodo'], section: 'A' },
                 numeroFactura: { label: 'Nº Factura', type: 'text', section: 'A' },
-                proveedor: { label: 'Proveedor', type: 'select', section: 'A' },
-                concepto: { label: 'Concepto', type: 'text', section: 'A' },
-                baseImponible: { label: 'Base Imponible', type: 'number', step: '0.01', section: 'A' },
-                ivaPorcentaje: { label: 'IVA %', type: 'select', options: ['0', '4', '10', '21'], section: 'A' },
-                ivaImporte: { label: 'Importe IVA', type: 'number', step: '0.01', section: 'A' },
-                irpfPorcentaje: { label: 'Retención IRPF %', type: 'number', step: '0.01', section: 'A' },
-                irpfImporte: { label: 'Importe IRPF', type: 'number', step: '0.01', section: 'A' },
-                total: { label: 'Total Factura', type: 'number', step: '0.01', section: 'A' },
-                estadoPago: { label: 'Estado Pago', type: 'select', options: ['Pendiente', 'Pagado'], section: 'A' },
+                fechaFactura: { label: 'Fecha Factura', type: 'date', section: 'A' },
+                periodoInicio: { label: 'Periodo Inicio', type: 'date', section: 'A' },
+                periodoFin: { label: 'Periodo Fin', type: 'date', section: 'A' },
+                proveedorNombre: { label: 'Proveedor', type: 'text', section: 'A' },
+                proveedorCif: { label: 'CIF Proveedor', type: 'text', section: 'A' },
+                proveedorRazonSocial: { label: 'Razón Social', type: 'text', section: 'A' },
+                subtotal: { label: 'Subtotal', type: 'number', step: '0.01', section: 'A' },
+                descuentoTotal: { label: 'Descuento Total', type: 'number', step: '0.01', section: 'A' },
+                ivaTotal: { label: 'IVA Total', type: 'number', step: '0.01', section: 'A' },
+                recargosEspecialesTotal: { label: 'Recargos Especiales', type: 'number', step: '0.01', section: 'A' },
+                otrosCargos: { label: 'Otros Cargos', type: 'number', step: '0.01', section: 'A' },
+                totalFactura: { label: 'Total Factura', type: 'number', step: '0.01', section: 'A' },
                 metodoPago: { label: 'Método Pago', type: 'text', section: 'A' },
-                categoriaGasto: { label: 'Categoría Gasto', type: 'select', options: ['Alimentación', 'Bebidas', 'Limpieza', 'Suministros', 'Mantenimiento', 'Personal', 'Alquiler', 'Impuestos', 'Otros'], section: 'A' },
-                observaciones: { label: 'Notas', type: 'textarea', section: 'A' },
+                fechaVencimiento: { label: 'Fecha Vencimiento', type: 'date', section: 'A' },
+                estadoPago: { label: 'Estado Pago', type: 'select', options: ['Pendiente', 'Pagado'], section: 'A' },
+                observacionesRevision: { label: 'Observaciones', type: 'textarea', section: 'A' },
                 
-                // Campos de sistema / Solo lectura
-                archivoNombre: { label: 'Archivo Adjunto', type: 'text', readOnly: true, section: 'B' },
-                archivoUrl: { label: 'URL Archivo', type: 'text', readOnly: true, section: 'B' },
-                usuario: { label: 'Usuario', type: 'text', readOnly: true, section: 'B' },
-                fechaRegistro: { label: 'Fecha Registro', type: 'date', readOnly: true, section: 'B' },
-                ocrConfidence: { label: 'Confianza OCR', type: 'number', readOnly: true, section: 'B' }
+                // B) Visible NO modificable
+                impuestosTotales: { label: 'Impuestos Totales', type: 'number', readOnly: true, section: 'B' },
+                origenRegistro: { label: 'Origen', type: 'text', readOnly: true, section: 'B' },
+                confianzaOcr: { label: 'Confianza OCR', type: 'number', readOnly: true, section: 'B' },
+                estadoRevision: { label: 'Estado Revisión', type: 'text', readOnly: true, section: 'B' },
+                usuarioResponsable: { label: 'Usuario', type: 'text', readOnly: true, section: 'B' },
+                fechaRegistroApp: { label: 'Fecha Registro', type: 'date', readOnly: true, section: 'B' },
+                archivoNombre: { label: 'Archivo', type: 'text', readOnly: true, section: 'B' },
+                archivoUrl: { label: 'URL Archivo', type: 'text', readOnly: true, section: 'B' }
             },
             'albaranes': {
+                // A) Visible y modificable
                 numeroAlbaran: { label: 'Nº Albarán', type: 'text', section: 'A' },
-                fecha: { label: 'Fecha Albarán', type: 'date', section: 'A' },
-                proveedor: { label: 'Proveedor', type: 'text', section: 'A' },
-                nifCif: { label: 'NIF/CIF Proveedor', type: 'text', section: 'A' },
-                proveedorRazonSocial: { label: 'Razón Social Prov.', type: 'text', section: 'A' },
+                fechaAlbaran: { label: 'Fecha Albarán', type: 'date', section: 'A' },
+                proveedorNombre: { label: 'Proveedor', type: 'text', section: 'A' },
+                proveedorCif: { label: 'CIF Proveedor', type: 'text', section: 'A' },
+                proveedorRazonSocial: { label: 'Razón Social', type: 'text', section: 'A' },
                 referenciaPedido: { label: 'Ref. Pedido', type: 'text', section: 'A' },
-                baseImponible: { label: 'Subtotal', type: 'number', step: '0.01', section: 'A' },
+                subtotal: { label: 'Subtotal', type: 'number', step: '0.01', section: 'A' },
                 descuentoTotal: { label: 'Descuento Total', type: 'number', step: '0.01', section: 'A' },
-                iva: { label: 'IVA Total', type: 'number', step: '0.01', section: 'A' },
-                recargos: { label: 'Recargos', type: 'number', step: '0.01', section: 'A' },
+                ivaTotal: { label: 'IVA Total', type: 'number', step: '0.01', section: 'A' },
+                recargosEspecialesTotal: { label: 'Recargos', type: 'number', step: '0.01', section: 'A' },
                 otrosCargos: { label: 'Otros Cargos', type: 'number', step: '0.01', section: 'A' },
-                total: { label: 'Total Albarán', type: 'number', step: '0.01', section: 'A' },
-                observaciones: { label: 'Observaciones', type: 'text', section: 'A' },
+                totalAlbaran: { label: 'Total Albarán', type: 'number', step: '0.01', section: 'A' },
+                observacionesRevision: { label: 'Observaciones', type: 'text', section: 'A' },
+                
+                // B) Visible NO modificable
                 impuestosTotales: { label: 'Impuestos Totales', type: 'number', readOnly: true, section: 'B' },
                 estadoRevision: { label: 'Estado Revisión', type: 'text', readOnly: true, section: 'B' },
-                usuario: { label: 'Usuario', type: 'text', readOnly: true, section: 'B' },
+                usuarioResponsable: { label: 'Usuario', type: 'text', readOnly: true, section: 'B' },
                 archivoNombre: { label: 'Archivo', type: 'text', readOnly: true, section: 'B' },
-                origen: { label: 'Origen', type: 'text', readOnly: true, section: 'B' },
-                ocrConfidence: { label: 'Confianza OCR', type: 'number', readOnly: true, section: 'B' },
-                fechaRegistro: { label: 'Fecha Registro', type: 'date', readOnly: true, section: 'B' },
+                origenRegistro: { label: 'Origen', type: 'text', readOnly: true, section: 'B' },
+                confianzaOcr: { label: 'Confianza OCR', type: 'number', readOnly: true, section: 'B' },
+                fechaRegistroApp: { label: 'Fecha Registro', type: 'date', readOnly: true, section: 'B' },
                 archivoHash: { label: 'Hash', type: 'text', hidden: true, section: 'C' }
             },
             'productos': {
@@ -3101,12 +3146,22 @@ export class App {
         const missingFields = schema.filter(f => !activeFields.includes(f));
         if (missingFields.length > 0) {
             html += `
-                <div class="add-field-container" style="margin-top: 25px; padding-top: 20px; border-top: 1px dashed #e2e8f0; display: flex; justify-content: center; align-items: center; gap: 10px;">
-                    <select id="addFieldSelect" class="form-control" style="max-width: 300px;">
-                        <option value="">+ Añadir campo faltante...</option>
-                        ${missingFields.map(f => `<option value="${f.id}">${f.label}</option>`).join('')}
-                    </select>
-                    <button type="button" class="btn-secondary" onclick="app.addFieldFromDropdown()">
+                <div class="add-field-container">
+                    <div class="custom-select-wrapper">
+                        <div class="custom-select-trigger" onclick="window.app.toggleFieldDropdown()">
+                            <span id="customSelectText">+ Añadir campo faltante...</span>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div id="customSelectOptions" class="custom-select-options hidden">
+                            ${missingFields.map(f => `
+                                <div class="custom-option" data-value="${f.id}" onclick="window.app.selectFieldOption('${f.id}', '${f.label}')">
+                                    ${f.label}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" id="addFieldSelect" value="">
+                    </div>
+                    <button type="button" class="btn-secondary add-field-btn" onclick="window.app.addFieldFromDropdown()">
                         Añadir
                     </button>
                 </div>
@@ -3114,6 +3169,7 @@ export class App {
         }
 
         container.innerHTML = html;
+        
         const saveBtn = document.getElementById('ocrSaveBtn');
         if (saveBtn) saveBtn.disabled = false;
         
@@ -3126,20 +3182,77 @@ export class App {
         }
     }
 
+    toggleFieldDropdown() {
+        const options = document.getElementById('customSelectOptions');
+        const wrapper = document.querySelector('.custom-select-wrapper');
+        
+        if (options && wrapper) {
+            const isHidden = options.classList.contains('hidden');
+            
+            if (isHidden) {
+                // Opening
+                options.classList.remove('hidden');
+                
+                // Check position
+                const rect = wrapper.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const optionsHeight = 200; // Max height approx
+                
+                // If space below is less than options height and space above is more
+                if (spaceBelow < optionsHeight && rect.top > optionsHeight) {
+                    options.classList.add('open-up');
+                } else {
+                    options.classList.remove('open-up');
+                }
+            } else {
+                // Closing
+                options.classList.add('hidden');
+                options.classList.remove('open-up');
+            }
+        }
+    }
+
+    selectFieldOption(value, label) {
+        document.getElementById('addFieldSelect').value = value;
+        const triggerText = document.getElementById('customSelectText');
+        triggerText.textContent = label;
+        triggerText.style.color = '#1f2d3d';
+        triggerText.style.fontWeight = '500';
+        
+        // Highlight selected option
+        document.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+        const selectedOpt = document.querySelector(`.custom-option[data-value="${value}"]`);
+        if (selectedOpt) selectedOpt.classList.add('selected');
+
+        this.toggleFieldDropdown();
+    }
+
     addFieldFromDropdown() {
         const select = document.getElementById('addFieldSelect');
-        if (!select || !select.value) return;
+        if (!select || !select.value) {
+            this.showToast('⚠️ Selecciona un campo primero', true);
+            return;
+        }
         
         this.addFieldToForm(select.value);
         
-        // Re-renderizar para actualizar la lista de campos disponibles
-        // Nota: Esto es un poco ineficiente pero seguro. Idealmente solo moveríamos el elemento.
-        // Para simplificar, como ya tenemos los datos en el DOM, los leemos y re-renderizamos.
-        // O mejor, simplemente eliminamos la opción del select.
-        
-        const option = select.querySelector(`option[value="${select.value}"]`);
+        // Remove option from custom list
+        const option = document.querySelector(`.custom-option[data-value="${select.value}"]`);
         if (option) option.remove();
+        
+        // Reset trigger
         select.value = "";
+        const triggerText = document.getElementById('customSelectText');
+        triggerText.textContent = "+ Añadir campo faltante...";
+        triggerText.style.color = '';
+        triggerText.style.fontWeight = '';
+        
+        // If no more options, hide container
+        const optionsContainer = document.getElementById('customSelectOptions');
+        if (optionsContainer && optionsContainer.children.length === 0) {
+            const container = document.querySelector('.add-field-container');
+            if(container) container.style.display = 'none';
+        }
     }
 
     renderField(field, data) {
@@ -3310,13 +3423,34 @@ export class App {
         console.log('💾 saveOCRData iniciado. Contexto:', this);
         const tipo = this.currentOCRType;
         
+        // Helper para obtener valor de forma segura
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : null;
+        };
+
         try {
             if (tipo === 'factura' || tipo === 'ticket') {
-                const baseNeta = parseFloat(document.getElementById('ocr_base').value);
-                const nombreProveedor = document.getElementById('ocr_proveedor').value;
-                const nifCif = document.getElementById('ocr_nif').value;
-                const numeroFactura = document.getElementById('ocr_numero').value;
+                // Obtener valores soportando IDs antiguos y nuevos (compatibilidad schema)
+                const baseNetaStr = getVal('ocr_base') || getVal('ocr_subtotal');
+                const baseNeta = baseNetaStr ? parseFloat(baseNetaStr) : 0;
                 
+                const nombreProveedor = getVal('ocr_proveedor');
+                const nifCif = getVal('ocr_nif') || getVal('ocr_proveedor_cif');
+                const numeroFactura = getVal('ocr_numero');
+                
+                // Validaciones específicas para Factura
+                if (tipo === 'factura') {
+                    const missingFields = [];
+                    if (!nombreProveedor) missingFields.push('Nombre Proveedor');
+                    if (!numeroFactura) missingFields.push('Nº Factura');
+                    // Añadir más validaciones si es necesario
+                    
+                    if (missingFields.length > 0) {
+                        throw new Error(`Faltan campos obligatorios: ${missingFields.join(', ')}`);
+                    }
+                }
+
                 console.log(`🔍 Verificando duplicados: ${numeroFactura} - ${nombreProveedor}`);
 
                 // Verificar duplicados (con validación segura)
@@ -3407,9 +3541,9 @@ export class App {
         } catch (error) {
             console.error('Error guardando OCR:', error);
             if (typeof this.showModal === 'function') {
-                this.showModal('❌ Error', 'Error al guardar los datos. Verifica los campos.', 'error');
+                this.showModal('❌ Error', error.message || 'Error al guardar los datos. Verifica los campos.', 'error');
             } else {
-                alert('❌ Error al guardar los datos. Verifica los campos.');
+                alert('❌ ' + (error.message || 'Error al guardar los datos. Verifica los campos.'));
             }
         }
     }
@@ -3421,7 +3555,8 @@ export class App {
         // Buscar el proveedor y rellenar el CIF si no está
         const proveedor = this.db.proveedores.find(p => p.id === parseInt(proveedorId));
         if (proveedor && proveedor.nifCif) {
-            document.getElementById('ocr_nif').value = proveedor.nifCif;
+            const nifInput = document.getElementById('ocr_nif') || document.getElementById('ocr_proveedor_cif');
+            if (nifInput) nifInput.value = proveedor.nifCif;
         }
         
         // Ocultar formulario de datos adicionales
@@ -4128,7 +4263,7 @@ export class App {
         const uploadZone = document.querySelector('.file-upload-zone');
         if (uploadZone) uploadZone.style.display = 'block';
         
-        // Resetear bot�n cancelar (asegurar que est� visible para la pr�xima vez)
+        // Resetear bot�n cancelar (asegurar que est� visible para la pr�xima vez)
         const cancelContainer = document.getElementById('ocrUploadCancelContainer');
         if (cancelContainer) cancelContainer.classList.remove('hidden');
         
@@ -4685,6 +4820,7 @@ export class App {
 
         // 3. Renderizar Contenido
         switch(this.currentView) {
+            case 'ocr': this.renderRecentDocuments(); break;
             case 'cierres': this.renderCierres(); this.collapseForm('cierre'); break;
             case 'compras': this.renderCompras(); break;
             case 'proveedores': this.renderProveedores(); this.collapseForm('proveedor'); break;
@@ -5673,6 +5809,18 @@ export class App {
         document.getElementById('fileSelectedInfo').classList.remove('hidden');
         document.getElementById('fileSelectedInfo').style.display = 'flex';
 
+        // Ocultar la zona de drag & drop
+        const uploadZone = document.querySelector('.file-upload-zone');
+        if (uploadZone) uploadZone.style.display = 'none';
+        
+        // Ocultar botón cancelar carga (porque ya hay archivo)
+        const cancelContainer = document.getElementById('ocrUploadCancelContainer');
+        if (cancelContainer) cancelContainer.classList.add('hidden');
+
+        // Ocultar lista de últimos documentos
+        const recentDocsList = document.getElementById('recentDocumentsList');
+        if (recentDocsList) recentDocsList.style.display = 'none';
+
         const fileName = file.name.toLowerCase();
         const fileExtension = fileName.split('.').pop();
         const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'pdf'];
@@ -6613,5 +6761,111 @@ export class App {
         `).join('') : '<p class="empty-state">No hay pedidos registrados</p>';
         
         document.getElementById('listaDelivery').innerHTML = html;
+    }
+
+    async renderRecentDocuments() {
+        const container = document.getElementById('recentDocsContainer');
+        if (!container) return;
+
+        container.innerHTML = '<p style="text-align:center; color:#64748b;">Cargando documentos...</p>';
+
+        // 1. Recopilar documentos (Local)
+        let allDocs = [];
+        
+        const collectDocs = (source, type, dateField, amountField, nameField) => {
+            if (source) {
+                source.forEach(doc => {
+                    if (doc.ocrProcessed) {
+                        allDocs.push({
+                            ...doc,
+                            type: type,
+                            displayDate: doc[dateField] || doc.fecha,
+                            displayAmount: doc[amountField] || doc.total,
+                            displayName: doc[nameField] || doc.proveedor || 'Desconocido'
+                        });
+                    }
+                });
+            }
+        };
+
+        collectDocs(this.db.facturas, 'Factura', 'fechaFactura', 'totalFactura', 'proveedorNombre');
+        collectDocs(this.db.albaranes, 'Albarán', 'fechaAlbaran', 'totalAlbaran', 'proveedorNombre');
+        collectDocs(this.db.cierres, 'Cierre', 'fecha', 'totalReal', 'turno');
+        collectDocs(this.db.delivery, 'Delivery', 'fecha', 'ventasBrutas', 'plataforma');
+
+        // 2. Si no hay locales, intentar Firebase
+        if (allDocs.length === 0 && this.db.cloudService) {
+            try {
+                console.log('☁️ Buscando documentos recientes en Firebase...');
+                const [facturas, albaranes, cierres, delivery] = await Promise.all([
+                    this.db.cloudService.getAll('facturas'),
+                    this.db.cloudService.getAll('albaranes'),
+                    this.db.cloudService.getAll('cierres'),
+                    this.db.cloudService.getAll('delivery')
+                ]);
+
+                // Actualizar local DB (opcional, pero útil)
+                if(facturas.length) this.db.facturas = facturas;
+                if(albaranes.length) this.db.albaranes = albaranes;
+                if(cierres.length) this.db.cierres = cierres;
+                if(delivery.length) this.db.delivery = delivery;
+
+                // Recolectar de nuevo
+                collectDocs(facturas, 'Factura', 'fechaFactura', 'totalFactura', 'proveedorNombre');
+                collectDocs(albaranes, 'Albarán', 'fechaAlbaran', 'totalAlbaran', 'proveedorNombre');
+                collectDocs(cierres, 'Cierre', 'fecha', 'totalReal', 'turno');
+                collectDocs(delivery, 'Delivery', 'fecha', 'ventasBrutas', 'plataforma');
+                
+            } catch (e) {
+                console.error('Error fetching from Firebase:', e);
+            }
+        }
+
+        // 3. Ordenar y Renderizar
+        container.innerHTML = '';
+        
+        if (allDocs.length === 0) {
+            container.innerHTML = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 10px;">No hay documentos escaneados recientemente.</p>';
+            return;
+        }
+
+        allDocs.sort((a, b) => b.id - a.id);
+        const recentDocs = allDocs.slice(0, 5);
+
+        recentDocs.forEach(doc => {
+            const date = new Date(doc.id);
+            const timeStr = !isNaN(date.getTime()) ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const dateStr = !isNaN(date.getTime()) ? date.toLocaleDateString() : (doc.displayDate || '');
+            
+            const item = document.createElement('div');
+            item.className = 'recent-doc-item';
+            item.style.cssText = 'display: flex; align-items: center; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px;';
+            
+            let icon = '📄';
+            let collectionName = '';
+            if (doc.type === 'Factura') { icon = '🧾'; collectionName = 'facturas'; }
+            if (doc.type === 'Albarán') { icon = '📦'; collectionName = 'albaranes'; }
+            if (doc.type === 'Cierre') { icon = '💰'; collectionName = 'cierres'; }
+            if (doc.type === 'Delivery') { icon = '🛵'; collectionName = 'delivery'; }
+
+            item.innerHTML = `
+                <div style="font-size: 20px; margin-right: 12px;">${icon}</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="font-weight: 600; color: #334155; font-size: 14px;">${doc.type}</span>
+                        <span style="font-size: 12px; color: #64748b;">${dateStr} ${timeStr}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; color: #475569;">${doc.displayName}</span>
+                        <span style="font-weight: 600; color: #0f172a; font-size: 13px;">${parseFloat(doc.displayAmount || 0).toFixed(2)} €</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 5px; margin-left: 10px;">
+                    <button class="btn-edit" onclick="window.app.editItem('${collectionName}', ${doc.id})" title="Editar" style="padding: 4px 8px; font-size: 14px; background: none; border: none; cursor: pointer;">✏️</button>
+                    <button class="btn-delete" onclick="window.app.deleteItem('${collectionName}', ${doc.id})" title="Eliminar" style="padding: 4px 8px; font-size: 14px; background: none; border: none; cursor: pointer;">🗑️</button>
+                </div>
+            `;
+            container.appendChild(item);
+        });
     }
 }

@@ -79,4 +79,15 @@ export class FirestoreService {
             throw error;
         }
     }
+
+    async getAll(collectionName) {
+        try {
+            const colRef = this._getCollectionRef(collectionName);
+            const snapshot = await getDocs(colRef);
+            return snapshot.docs.map(doc => ({ id: parseInt(doc.id), ...doc.data() }));
+        } catch (error) {
+            console.error(`❌ Error Firestore GetAll (${collectionName}):`, error);
+            return [];
+        }
+    }
 }
