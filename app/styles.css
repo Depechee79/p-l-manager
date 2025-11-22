@@ -2369,3 +2369,258 @@ body {
     font-weight: 500;
 }
 
+/* --- DATA TABLES (v4.28) --- */
+.table-responsive {
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 800px; /* Ensure horizontal scroll on small screens if not stacked */
+}
+
+.data-table th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 16px;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Column Alignments */
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.font-mono { font-family: 'Roboto Mono', monospace; }
+
+/* Actions Column */
+.actions-cell {
+    white-space: nowrap;
+    text-align: right;
+    width: 1%; /* Shrink to fit */
+}
+
+.action-btn-group {
+    display: inline-flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 16px;
+}
+
+.btn-icon:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.btn-icon.edit { color: #3b82f6; }
+.btn-icon.delete { color: #ef4444; }
+.btn-icon.view { color: #64748b; }
+
+/* --- SMART DROPDOWNS (v4.28) --- */
+.smart-dropdown-container {
+    position: relative;
+    width: 100%;
+}
+
+.smart-dropdown-input {
+    width: 100%;
+    padding: 10px 12px;
+    padding-right: 30px; /* Space for icon */
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") no-repeat right 10px center;
+    background-size: 16px;
+    cursor: pointer;
+}
+
+.smart-dropdown-input:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.smart-dropdown-input.has-value {
+    border-color: #10b981;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 13l4 4L19 7'%3E%3C/path%3E%3C/svg%3E");
+}
+
+.smart-dropdown-input.invalid {
+    border-color: #ef4444;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ef4444'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'%3E%3C/path%3E%3C/svg%3E");
+}
+
+.smart-dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 4px;
+    display: none;
+}
+
+.smart-dropdown-list.show {
+    display: block;
+}
+
+.smart-dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.1s;
+}
+
+.smart-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.smart-dropdown-item:hover {
+    background: #f8fafc;
+    color: #1171ef;
+}
+
+.smart-dropdown-item.selected {
+    background: #eff6ff;
+    color: #1171ef;
+    font-weight: 500;
+}
+
+.smart-dropdown-empty {
+    padding: 15px;
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.smart-dropdown-create-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    background: #f0f9ff;
+    color: #0284c7;
+    border: none;
+    border-top: 1px solid #e0f2fe;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.smart-dropdown-create-btn:hover {
+    background: #e0f2fe;
+}
+
+/* --- RESPONSIVE TABLES (Mobile Stacked) --- */
+@media (max-width: 768px) {
+    .data-table, .data-table thead, .data-table tbody, .data-table th, .data-table td, .data-table tr {
+        display: block;
+    }
+
+    .data-table thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .data-table {
+        min-width: 100%;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .data-table tbody tr {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        padding: 15px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .data-table td {
+        border: none;
+        position: relative;
+        padding: 8px 0 8px 45%;
+        text-align: right;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .data-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 40%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: 600;
+        color: #64748b;
+        font-size: 12px;
+        text-transform: uppercase;
+    }
+
+    .data-table td.actions-cell {
+        padding-top: 15px;
+        margin-top: 10px;
+        border-top: 1px solid #f1f5f9;
+        justify-content: flex-end;
+        padding-left: 0;
+    }
+    
+    .data-table td.actions-cell::before {
+        display: none;
+    }
+    
+    /* Adjustments for specific columns in mobile */
+    .data-table td.text-right { text-align: right; }
+    .data-table td.text-center { text-align: right; } /* Align right in mobile for consistency */
+}
+

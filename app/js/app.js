@@ -15,6 +15,18 @@ export class App {
             tempProductoAltaRapida: null // Para cuando se crea producto desde inventario
         };
         
+        // Estado de ordenación para las tablas
+        this.sortState = {
+            escandallos: { column: 'nombre', direction: 'asc' },
+            cierres: { column: 'fecha', direction: 'desc' },
+            facturas: { column: 'fecha', direction: 'desc' },
+            albaranes: { column: 'fecha', direction: 'desc' },
+            inventarios: { column: 'fecha', direction: 'desc' },
+            delivery: { column: 'fecha', direction: 'desc' },
+            productos: { column: 'nombre', direction: 'asc' },
+            proveedores: { column: 'nombreFiscal', direction: 'asc' }
+        };
+
         // IMPORTANTE: Cerrar SOLO modales bloqueados al inicio (antes de que app esté lista)
         // Después de 100ms, marcar que la app ya está inicializada
         this.appInicializada = false;
@@ -136,6 +148,9 @@ export class App {
                     if (form && !form.dataset.editId) {
                         form.reset();
                     }
+                    
+                    // Inicializar dropdowns inteligentes
+                    this.updateSmartDropdowns(type);
                     
                     if (type === 'cierre') {
                         setTimeout(() => this.conectarEventosCierre(), 100); // Pequeño delay para asegurar DOM
@@ -1044,7 +1059,7 @@ export class App {
         this.showToast('✏️ Editando cierre del ' + cierre.fecha);
     }
 
-    renderCierres() {
+    renderCierres_OLD_1062() {
         const cierres = this.db.getByPeriod('cierres', this.currentPeriod);
         
         if (cierres.length === 0) {
@@ -1204,7 +1219,7 @@ export class App {
         return abs <= 0.01 ? 'delta-cero' : 'delta-descuadre';
     }
 
-    renderCompras() {
+    renderCompras_OLD_1222() {
         // Poblar datalist de proveedores para autocomplete
         const datalist = document.getElementById('datalistProveedores');
         if (datalist) {
@@ -1406,7 +1421,7 @@ export class App {
         if (modal) modal.remove();
     }
 
-    renderProveedores() {
+    renderProveedores_OLD_1424() {
         const proveedores = this.db.proveedores;
         
         // DEBUG: Verificar datos de proveedores
@@ -1457,7 +1472,7 @@ export class App {
         }
     }
 
-    renderProductos() {
+    renderProductos_OLD_1475() {
         const productos = this.db.productos;
         const html = productos.length > 0 ? productos.map(p => {
             const precio = p.precioPromedioNeto || p.precio || 0;
@@ -1491,7 +1506,7 @@ export class App {
         document.getElementById('listaProductos').innerHTML = html;
     }
 
-    renderEscandallos() {
+    renderEscandallos_OLD_1509() {
         const escandallos = this.db.escandallos;
         const html = escandallos.length > 0 ? escandallos.map(e => {
             const fcClass = e.foodCost > 35 ? 'fc-high' : e.foodCost > 25 ? 'fc-medium' : 'fc-low';
@@ -1747,7 +1762,7 @@ export class App {
         this.render();
     }
 
-    renderInventarios() {
+    renderInventarios_OLD_1765() {
         const inventarios = this.db.inventarios;
         const html = inventarios.length > 0 ? inventarios.reverse().map(i => {
             const numProductos = i.productos ? i.productos.length : 0;
@@ -1774,7 +1789,7 @@ export class App {
         document.getElementById('listaInventarios').innerHTML = html;
     }
 
-    renderDelivery() {
+    renderDelivery_OLD_1792() {
         const delivery = this.db.getByPeriod('delivery', this.currentPeriod);
         const html = delivery.length > 0 ? delivery.reverse().map(d => `
             <div class="list-item">
@@ -3592,34 +3607,153 @@ export class App {
             return;
         }
 
-        // Buscar contenedor en el DOM
-        const containerId = `row-${collection}-${id}`;
-        const container = document.getElementById(containerId);
-        
-        if (container) {
-            // MODO INLINE: Reemplazar contenido del contenedor
-            container.innerHTML = this.renderInlineEditForm(collection, item);
-        } else {
-            // Fallback a modal si no se encuentra el contenedor (o para vistas antiguas)
-            // Router de edición antiguo
-            switch(collection) {
-                case 'facturas':
-                    if (this.abrirModalEditarFactura) this.abrirModalEditarFactura(item);
-                    break;
-                case 'albaranes':
-                    if (this.abrirModalEditarAlbaran) this.abrirModalEditarAlbaran(item);
-                    break;
-                case 'cierres':
-                    if (this.abrirModalEditarCierre) this.abrirModalEditarCierre(item.id);
-                    break;
-                case 'escandallos':
-                    if (this.abrirModalEditarEscandallo) this.abrirModalEditarEscandallo(item.id);
-                    break;
-                default:
-                    console.warn(`Edición no implementada para ${collection}`);
-                    this.showToast(`⚠️ La edición de ${collection} aún no está disponible`);
+        // 1. PRODUCTOS
+        if (collection === 'productos') {
+            this.expandForm('producto');
+            const form = document.getElementById('productoForm');
+            form.dataset.editId = item.id;
+            
+            document.getElementById('productoNombre').value = item.nombre;
+            document.getElementById('productoPrecio').value = item.precioPromedioNeto;
+            document.getElementById('productoUnidadBase').value = item.unidadBase;
+            document.getElementById('productoEsEmpaquetado').value = item.esEmpaquetado.toString();
+            this.toggleEmpaqueFields(); // Actualizar visibilidad
+            document.getElementById('productoTipoEmpaque').value = item.tipoEmpaque || '';
+            document.getElementById('productoUnidadesPorEmpaque').value = item.unidadesPorEmpaque || '';
+            document.getElementById('productoStockActual').value = item.stockActualUnidades || 0;
+            
+            if (this.proveedorDropdown) {
+                this.proveedorDropdown.setValue(item.proveedorId);
             }
+            
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) btn.textContent = '✓ Actualizar Producto';
+            return;
         }
+
+        // 2. PROVEEDORES
+        if (collection === 'proveedores') {
+            this.expandForm('proveedor');
+            const form = document.getElementById('proveedorForm');
+            form.dataset.editId = item.id;
+            
+            document.getElementById('proveedorNombreComercial').value = item.nombreComercial || '';
+            document.getElementById('proveedorRazonSocial').value = item.nombreFiscal || item.nombre || '';
+            document.getElementById('proveedorNifCif').value = item.nifCif || item.cif || '';
+            document.getElementById('proveedorPersonaContacto').value = item.contacto || '';
+            document.getElementById('proveedorTelefono').value = item.telefono || '';
+            document.getElementById('proveedorEmail').value = item.email || '';
+            document.getElementById('proveedorWeb').value = item.web || '';
+            document.getElementById('proveedorDireccionFiscal').value = item.direccion || '';
+            document.getElementById('proveedorDireccionEnvioHabitual').value = item.direccionEnvio || '';
+            document.getElementById('proveedorCodigoPostal').value = item.cp || '';
+            document.getElementById('proveedorCiudad').value = item.ciudad || '';
+            document.getElementById('proveedorPais').value = item.pais || '';
+            document.getElementById('proveedorMetodoPagoPreferido').value = item.condicionesPago || '';
+            document.getElementById('proveedorPlazoPagoDias').value = item.plazoPago || '';
+            document.getElementById('proveedorDescuentoAcordadoPorcentaje').value = item.descuento || '';
+            document.getElementById('proveedorIban').value = item.iban || '';
+            document.getElementById('proveedorBanco').value = item.banco || '';
+            document.getElementById('proveedorCategoriaPrincipalCompra').value = item.categoria || '';
+            document.getElementById('proveedorSubcategoriasCompra').value = item.subcategorias || '';
+            document.getElementById('proveedorNotasCondiciones').value = item.notas || '';
+            document.getElementById('proveedorNotasInternas').value = item.notasInternas || '';
+            document.getElementById('proveedorEstado').value = item.estado || 'Activo';
+            document.getElementById('proveedorFechaAlta').value = item.fechaAlta || '';
+            
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) btn.textContent = '✓ Actualizar Proveedor';
+            return;
+        }
+
+        // 3. ESCANDALLOS
+        if (collection === 'escandallos') {
+            this.expandForm('escandallo');
+            const form = document.getElementById('escandalloForm');
+            form.dataset.editId = item.id;
+            
+            document.getElementById('escandalloNombre').value = item.nombre;
+            document.getElementById('escandalloCodigo').value = item.codigo || '';
+            document.getElementById('escandalloPVPConIVA').value = item.pvpConIva;
+            document.getElementById('escandalloTipoIVA').value = item.tipoIva;
+            document.getElementById('escandalloPVPNeto').value = item.pvpNeto;
+            document.getElementById('escandalloCosteTotalNeto').value = item.costeTotalNeto;
+            document.getElementById('escandalloFC').value = item.foodCost;
+            document.getElementById('escandalloMargen').value = item.margenPorcentaje;
+            document.getElementById('escandalloNotas').value = item.notas || '';
+
+            // Reconstruir ingredientes
+            const container = document.getElementById('ingredientesContainer');
+            container.innerHTML = '';
+            if (item.ingredientes) {
+                item.ingredientes.forEach(ing => {
+                    this.addIngredienteRow();
+                    const rows = container.querySelectorAll('.ingrediente-item');
+                    const lastRow = rows[rows.length - 1];
+                    
+                    if (lastRow.dropdown) {
+                        lastRow.dropdown.setValue(ing.productoId);
+                    }
+                    
+                    // Forzar actualización de datos de la fila
+                    const product = this.db.productos.find(p => p.id === ing.productoId);
+                    if (product) {
+                        this.updateIngredienteRowData(lastRow, product);
+                    }
+                    
+                    // Restaurar cantidad específica de este escandallo
+                    lastRow.querySelector('.ingrediente-cantidad').value = ing.cantidad;
+                    
+                    // Recalcular total de la fila
+                    const costeUnitario = parseFloat(lastRow.querySelector('.ingrediente-coste-unitario').value) || 0;
+                    lastRow.querySelector('.ingrediente-coste-total').value = (ing.cantidad * costeUnitario).toFixed(2);
+                });
+                this.calcularCostesEscandallo();
+            }
+            
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) btn.textContent = '✓ Actualizar Escandallo';
+            return;
+        }
+
+        // 4. DELIVERY
+        if (collection === 'delivery') {
+            this.expandForm('delivery');
+            const form = document.getElementById('deliveryForm');
+            form.dataset.editId = item.id;
+            
+            document.getElementById('deliveryPlataforma').value = item.plataforma;
+            document.getElementById('deliveryFecha').value = item.fecha;
+            document.getElementById('deliveryVentas').value = item.ventasBrutas;
+            document.getElementById('deliveryComision').value = item.comisionPorcentaje;
+            
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) btn.textContent = '✓ Actualizar Registro';
+            return;
+        }
+
+        // 5. MODALES ESPECÍFICOS (Facturas, Albaranes, Cierres)
+        if (collection === 'facturas') {
+            if (this.abrirModalEditarFactura) this.abrirModalEditarFactura(item);
+            return;
+        }
+        if (collection === 'albaranes') {
+            if (this.abrirModalEditarAlbaran) this.abrirModalEditarAlbaran(item);
+            return;
+        }
+        if (collection === 'cierres') {
+            if (this.abrirModalEditarCierre) this.abrirModalEditarCierre(item.id);
+            return;
+        }
+        
+        // 6. INVENTARIOS (Edición limitada o no soportada completamente aún)
+        if (collection === 'inventarios') {
+            this.showToast('⚠️ La edición completa de inventarios no está disponible. Elimina y crea uno nuevo si hay errores graves.', true);
+            return;
+        }
+
+        console.warn(`Edición no implementada para ${collection}`);
+        this.showToast(`⚠️ La edición de ${collection} no está disponible`);
     }
 
     saveOCRData() {
@@ -5023,7 +5157,7 @@ export class App {
         }
     }
 
-    render() {
+    render_OLD_5160() {
         const titles = {
             'ocr': 'Escáner de Documentos',
             'cierres': '🧾 Cierres de Caja',
@@ -5182,7 +5316,7 @@ export class App {
         this.showToast('✏️ Editando cierre del ' + cierre.fecha);
     }
 
-    renderCierres() {
+    renderCierres_OLD_5319() {
         const cierres = this.db.getByPeriod('cierres', this.currentPeriod);
         
         if (cierres.length === 0) {
@@ -5323,7 +5457,7 @@ export class App {
         return abs <= 0.01 ? 'delta-cero' : 'delta-descuadre';
     }
 
-    renderCompras() {
+    renderCompras_OLD_5460() {
         // Poblar datalist de proveedores para autocomplete
         const datalist = document.getElementById('datalistProveedores');
         if (datalist) {
@@ -5525,7 +5659,7 @@ export class App {
         if (modal) modal.remove();
     }
 
-    renderProveedores() {
+    renderProveedores_OLD_5662() {
         const proveedores = this.db.proveedores;
         
         // DEBUG: Verificar datos de proveedores
@@ -5576,7 +5710,7 @@ export class App {
         }
     }
 
-    renderProductos() {
+    renderProductos_OLD_5713() {
         const productos = this.db.productos;
         const html = productos.length > 0 ? productos.map(p => {
             const precio = p.precioPromedioNeto || p.precio || 0;
@@ -5610,7 +5744,7 @@ export class App {
         document.getElementById('listaProductos').innerHTML = html;
     }
 
-    renderEscandallos() {
+    renderEscandallos_OLD_5747() {
         const escandallos = this.db.escandallos;
         const html = escandallos.length > 0 ? escandallos.map(e => {
             const fcClass = e.foodCost > 35 ? 'fc-high' : e.foodCost > 25 ? 'fc-medium' : 'fc-low';
@@ -5866,7 +6000,7 @@ export class App {
         this.render();
     }
 
-    renderInventarios() {
+    renderInventarios_OLD_6003() {
         const inventarios = this.db.inventarios;
         const html = inventarios.length > 0 ? inventarios.reverse().map(i => {
             const numProductos = i.productos ? i.productos.length : 0;
@@ -5893,7 +6027,7 @@ export class App {
         document.getElementById('listaInventarios').innerHTML = html;
     }
 
-    renderDelivery() {
+    renderDelivery_OLD_6030() {
         const delivery = this.db.getByPeriod('delivery', this.currentPeriod);
         const html = delivery.length > 0 ? delivery.reverse().map(d => `
             <div class="list-item">
@@ -5914,7 +6048,7 @@ export class App {
         document.getElementById('listaDelivery').innerHTML = html;
     }
 
-    renderPnL() {
+    renderPnL_OLD_6051() {
         // ══════════════════════════════════════════════════════════════
         // CUENTA DE EXPLOTACIÓN PROFESIONAL HOSTELERÍA 2025
         // TODO SIN IVA · ESTRUCTURA PROFESIONAL COMPLETA
@@ -6778,7 +6912,7 @@ export class App {
         });
     }
 
-    renderCompras() {
+    renderCompras_OLD_6915() {
         // Poblar datalist de proveedores para autocomplete
         const datalist = document.getElementById('datalistProveedores');
         if (datalist) {
@@ -6863,31 +6997,41 @@ export class App {
         document.getElementById('listaAlbaranes').innerHTML = albaranesHtml;
     }
 
-    renderProveedores() {
+    renderProveedores_OLD_7000() {
         const proveedores = this.db.proveedores;
         
-        const html = proveedores.length > 0 ? proveedores.map(p => {
-            const nombre = p.nombreFiscal || p.nombre || 'Sin nombre';
-            const comercial = p.nombreComercial ? ` (${p.nombreComercial})` : '';
-            const tipo = p.tipo || p.tipoProveedor || 'N/A';
-            
-            return `
-            <div class="list-item" id="row-proveedores-${p.id}">
-                <div class="list-item-header">
-                    <span class="list-item-title">${nombre}${comercial}</span>
-                    <span class="list-item-value">${tipo}</span>
-                </div>
-                <div class="list-item-details">
-                    🏢 ${p.nifCif || 'Sin NIF/CIF'} | 📞 ${p.telefono || 'Sin teléfono'} | 📧 ${p.email || 'Sin email'}
-                    ${p.condicionesPago ? `| 💳 ${p.condicionesPago}` : ''}
-                </div>
-                <div class="list-item-actions">
-                    <button class="btn-edit" onclick="window.app.editItem('proveedores', ${p.id})">✏️</button>
-                    <button class="btn-delete" onclick="window.app.deleteItem('proveedores', ${p.id})">🗑️</button>
-                </div>
-            </div>
-            `;
-        }).join('') : '<p class="empty-state">No hay proveedores registrados</p>';
+        const html = proveedores.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nombre Comercial</th>
+                        <th>Razón Social</th>
+                        <th>Contacto</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${proveedores.map(p => `
+                    <tr id="row-proveedores-${p.id}">
+                        <td>${p.nombreComercial || '-'}</td>
+                        <td>${p.nombreFiscal || p.nombre || '-'}</td>
+                        <td>${p.contacto || '-'}</td>
+                        <td>${p.telefono || '-'}</td>
+                        <td>${p.email || '-'}</td>
+                        <td><span class="badge badge-${(p.estado || 'Activo').toLowerCase()}">${p.estado || 'Activo'}</span></td>
+                        <td class="actions-cell">
+                            <button class="btn-icon" onclick="window.app.editItem('proveedores', ${p.id})" title="Editar">✏️</button>
+                            <button class="btn-icon delete" onclick="window.app.deleteItem('proveedores', ${p.id})" title="Eliminar">🗑️</button>
+                        </td>
+                    </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay proveedores registrados</p>';
         
         const contenedor = document.getElementById('listaProveedores');
         if (contenedor) {
@@ -7027,84 +7171,125 @@ export class App {
         }
     }
 
-    renderProductos() {
+    renderProductos_OLD_7174() {
         const productos = this.db.productos;
-        const html = productos.length > 0 ? productos.map(p => {
-            const precio = p.precioPromedioNeto || p.precio || 0;
-            const stock = p.stockActualUnidades || 0;
-            const unidad = p.unidadBase || 'ud';
-            const proveedor = p.proveedorNombre || p.proveedor || 'Sin proveedor';
-            
-            let empaqueInfo = '';
-            if (p.esEmpaquetado && p.unidadesPorEmpaque) {
-                const numEmpaques = (stock / p.unidadesPorEmpaque).toFixed(2);
-                empaqueInfo = ` | 📦 ${numEmpaques} ${p.tipoEmpaque}s`;
-            }
-            
-            return `
-            <div class="list-item" id="row-productos-${p.id}">
-                <div class="list-item-header">
-                    <span class="list-item-title">${p.nombre}</span>
-                    <span class="list-item-value">${precio.toFixed(2)}€/${unidad}</span>
-                </div>
-                <div class="list-item-details">
-                    🏢 ${proveedor} | 📦 Stock: ${stock.toFixed(2)} ${unidad}${empaqueInfo}
-                </div>
-                <div class="list-item-actions">
-                    <button class="btn-edit" onclick="window.app.editItem('productos', ${p.id})">✏️</button>
-                    <button class="btn-delete" onclick="window.app.deleteItem('productos', ${p.id})">🗑️</button>
-                </div>
-            </div>
-            `;
-        }).join('') : '<p class="empty-state">No hay productos en el catálogo</p>';
+        const html = productos.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Precio</th>
+                        <th>Proveedor</th>
+                        <th>Stock</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${productos.map(p => {
+                        const precio = p.precioPromedioNeto || p.precio || 0;
+                        const stock = p.stockActualUnidades || 0;
+                        const unidad = p.unidadBase || 'ud';
+                        const proveedor = p.proveedorNombre || p.proveedor || 'Sin proveedor';
+                        
+                        let empaqueInfo = '';
+                        if (p.esEmpaquetado && p.unidadesPorEmpaque) {
+                            const numEmpaques = (stock / p.unidadesPorEmpaque).toFixed(2);
+                            empaqueInfo = `<br><small class="text-muted">📦 ${numEmpaques} ${p.tipoEmpaque}s</small>`;
+                        }
+
+                        return `
+                        <tr id="row-productos-${p.id}">
+                            <td>${p.nombre}</td>
+                            <td>${precio.toFixed(2)} €/${unidad}</td>
+                            <td>${proveedor}</td>
+                            <td>${stock.toFixed(2)} ${unidad}${empaqueInfo}</td>
+                            <td class="actions-cell">
+                                <button class="btn-icon" onclick="window.app.editItem('productos', ${p.id})" title="Editar">✏️</button>
+                                <button class="btn-icon delete" onclick="window.app.deleteItem('productos', ${p.id})" title="Eliminar">🗑️</button>
+                            </td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay productos en el catálogo</p>';
         
         document.getElementById('listaProductos').innerHTML = html;
     }
 
-    renderInventarios() {
+    renderInventarios_OLD_7221() {
         const inventarios = this.db.inventarios;
-        const html = inventarios.length > 0 ? inventarios.reverse().map(i => {
-            const numProductos = i.productos ? i.productos.length : 0;
-            const valorTotal = i.productos ? i.productos.reduce((sum, p) => sum + p.valorDiferencia, 0) : 0;
-            const colorClass = Math.abs(valorTotal) > 50 ? 'warning' : '';
-            
-            return `
-            <div class="list-item ${colorClass}" id="row-inventarios-${i.id}">
-                <div class="list-item-header">
-                    <span class="list-item-title">Inventario ${i.fecha}</span>
-                    <span class="list-item-value">${i.familia}</span>
-                </div>
-                <div class="list-item-details">
-                    📦 ${numProductos} productos | 💰 Diferencia: ${valorTotal.toFixed(2)}€
-                </div>
-                <div class="list-item-actions">
-                    <button class="btn-edit" onclick="window.app.editItem('inventarios', ${i.id})">✏️</button>
-                    <button class="btn-delete" onclick="window.app.deleteItem('inventarios', ${i.id})">🗑️</button>
-                </div>
-            </div>
-            `;
-        }).join('') : '<p class="empty-state">No hay inventarios realizados</p>';
+        const html = inventarios.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Familia</th>
+                        <th>Productos</th>
+                        <th>Valor Diferencia</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${inventarios.reverse().map(i => {
+                        const numProductos = i.productos ? i.productos.length : 0;
+                        const valorTotal = i.productos ? i.productos.reduce((sum, p) => sum + p.valorDiferencia, 0) : 0;
+                        const colorClass = Math.abs(valorTotal) > 50 ? 'color: #e74c3c; font-weight: bold;' : '';
+                        
+                        return `
+                        <tr id="row-inventarios-${i.id}">
+                            <td>${i.fecha}</td>
+                            <td>${i.familia}</td>
+                            <td>${numProductos}</td>
+                            <td style="${colorClass}">${valorTotal.toFixed(2)} €</td>
+                            <td class="actions-cell">
+                                <button class="btn-icon" onclick="window.app.editItem('inventarios', ${i.id})" title="Editar">✏️</button>
+                                <button class="btn-icon delete" onclick="window.app.deleteItem('inventarios', ${i.id})" title="Eliminar">🗑️</button>
+                            </td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay inventarios realizados</p>';
         
         document.getElementById('listaInventarios').innerHTML = html;
     }
 
-    renderDelivery() {
+    renderDelivery_OLD_7261() {
         const delivery = this.db.getByPeriod('delivery', this.currentPeriod);
-        const html = delivery.length > 0 ? delivery.reverse().map(d => `
-            <div class="list-item" id="row-delivery-${d.id}">
-                <div class="list-item-header">
-                    <span class="list-item-title">${d.plataforma} - ${d.fecha}</span>
-                    <span class="list-item-value">${d.ingresoNeto.toFixed(2)}€</span>
-                </div>
-                <div class="list-item-details">
-                    💰 Brutos: ${d.ventasBrutas}€ | 💸 Comisión: ${d.comisionPorcentaje}% (${d.comisionImporte.toFixed(2)}€)
-                </div>
-                <div class="list-item-actions">
-                    <button class="btn-edit" onclick="window.app.editItem('delivery', ${d.id})">✏️</button>
-                    <button class="btn-delete" onclick="window.app.deleteItem('delivery', ${d.id})">🗑️</button>
-                </div>
-            </div>
-        `).join('') : '<p class="empty-state">No hay pedidos registrados</p>';
+        const html = delivery.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Plataforma</th>
+                        <th>Ventas Brutas</th>
+                        <th>Comisión</th>
+                        <th>Ingreso Neto</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${delivery.reverse().map(d => `
+                    <tr id="row-delivery-${d.id}">
+                        <td>${d.fecha}</td>
+                        <td>${d.plataforma}</td>
+                        <td>${d.ventasBrutas.toFixed(2)} €</td>
+                        <td>${d.comisionPorcentaje}% (${d.comisionImporte.toFixed(2)} €)</td>
+                        <td><strong>${d.ingresoNeto.toFixed(2)} €</strong></td>
+                        <td class="actions-cell">
+                            <button class="btn-icon" onclick="window.app.editItem('delivery', ${d.id})" title="Editar">✏️</button>
+                            <button class="btn-icon delete" onclick="window.app.deleteItem('delivery', ${d.id})" title="Eliminar">🗑️</button>
+                        </td>
+                    </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay pedidos registrados</p>';
         
         document.getElementById('listaDelivery').innerHTML = html;
     }
@@ -7266,7 +7451,7 @@ export class App {
         
         const producto = {
             nombre: document.getElementById('productoNombre').value,
-            proveedorId: parseInt(document.getElementById('productoProveedorId').value) || null,
+            proveedorId: this.proveedorDropdown && this.proveedorDropdown.getValue() ? parseInt(this.proveedorDropdown.getValue()) : null,
             precioPromedioNeto: parseFloat(document.getElementById('productoPrecio').value),
             unidadBase: document.getElementById('productoUnidadBase').value,
             esEmpaquetado: document.getElementById('productoEsEmpaquetado').value === 'true',
@@ -7361,13 +7546,18 @@ export class App {
         // Recopilar ingredientes
         const ingredientes = [];
         document.querySelectorAll('.ingrediente-item').forEach(item => {
-            ingredientes.push({
-                productoId: parseInt(item.querySelector('.ingrediente-producto').value),
-                cantidad: parseFloat(item.querySelector('.ingrediente-cantidad').value),
-                unidad: item.querySelector('.ingrediente-unidad').value,
-                costeUnitario: parseFloat(item.querySelector('.ingrediente-coste-unitario').value),
-                costeTotal: parseFloat(item.querySelector('.ingrediente-coste-total').value)
-            });
+            const hiddenInput = item.querySelector('.smart-dropdown-value');
+            const productoId = hiddenInput ? parseInt(hiddenInput.value) : null;
+            
+            if (productoId) {
+                ingredientes.push({
+                    productoId: productoId,
+                    cantidad: parseFloat(item.querySelector('.ingrediente-cantidad').value),
+                    unidad: item.querySelector('.ingrediente-unidad').value,
+                    costeUnitario: parseFloat(item.querySelector('.ingrediente-coste-unitario').value),
+                    costeTotal: parseFloat(item.querySelector('.ingrediente-coste-total').value)
+                });
+            }
         });
 
         const escandallo = {
@@ -7415,7 +7605,9 @@ export class App {
                 const rows = container.querySelectorAll('.ingrediente-item');
                 const lastRow = rows[rows.length - 1];
                 
-                lastRow.querySelector('.ingrediente-producto').value = ing.productoId;
+                if (lastRow.dropdown) {
+                    lastRow.dropdown.setValue(ing.productoId);
+                }
                 lastRow.querySelector('.ingrediente-cantidad').value = ing.cantidad;
                 lastRow.querySelector('.ingrediente-unidad').value = ing.unidad;
                 lastRow.querySelector('.ingrediente-coste-unitario').value = ing.costeUnitario;
@@ -7429,6 +7621,555 @@ export class App {
         // Cambiar texto del botón
         const btn = document.querySelector('#escandalloForm button[type="submit"]');
         if(btn) btn.textContent = '✓ Actualizar Escandallo';
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // UI HELPERS - SMART DROPDOWNS
+    // ══════════════════════════════════════════════════════════════
+
+    createSmartDropdown(containerId, options, onSelect, onCreateNew, placeholder = 'Seleccionar...') {
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+
+        container.innerHTML = '';
+        container.className = 'smart-dropdown-container';
+
+        // Input de búsqueda
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'smart-dropdown-input';
+        input.placeholder = placeholder;
+        input.autocomplete = 'off';
+
+        // Lista de opciones
+        const list = document.createElement('div');
+        list.className = 'smart-dropdown-list';
+        list.style.display = 'none';
+
+        // Hidden input para el valor real (ID)
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.className = 'smart-dropdown-value';
+        hiddenInput.name = containerId + '_value';
+
+        container.appendChild(input);
+        container.appendChild(hiddenInput);
+        container.appendChild(list);
+
+        let selectedOption = null;
+
+        // Renderizar lista
+        const renderList = (filterText = '') => {
+            list.innerHTML = '';
+            const filtered = options.filter(opt => 
+                opt.label.toLowerCase().includes(filterText.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                if (onCreateNew && filterText.length > 0) {
+                    const createItem = document.createElement('div');
+                    createItem.className = 'smart-dropdown-item create-new';
+                    createItem.textContent = `+ Crear "${filterText}"`;
+                    createItem.onclick = (e) => {
+                        e.preventDefault();
+                        onCreateNew(filterText);
+                        closeList();
+                    };
+                    createItem.onmousedown = (e) => e.preventDefault();
+                    list.appendChild(createItem);
+                } else {
+                    const noResults = document.createElement('div');
+                    noResults.className = 'smart-dropdown-item disabled';
+                    noResults.textContent = 'No hay resultados';
+                    list.appendChild(noResults);
+                }
+            } else {
+                filtered.forEach(opt => {
+                    const item = document.createElement('div');
+                    item.className = 'smart-dropdown-item';
+                    if (selectedOption && selectedOption.id === opt.id) {
+                        item.classList.add('selected');
+                    }
+                    item.textContent = opt.label;
+                    
+                    item.onmousedown = (e) => {
+                        e.preventDefault();
+                        selectOption(opt);
+                    };
+                    
+                    list.appendChild(item);
+                });
+            }
+        };
+
+        const selectOption = (opt) => {
+            selectedOption = opt;
+            input.value = opt.label;
+            hiddenInput.value = opt.id;
+            list.style.display = 'none';
+            if (onSelect) onSelect(opt.id);
+        };
+
+        const openList = () => {
+            list.style.display = 'block';
+            renderList(input.value);
+        };
+
+        const closeList = () => {
+            setTimeout(() => {
+                list.style.display = 'none';
+                if (selectedOption && input.value !== selectedOption.label) {
+                    input.value = selectedOption.label;
+                } else if (!selectedOption) {
+                    input.value = '';
+                }
+            }, 200);
+        };
+
+        input.addEventListener('focus', openList);
+        input.addEventListener('input', (e) => {
+            list.style.display = 'block';
+            renderList(e.target.value);
+            if (e.target.value === '') {
+                selectedOption = null;
+                hiddenInput.value = '';
+            }
+        });
+        input.addEventListener('blur', closeList);
+
+        return {
+            getValue: () => hiddenInput.value,
+            setValue: (id) => {
+                const opt = options.find(o => o.id === id);
+                if (opt) {
+                    selectOption(opt);
+                } else {
+                    selectedOption = null;
+                    input.value = '';
+                    hiddenInput.value = '';
+                }
+            },
+            updateOptions: (newOptions) => {
+                options = newOptions;
+            }
+        };
+    }
+
+    updateSmartDropdowns(type) {
+        if (type === 'producto') {
+            const container = document.getElementById('productoProveedorDropdown');
+            if (container) {
+                const options = this.db.proveedores.map(p => ({
+                    id: p.id,
+                    label: p.nombreFiscal || p.nombre
+                }));
+                
+                this.proveedorDropdown = this.createSmartDropdown(
+                    'productoProveedorDropdown',
+                    options,
+                    (id) => console.log('Proveedor seleccionado:', id),
+                    (text) => {
+                        this.toggleForm('proveedor');
+                        const nombreInput = document.getElementById('proveedorNombre');
+                        if (nombreInput) nombreInput.value = text;
+                    },
+                    'Buscar proveedor...'
+                );
+                
+                // Si estamos editando, establecer valor inicial
+                const form = document.getElementById('productoForm');
+                if (form && form.dataset.editId) {
+                    const prodId = parseInt(form.dataset.editId);
+                    const prod = this.db.productos.find(p => p.id === prodId);
+                    if (prod && prod.proveedorId && this.proveedorDropdown) {
+                        this.proveedorDropdown.setValue(prod.proveedorId);
+                    }
+                }
+            }
+        }
+    }
+
+    // --- OVERRIDES FOR TABLE LAYOUT & SORTING ---
+
+    renderEscandallos() {
+        let escandallos = this.db.escandallos;
+        escandallos = this.sortData(escandallos, 'escandallos');
+
+        const html = escandallos.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.app.handleSort('escandallos', 'nombre')" style="cursor:pointer">Nombre${this.getSortIndicator('escandallos', 'nombre')}</th>
+                        <th onclick="window.app.handleSort('escandallos', 'pvpConIva')" style="cursor:pointer">PVP (IVA inc.)${this.getSortIndicator('escandallos', 'pvpConIva')}</th>
+                        <th onclick="window.app.handleSort('escandallos', 'costeTotalNeto')" style="cursor:pointer">Coste Neto${this.getSortIndicator('escandallos', 'costeTotalNeto')}</th>
+                        <th onclick="window.app.handleSort('escandallos', 'foodCost')" style="cursor:pointer">Food Cost %${this.getSortIndicator('escandallos', 'foodCost')}</th>
+                        <th onclick="window.app.handleSort('escandallos', 'margenPorcentaje')" style="cursor:pointer">Margen %${this.getSortIndicator('escandallos', 'margenPorcentaje')}</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${escandallos.map(e => {
+                        const fcClass = e.foodCost > 35 ? 'color: #e74c3c; font-weight: bold;' : e.foodCost > 25 ? 'color: #f39c12;' : 'color: #27ae60;';
+                        
+                        return `
+                        <tr id="row-escandallos-${e.id}">
+                            <td>${e.nombre}${e.codigo ? ` <small class="text-muted">(${e.codigo})</small>` : ''}</td>
+                            <td>${e.pvpConIva.toFixed(2)} €</td>
+                            <td>${e.costeTotalNeto.toFixed(2)} €</td>
+                            <td style="${fcClass}">${e.foodCost.toFixed(1)}%</td>
+                            <td>${e.margenPorcentaje.toFixed(1)}%</td>
+                            <td class="actions-cell">
+                                <button class="btn-icon" onclick="window.app.editItem('escandallos', ${e.id})" title="Editar">✏️</button>
+                                <button class="btn-icon delete" onclick="window.app.deleteItem('escandallos', ${e.id})" title="Eliminar">🗑️</button>
+                            </td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay escandallos definidos</p>';
+        
+        document.getElementById('listaEscandallos').innerHTML = html;
+    }
+
+    renderCierres() {
+        let cierres = this.db.getByPeriod('cierres', this.currentPeriod);
+        cierres = this.sortData(cierres, 'cierres');
+        
+        if (cierres.length === 0) {
+            document.getElementById('listaCierres').innerHTML = '<p class="empty-state">No hay cierres registrados</p>';
+            return;
+        }
+
+        const html = `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.app.handleSort('cierres', 'fecha')" style="cursor:pointer">Fecha${this.getSortIndicator('cierres', 'fecha')}</th>
+                        <th onclick="window.app.handleSort('cierres', 'turno')" style="cursor:pointer">Turno${this.getSortIndicator('cierres', 'turno')}</th>
+                        <th onclick="window.app.handleSort('cierres', 'totalPos')" style="cursor:pointer">Total POS${this.getSortIndicator('cierres', 'totalPos')}</th>
+                        <th onclick="window.app.handleSort('cierres', 'totalReal')" style="cursor:pointer">Total Real${this.getSortIndicator('cierres', 'totalReal')}</th>
+                        <th onclick="window.app.handleSort('cierres', 'descuadreTotal')" style="cursor:pointer">Descuadre${this.getSortIndicator('cierres', 'descuadreTotal')}</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${cierres.map(c => {
+                        const descuadreAbs = Math.abs(c.descuadreTotal);
+                        const cuadra = descuadreAbs <= 0.01;
+                        const badgeClass = cuadra ? 'badge-cuadra' : 'badge-descuadre';
+                        const badgeText = cuadra ? '✅ CUADRA' : `⚠ ${descuadreAbs.toFixed(2)} €`;
+                        
+                        return `
+                        <tr id="row-cierres-${c.id}">
+                            <td>${c.fecha}</td>
+                            <td>${c.turno}</td>
+                            <td>${c.totalPos.toFixed(2)} €</td>
+                            <td>${c.totalReal.toFixed(2)} €</td>
+                            <td style="color: ${c.descuadreTotal >= 0 ? 'green' : 'red'}">${c.descuadreTotal.toFixed(2)} €</td>
+                            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                            <td class="actions-cell">
+                                <button class="btn-icon" onclick="window.app.abrirModalEditarCierre(${c.id})" title="Editar">✏️</button>
+                                <button class="btn-icon delete" onclick="window.app.deleteItem('cierres', ${c.id})" title="Eliminar">🗑️</button>
+                            </td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>`;
+
+        document.getElementById('listaCierres').innerHTML = html;
+    }
+
+    renderCompras() {
+        // Poblar datalist de proveedores para autocomplete
+        const datalist = document.getElementById('datalistProveedores');
+        if (datalist) {
+            datalist.innerHTML = this.db.proveedores
+                .map(p => `<option value="${p.nombreFiscal}">${p.nombreComercial ? `(${p.nombreComercial})` : ''}</option>`)
+                .join('');
+        }
+
+        let facturas = this.db.getByPeriod('facturas', this.currentPeriod);
+        let albaranes = this.db.getByPeriod('albaranes', this.currentPeriod);
+
+        // Aplicar filtros si existen
+        if (this.currentFilters) {
+            const { proveedor, desde, hasta } = this.currentFilters;
+            
+            if (proveedor) {
+                facturas = facturas.filter(f => f.proveedor.toLowerCase().includes(proveedor));
+                albaranes = albaranes.filter(a => a.proveedor.toLowerCase().includes(proveedor));
+            }
+            
+            if (desde) {
+                const fechaDesde = desde.includes('-') ? desde : new Date(desde).toISOString().split('T')[0];
+                facturas = facturas.filter(f => (f.fecha.includes('-') ? f.fecha : new Date(f.fecha).toISOString().split('T')[0]) >= fechaDesde);
+                albaranes = albaranes.filter(a => (a.fecha.includes('-') ? a.fecha : new Date(a.fecha).toISOString().split('T')[0]) >= fechaDesde);
+            }
+            
+            if (hasta) {
+                const fechaHasta = hasta.includes('-') ? hasta : new Date(hasta).toISOString().split('T')[0];
+                facturas = facturas.filter(f => (f.fecha.includes('-') ? f.fecha : new Date(f.fecha).toISOString().split('T')[0]) <= fechaHasta);
+                albaranes = albaranes.filter(a => (a.fecha.includes('-') ? a.fecha : new Date(a.fecha).toISOString().split('T')[0]) <= fechaHasta);
+            }
+        }
+
+        facturas = this.sortData(facturas, 'facturas');
+        albaranes = this.sortData(albaranes, 'albaranes');
+
+        const facturasHtml = facturas.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.app.handleSort('facturas', 'proveedor')" style="cursor:pointer">Proveedor${this.getSortIndicator('facturas', 'proveedor')}</th>
+                        <th onclick="window.app.handleSort('facturas', 'numeroFactura')" style="cursor:pointer">Nº Factura${this.getSortIndicator('facturas', 'numeroFactura')}</th>
+                        <th onclick="window.app.handleSort('facturas', 'fecha')" style="cursor:pointer">Fecha${this.getSortIndicator('facturas', 'fecha')}</th>
+                        <th onclick="window.app.handleSort('facturas', 'categoria')" style="cursor:pointer">Categoría${this.getSortIndicator('facturas', 'categoria')}</th>
+                        <th onclick="window.app.handleSort('facturas', 'total')" style="cursor:pointer">Total${this.getSortIndicator('facturas', 'total')}</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${facturas.map(f => `
+                    <tr id="row-facturas-${f.id}">
+                        <td>${f.proveedor}</td>
+                        <td>${f.numeroFactura}</td>
+                        <td>${f.fecha}</td>
+                        <td>${f.categoria}</td>
+                        <td>${f.total.toFixed(2)} €</td>
+                        <td class="actions-cell">
+                            ${f.archivoData ? `<button class="btn-icon" onclick="window.app.verArchivoFactura(${f.id})" title="Ver archivo">🔍</button>` : ''}
+                            <button class="btn-icon" onclick="window.app.verificarFacturaAlbaranes(${f.id})" title="Verificar albaranes">📋</button>
+                            <button class="btn-icon" onclick="window.app.editItem('facturas', ${f.id})" title="Editar">✏️</button>
+                            <button class="btn-icon delete" onclick="window.app.deleteItem('facturas', ${f.id})" title="Eliminar">🗑️</button>
+                        </td>
+                    </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay facturas registradas</p>';
+        
+        document.getElementById('listaFacturas').innerHTML = facturasHtml;
+
+        const albaranesHtml = albaranes.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.app.handleSort('albaranes', 'proveedor')" style="cursor:pointer">Proveedor${this.getSortIndicator('albaranes', 'proveedor')}</th>
+                        <th onclick="window.app.handleSort('albaranes', 'numeroAlbaran')" style="cursor:pointer">Nº Albarán${this.getSortIndicator('albaranes', 'numeroAlbaran')}</th>
+                        <th onclick="window.app.handleSort('albaranes', 'fecha')" style="cursor:pointer">Fecha${this.getSortIndicator('albaranes', 'fecha')}</th>
+                        <th onclick="window.app.handleSort('albaranes', 'verificado')" style="cursor:pointer">Estado${this.getSortIndicator('albaranes', 'verificado')}</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${albaranes.map(a => `
+                    <tr id="row-albaranes-${a.id}">
+                        <td>${a.proveedor}</td>
+                        <td>${a.numeroAlbaran}</td>
+                        <td>${a.fecha}</td>
+                        <td>${a.verificado ? '✅ Verificado' : '⏳ Pendiente'}</td>
+                        <td class="actions-cell">
+                            <button class="btn-icon" onclick="window.app.editItem('albaranes', ${a.id})" title="Editar">✏️</button>
+                            <button class="btn-icon delete" onclick="window.app.deleteItem('albaranes', ${a.id})" title="Eliminar">🗑️</button>
+                        </td>
+                    </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay albaranes registrados</p>';
+        
+        document.getElementById('listaAlbaranes').innerHTML = albaranesHtml;
+    }
+
+    renderInventarios() {
+        let inventarios = this.db.inventarios;
+        inventarios = this.sortData(inventarios, 'inventarios');
+
+        const html = inventarios.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.app.handleSort('inventarios', 'fecha')" style="cursor:pointer">Fecha${this.getSortIndicator('inventarios', 'fecha')}</th>
+                        <th onclick="window.app.handleSort('inventarios', 'familia')" style="cursor:pointer">Familia${this.getSortIndicator('inventarios', 'familia')}</th>
+                        <th>Nº Productos</th>
+                        <th>Diferencia Valor</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${inventarios.map(i => {
+                        const numProductos = i.productos ? i.productos.length : 0;
+                        const valorTotal = i.productos ? i.productos.reduce((sum, p) => sum + p.valorDiferencia, 0) : 0;
+                        const colorStyle = Math.abs(valorTotal) > 50 ? 'color: #e74c3c; font-weight: bold;' : '';
+                        
+                        return `
+                        <tr id="row-inventarios-${i.id}">
+                            <td>${i.fecha}</td>
+                            <td>${i.familia}</td>
+                            <td>${numProductos}</td>
+                            <td style="${colorStyle}">${valorTotal.toFixed(2)} €</td>
+                            <td class="actions-cell">
+                                <button class="btn-icon" onclick="window.app.editItem('inventarios', ${i.id})" title="Editar">✏️</button>
+                                <button class="btn-icon delete" onclick="window.app.deleteItem('inventarios', ${i.id})" title="Eliminar">🗑️</button>
+                            </td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay inventarios realizados</p>';
+        
+        document.getElementById('listaInventarios').innerHTML = html;
+    }
+
+    renderDelivery() {
+        let delivery = this.db.getByPeriod('delivery', this.currentPeriod);
+        delivery = this.sortData(delivery, 'delivery');
+
+        const html = delivery.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.app.handleSort('delivery', 'fecha')" style="cursor:pointer">Fecha${this.getSortIndicator('delivery', 'fecha')}</th>
+                        <th onclick="window.app.handleSort('delivery', 'plataforma')" style="cursor:pointer">Plataforma${this.getSortIndicator('delivery', 'plataforma')}</th>
+                        <th onclick="window.app.handleSort('delivery', 'ventasBrutas')" style="cursor:pointer">Ventas Brutas${this.getSortIndicator('delivery', 'ventasBrutas')}</th>
+                        <th onclick="window.app.handleSort('delivery', 'comisionPorcentaje')" style="cursor:pointer">Comisión %${this.getSortIndicator('delivery', 'comisionPorcentaje')}</th>
+                        <th onclick="window.app.handleSort('delivery', 'comisionImporte')" style="cursor:pointer">Comisión €${this.getSortIndicator('delivery', 'comisionImporte')}</th>
+                        <th onclick="window.app.handleSort('delivery', 'ingresoNeto')" style="cursor:pointer">Ingreso Neto${this.getSortIndicator('delivery', 'ingresoNeto')}</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${delivery.map(d => `
+                    <tr id="row-delivery-${d.id}">
+                        <td>${d.fecha}</td>
+                        <td>${d.plataforma}</td>
+                        <td>${d.ventasBrutas.toFixed(2)} €</td>
+                        <td>${d.comisionPorcentaje.toFixed(2)}%</td>
+                        <td>${d.comisionImporte.toFixed(2)} €</td>
+                        <td style="font-weight: bold;">${d.ingresoNeto.toFixed(2)} €</td>
+                        <td class="actions-cell">
+                            <button class="btn-icon" onclick="window.app.editItem('delivery', ${d.id})" title="Editar">✏️</button>
+                            <button class="btn-icon delete" onclick="window.app.deleteItem('delivery', ${d.id})" title="Eliminar">🗑️</button>
+                        </td>
+                    </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay pedidos registrados</p>';
+        
+        document.getElementById('listaDelivery').innerHTML = html;
+    }
+
+    renderProductos() {
+        let productos = this.db.productos;
+        productos = this.sortData(productos, 'productos');
+
+        const html = productos.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.app.handleSort('productos', 'nombre')" style="cursor:pointer">Producto${this.getSortIndicator('productos', 'nombre')}</th>
+                        <th onclick="window.app.handleSort('productos', 'precioPromedioNeto')" style="cursor:pointer">Precio${this.getSortIndicator('productos', 'precioPromedioNeto')}</th>
+                        <th onclick="window.app.handleSort('productos', 'proveedorNombre')" style="cursor:pointer">Proveedor${this.getSortIndicator('productos', 'proveedorNombre')}</th>
+                        <th onclick="window.app.handleSort('productos', 'stockActualUnidades')" style="cursor:pointer">Stock${this.getSortIndicator('productos', 'stockActualUnidades')}</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${productos.map(p => {
+                        const precio = p.precioPromedioNeto || p.precio || 0;
+                        const stock = p.stockActualUnidades || 0;
+                        const unidad = p.unidadBase || 'ud';
+                        const proveedor = p.proveedorNombre || p.proveedor || 'Sin proveedor';
+                        
+                        let empaqueInfo = '';
+                        if (p.esEmpaquetado && p.unidadesPorEmpaque) {
+                            const numEmpaques = (stock / p.unidadesPorEmpaque).toFixed(2);
+                            empaqueInfo = `<br><small class="text-muted">📦 ${numEmpaques} ${p.tipoEmpaque}s</small>`;
+                        }
+
+                        return `
+                        <tr id="row-productos-${p.id}">
+                            <td>${p.nombre}</td>
+                            <td>${precio.toFixed(2)} €/${unidad}</td>
+                            <td>${proveedor}</td>
+                            <td>${stock.toFixed(2)} ${unidad}${empaqueInfo}</td>
+                            <td class="actions-cell">
+                                <button class="btn-icon" onclick="window.app.editItem('productos', ${p.id})" title="Editar">✏️</button>
+                                <button class="btn-icon delete" onclick="window.app.deleteItem('productos', ${p.id})" title="Eliminar">🗑️</button>
+                            </td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay productos en el catálogo</p>';
+        
+        document.getElementById('listaProductos').innerHTML = html;
+    }
+
+    renderProveedores() {
+        let proveedores = this.db.proveedores;
+        proveedores = this.sortData(proveedores, 'proveedores');
+        
+        const html = proveedores.length > 0 ? `
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.app.handleSort('proveedores', 'nombreComercial')" style="cursor:pointer">Nombre Comercial${this.getSortIndicator('proveedores', 'nombreComercial')}</th>
+                        <th onclick="window.app.handleSort('proveedores', 'nombreFiscal')" style="cursor:pointer">Razón Social${this.getSortIndicator('proveedores', 'nombreFiscal')}</th>
+                        <th onclick="window.app.handleSort('proveedores', 'contacto')" style="cursor:pointer">Contacto${this.getSortIndicator('proveedores', 'contacto')}</th>
+                        <th onclick="window.app.handleSort('proveedores', 'telefono')" style="cursor:pointer">Teléfono${this.getSortIndicator('proveedores', 'telefono')}</th>
+                        <th onclick="window.app.handleSort('proveedores', 'email')" style="cursor:pointer">Email${this.getSortIndicator('proveedores', 'email')}</th>
+                        <th onclick="window.app.handleSort('proveedores', 'estado')" style="cursor:pointer">Estado${this.getSortIndicator('proveedores', 'estado')}</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${proveedores.map(p => `
+                    <tr id="row-proveedores-${p.id}">
+                        <td>${p.nombreComercial || '-'}</td>
+                        <td>${p.nombreFiscal || p.nombre || '-'}</td>
+                        <td>${p.contacto || '-'}</td>
+                        <td>${p.telefono || '-'}</td>
+                        <td>${p.email || '-'}</td>
+                        <td><span class="badge badge-${(p.estado || 'Activo').toLowerCase()}">${p.estado || 'Activo'}</span></td>
+                        <td class="actions-cell">
+                            <button class="btn-icon" onclick="window.app.editItem('proveedores', ${p.id})" title="Editar">✏️</button>
+                            <button class="btn-icon delete" onclick="window.app.deleteItem('proveedores', ${p.id})" title="Eliminar">🗑️</button>
+                        </td>
+                    </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>` : '<p class="empty-state">No hay proveedores registrados</p>';
+        
+        const contenedor = document.getElementById('listaProveedores');
+        if (contenedor) {
+            contenedor.innerHTML = html;
+        }
+        
+        // Actualizar dropdown de productos
+        const selectProveedor = document.getElementById('productoProveedorId');
+        if (selectProveedor) {
+            const options = proveedores.map(p => 
+                `<option value="${p.id}">${p.nombreFiscal || p.nombre}</option>`
+            ).join('');
+            selectProveedor.innerHTML = '<option value="">Seleccionar...</option>' + options;
+        }
     }
 }
 
