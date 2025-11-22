@@ -8614,6 +8614,7 @@ export class App {
                             <td>${numProductos}</td>
                             <td style="${colorStyle}">${valorTotal.toFixed(2)} €</td>
                             <td class="actions-cell">
+                                <button class="btn-icon" onclick="window.app.editItem('inventarios', ${i.id})" title="Editar">✏️</button>
                                 <button class="btn-icon delete" onclick="window.app.deleteItem('inventarios', ${i.id})" title="Eliminar">🗑️</button>
                                 <button id="btn-preview-inventario-${i.id}" class="btn-icon" onclick="window.app.toggleRow('preview-inventario-${i.id}', this)" title="Ver detalles">▶</button>
                             </td>
