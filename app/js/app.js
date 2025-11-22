@@ -1904,68 +1904,73 @@ export class App {
         // ══════════════════════════════════════════════════════════════
         // ACTUALIZAR UI - KPIs PRINCIPALES
         // ══════════════════════════════════════════════════════════════
-        document.getElementById('kpiIngresos').textContent = totalIngresos.toFixed(0) + '€';
-        document.getElementById('kpiFoodCost').textContent = foodCostPct.toFixed(1) + '%';
-        document.getElementById('kpiMargen').textContent = margenBrutoPct.toFixed(1) + '%';
-        document.getElementById('kpiEBITDA').textContent = ebitdaPct.toFixed(1) + '%';
+        const setContent = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+
+        setContent('kpiIngresos', totalIngresos.toFixed(0) + '€');
+        setContent('kpiFoodCost', foodCostPct.toFixed(1) + '%');
+        setContent('kpiMargen', margenBrutoPct.toFixed(1) + '%');
+        setContent('kpiEBITDA', ebitdaPct.toFixed(1) + '%');
 
         // Comparaciones (placeholder - implementar comparación períodos)
-        document.getElementById('kpiIngresosCompare').textContent = '';
-        document.getElementById('kpiFoodCostCompare').textContent = '';
-        document.getElementById('kpiMargenCompare').textContent = '';
-        document.getElementById('kpiEBITDACompare').textContent = '';
+        setContent('kpiIngresosCompare', '');
+        setContent('kpiFoodCostCompare', '');
+        setContent('kpiMargenCompare', '');
+        setContent('kpiEBITDACompare', '');
 
         // ══════════════════════════════════════════════════════════════
         // ACTUALIZAR UI - CUENTA DETALLADA
         // ══════════════════════════════════════════════════════════════
         
         // 1. INGRESOS
-        document.getElementById('plVentasLocal').textContent = ventasLocal.toFixed(2) + '€';
-        document.getElementById('plVentasDelivery').textContent = ventasDelivery.toFixed(2) + '€';
-        document.getElementById('plTotalIngresos').textContent = totalIngresos.toFixed(2) + '€';
+        setContent('plVentasLocal', ventasLocal.toFixed(2) + '€');
+        setContent('plVentasDelivery', ventasDelivery.toFixed(2) + '€');
+        setContent('plTotalIngresos', totalIngresos.toFixed(2) + '€');
 
         // 2. COGS
-        document.getElementById('plInvInicial').textContent = invInicial.toFixed(2) + '€';
-        document.getElementById('plComprasNetas').textContent = comprasNetas.toFixed(2) + '€';
-        document.getElementById('plInvFinal').textContent = invFinal.toFixed(2) + '€';
-        document.getElementById('plCOGSTotal').textContent = cogsTotal.toFixed(2) + '€';
-        document.getElementById('plCOGSComida').textContent = cogsComida.toFixed(2) + '€';
-        document.getElementById('plCOGSBebida').textContent = cogsBebida.toFixed(2) + '€';
-        document.getElementById('plFoodCostPct').textContent = foodCostPct.toFixed(1) + '%';
+        setContent('plInvInicial', invInicial.toFixed(2) + '€');
+        setContent('plComprasNetas', comprasNetas.toFixed(2) + '€');
+        setContent('plInvFinal', invFinal.toFixed(2) + '€');
+        setContent('plCOGSTotal', cogsTotal.toFixed(2) + '€');
+        setContent('plCOGSComida', cogsComida.toFixed(2) + '€');
+        setContent('plCOGSBebida', cogsBebida.toFixed(2) + '€');
+        setContent('plFoodCostPct', foodCostPct.toFixed(1) + '%');
 
         // 3. MARGEN BRUTO
-        document.getElementById('plMargenBruto').textContent = margenBruto.toFixed(2) + '€';
-        document.getElementById('plMargenPct').textContent = margenBrutoPct.toFixed(1) + '%';
+        setContent('plMargenBruto', margenBruto.toFixed(2) + '€');
+        setContent('plMargenPct', margenBrutoPct.toFixed(1) + '%');
 
         // 4. PERSONAL
-        document.getElementById('plSalarios').textContent = salarios.toFixed(2) + '€';
-        document.getElementById('plSeguridadSocial').textContent = seguridadSocial.toFixed(2) + '€';
-        document.getElementById('plTotalPersonal').textContent = totalPersonal.toFixed(2) + '€';
-        document.getElementById('plPersonalPct').textContent = personalPct.toFixed(1) + '%';
+        setContent('plSalarios', salarios.toFixed(2) + '€');
+        setContent('plSeguridadSocial', seguridadSocial.toFixed(2) + '€');
+        setContent('plTotalPersonal', totalPersonal.toFixed(2) + '€');
+        setContent('plPersonalPct', personalPct.toFixed(1) + '%');
 
         // 5. OPEX
-        document.getElementById('plAlquiler').textContent = alquiler.toFixed(2) + '€';
-        document.getElementById('plSuministros').textContent = suministros.toFixed(2) + '€';
-        document.getElementById('plServicios').textContent = servicios.toFixed(2) + '€';
-        document.getElementById('plMarketing').textContent = marketing.toFixed(2) + '€';
-        document.getElementById('plComisiones').textContent = comisiones.toFixed(2) + '€';
-        document.getElementById('plLimpieza').textContent = limpieza.toFixed(2) + '€';
-        document.getElementById('plSeguros').textContent = seguros.toFixed(2) + '€';
-        document.getElementById('plOtrosOpex').textContent = otrosOpex.toFixed(2) + '€';
-        document.getElementById('plTotalOpex').textContent = totalOpex.toFixed(2) + '€';
-        document.getElementById('plOpexPct').textContent = opexPct.toFixed(1) + '%';
+        setContent('plAlquiler', alquiler.toFixed(2) + '€');
+        setContent('plSuministros', suministros.toFixed(2) + '€');
+        setContent('plServicios', servicios.toFixed(2) + '€');
+        setContent('plMarketing', marketing.toFixed(2) + '€');
+        setContent('plComisiones', comisiones.toFixed(2) + '€');
+        setContent('plLimpieza', limpieza.toFixed(2) + '€');
+        setContent('plSeguros', seguros.toFixed(2) + '€');
+        setContent('plOtrosOpex', otrosOpex.toFixed(2) + '€');
+        setContent('plTotalOpex', totalOpex.toFixed(2) + '€');
+        setContent('plOpexPct', opexPct.toFixed(1) + '%');
 
         // 6. EBITDA
-        document.getElementById('plEBITDA').textContent = ebitda.toFixed(2) + '€';
-        document.getElementById('plEBITDAPct').textContent = ebitdaPct.toFixed(1) + '%';
+        setContent('plEBITDA', ebitda.toFixed(2) + '€');
+        setContent('plEBITDAPct', ebitdaPct.toFixed(1) + '%');
 
         // 7. FINANCIEROS Y AMORTIZACIONES
-        document.getElementById('plFinancieros').textContent = financieros.toFixed(2) + '€';
-        document.getElementById('plAmortizaciones').textContent = amortizaciones.toFixed(2) + '€';
+        setContent('plFinancieros', financieros.toFixed(2) + '€');
+        setContent('plAmortizaciones', amortizaciones.toFixed(2) + '€');
 
         // 8. BENEFICIO NETO
-        document.getElementById('plBeneficioNeto').textContent = beneficioNeto.toFixed(2) + '€';
-        document.getElementById('plMargenNetoPct').textContent = margenNetoPct.toFixed(1) + '%';
+        setContent('plBeneficioNeto', beneficioNeto.toFixed(2) + '€');
+        setContent('plMargenNetoPct', margenNetoPct.toFixed(1) + '%');
 
         // ══════════════════════════════════════════════════════════════
         // ALERTAS AUTOMÁTICAS
@@ -7822,6 +7827,40 @@ export class App {
                             <td class="actions-cell">
                                 <button class="btn-icon" onclick="window.app.editItem('escandallos', ${e.id})" title="Editar">✏️</button>
                                 <button class="btn-icon delete" onclick="window.app.deleteItem('escandallos', ${e.id})" title="Eliminar">🗑️</button>
+                                <button id="btn-preview-escandallo-${e.id}" class="btn-icon" onclick="window.app.toggleRow('preview-escandallo-${e.id}', this)" title="Ver detalles">▶</button>
+                            </td>
+                        </tr>
+                        <tr id="preview-escandallo-${e.id}" style="display:none; background-color: #f8f9fa;">
+                            <td colspan="6" style="padding: 20px;">
+                                <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+                                    <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                                        🥘 Detalle del Escandallo
+                                    </h4>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
+                                        <thead>
+                                            <tr style="background-color: #f1f2f6; color: #555;">
+                                                <th style="text-align: left; padding: 10px; border-bottom: 2px solid #ddd;">Ingrediente</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Cantidad</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Coste Unit.</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Coste Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${e.ingredientes ? e.ingredientes.map(ing => {
+                                                const prod = this.db.productos.find(p => p.id === ing.productoId);
+                                                const nombre = prod ? prod.nombre : 'Producto desconocido';
+                                                return `
+                                                <tr style="border-bottom: 1px solid #eee;">
+                                                    <td style="padding: 10px;">${nombre}</td>
+                                                    <td style="text-align: right; padding: 10px;">${ing.cantidad} ${ing.unidad}</td>
+                                                    <td style="text-align: right; padding: 10px;">${ing.costeUnitario ? ing.costeUnitario.toFixed(4) : '0.0000'} €</td>
+                                                    <td style="text-align: right; padding: 10px;">${ing.costeTotal ? ing.costeTotal.toFixed(2) : '0.00'} €</td>
+                                                </tr>`;
+                                            }).join('') : '<tr><td colspan="4" style="padding:10px; text-align:center;">Sin ingredientes</td></tr>'}
+                                        </tbody>
+                                    </table>
+                                    ${e.notas ? `<div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;"><strong>📝 Notas:</strong> ${e.notas}</div>` : ''}
+                                </div>
                             </td>
                         </tr>
                         `;
@@ -7874,6 +7913,74 @@ export class App {
                             <td class="actions-cell">
                                 <button class="btn-icon" onclick="window.app.abrirModalEditarCierre(${c.id})" title="Editar">✏️</button>
                                 <button class="btn-icon delete" onclick="window.app.deleteItem('cierres', ${c.id})" title="Eliminar">🗑️</button>
+                                <button id="btn-preview-cierre-${c.id}" class="btn-icon" onclick="window.app.toggleRow('preview-cierre-${c.id}', this)" title="Ver detalles">▶</button>
+                            </td>
+                        </tr>
+                        <tr id="preview-cierre-${c.id}" style="display:none; background-color: #f8f9fa;">
+                            <td colspan="7" style="padding: 20px;">
+                                <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+                                    <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                                        ✅ BALANCE CIERRE DE CAJA
+                                    </h4>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
+                                        <thead>
+                                            <tr style="background-color: #f1f2f6; color: #555;">
+                                                <th style="text-align: left; padding: 10px; border-bottom: 2px solid #ddd;">MÉTODO</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">POS DECLARADO</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">REAL CONTADO</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">DIFERENCIA</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Efectivo -->
+                                            <tr style="border-bottom: 1px solid #eee;">
+                                                <td style="padding: 10px;">💵 Efectivo</td>
+                                                <td style="text-align: right; padding: 10px;">${(c.posEfectivo || 0).toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px;">${(c.efectivoContado || 0).toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px; color: ${((c.efectivoContado || 0) - (c.posEfectivo || 0)) >= 0 ? 'green' : 'red'};">
+                                                    ${((c.efectivoContado || 0) - (c.posEfectivo || 0)) > 0 ? '+' : ''}${((c.efectivoContado || 0) - (c.posEfectivo || 0)).toFixed(2)} €
+                                                </td>
+                                            </tr>
+                                            <!-- Tarjetas -->
+                                            <tr style="border-bottom: 1px solid #eee;">
+                                                <td style="padding: 10px;">💳 Tarjetas</td>
+                                                <td style="text-align: right; padding: 10px;">${(c.posTarjetas || 0).toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px;">${(c.totalDatafonos || 0).toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px; color: ${((c.totalDatafonos || 0) - (c.posTarjetas || 0)) >= 0 ? 'green' : 'red'};">
+                                                    ${((c.totalDatafonos || 0) - (c.posTarjetas || 0)) > 0 ? '+' : ''}${((c.totalDatafonos || 0) - (c.posTarjetas || 0)).toFixed(2)} €
+                                                </td>
+                                            </tr>
+                                            <!-- Otros Medios -->
+                                            ${(() => {
+                                                const posExtras = (c.totalPos || 0) - (c.posEfectivo || 0) - (c.posTarjetas || 0);
+                                                const realExtras = (c.totalOtrosMedios || 0);
+                                                const diffExtras = realExtras - posExtras;
+                                                if (Math.abs(posExtras) > 0.01 || Math.abs(realExtras) > 0.01) {
+                                                    return `
+                                                    <tr style="border-bottom: 1px solid #eee;">
+                                                        <td style="padding: 10px;">📱 Otros (Bizum, etc.)</td>
+                                                        <td style="text-align: right; padding: 10px;">${posExtras.toFixed(2)} €</td>
+                                                        <td style="text-align: right; padding: 10px;">${realExtras.toFixed(2)} €</td>
+                                                        <td style="text-align: right; padding: 10px; color: ${diffExtras >= 0 ? 'green' : 'red'};">
+                                                            ${diffExtras > 0 ? '+' : ''}${diffExtras.toFixed(2)} €
+                                                        </td>
+                                                    </tr>`;
+                                                }
+                                                return '';
+                                            })()}
+                                            <!-- TOTAL -->
+                                            <tr style="background-color: #eef2f7; font-weight: bold;">
+                                                <td style="padding: 10px;">TOTAL</td>
+                                                <td style="text-align: right; padding: 10px;">${(c.totalPos || 0).toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px;">${(c.totalReal || 0).toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px; color: ${(c.descuadreTotal || 0) >= 0 ? '#2980b9' : '#c0392b'};">
+                                                    ${(c.descuadreTotal || 0) > 0 ? '+' : ''}${(c.descuadreTotal || 0).toFixed(2)} €
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    ${c.notas ? `<div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;"><strong>📝 Notas:</strong> ${c.notas}</div>` : ''}
+                                </div>
                             </td>
                         </tr>
                         `;
@@ -8169,6 +8276,78 @@ export class App {
                 `<option value="${p.id}">${p.nombreFiscal || p.nombre}</option>`
             ).join('');
             selectProveedor.innerHTML = '<option value="">Seleccionar...</option>' + options;
+        }
+    }
+
+    // --- MÉTODOS DE ORDENACIÓN ---
+    
+    handleSort(section, column) {
+        const currentSort = this.sortState[section];
+        if (currentSort.column === column) {
+            // Alternar dirección
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            // Nueva columna, default asc (o desc para fechas)
+            currentSort.column = column;
+            currentSort.direction = ['fecha', 'total', 'importe'].includes(column) ? 'desc' : 'asc';
+        }
+        
+        // Re-renderizar la sección correspondiente
+        switch(section) {
+            case 'escandallos': this.renderEscandallos(); break;
+            case 'cierres': this.renderCierres(); break;
+            case 'facturas': this.renderCompras(); break; // Facturas y albaranes están en Compras
+            case 'albaranes': this.renderCompras(); break;
+            case 'inventarios': this.renderControlStock(); break;
+            case 'delivery': this.renderDelivery(); break;
+            case 'productos': this.renderProductos(); break;
+            case 'proveedores': this.renderProveedores(); break;
+        }
+    }
+
+    sortData(data, section) {
+        if (!data || !Array.isArray(data)) return [];
+        
+        const { column, direction } = this.sortState[section];
+        
+        return [...data].sort((a, b) => {
+            let valA = a[column];
+            let valB = b[column];
+
+            // Manejo de fechas
+            if (column === 'fecha' || column.includes('Date')) {
+                valA = new Date(valA || 0).getTime();
+                valB = new Date(valB || 0).getTime();
+            }
+            // Manejo de números
+            else if (typeof valA === 'number' || typeof valB === 'number') {
+                valA = Number(valA || 0);
+                valB = Number(valB || 0);
+            }
+            // Manejo de strings
+            else {
+                valA = String(valA || '').toLowerCase();
+                valB = String(valB || '').toLowerCase();
+            }
+
+            if (valA < valB) return direction === 'asc' ? -1 : 1;
+            if (valA > valB) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    getSortIndicator(section, column) {
+        const sort = this.sortState[section];
+        if (sort.column !== column) return '<span class="sort-icon">↕</span>';
+        return sort.direction === 'asc' ? '<span class="sort-icon">↑</span>' : '<span class="sort-icon">↓</span>';
+    }
+
+    toggleRow(id, btn) {
+        const row = document.getElementById(id);
+        if (row) {
+            const isHidden = row.style.display === 'none';
+            row.style.display = isHidden ? 'table-row' : 'none';
+            if (btn) btn.textContent = isHidden ? '▼' : '▶';
         }
     }
 }
