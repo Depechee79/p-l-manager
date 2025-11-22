@@ -2924,72 +2924,47 @@ export class App {
                 { id: 'ocr_fecha', label: 'Fecha Factura', type: 'date', required: true, field: 'fechaFactura' },
                 { id: 'ocr_periodo_inicio', label: 'Periodo Inicio', type: 'date', required: false, field: 'periodoInicio' },
                 { id: 'ocr_periodo_fin', label: 'Periodo Fin', type: 'date', required: false, field: 'periodoFin' },
-                { id: 'ocr_proveedor', label: 'Nombre Proveedor', type: 'text', required: true, field: 'proveedorNombre' },
+                // Regla 3: proveedor_nombre SIEMPRE es razon_social
+                { id: 'ocr_proveedor', label: 'Proveedor (Razón Social)', type: 'text', required: true, field: 'proveedorRazonSocial' },
                 { id: 'ocr_proveedor_cif', label: 'CIF Proveedor', type: 'text', required: false, field: 'proveedorCif' },
-                { id: 'ocr_proveedor_razon', label: 'Razón Social', type: 'text', required: false, field: 'proveedorRazonSocial' },
+                
                 { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', step: '0.01', required: true, field: 'subtotal' },
                 { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', step: '0.01', required: false, field: 'descuentoTotal' },
                 { id: 'ocr_iva', label: 'IVA Total', type: 'number', step: '0.01', required: true, field: 'ivaTotal' },
                 { id: 'ocr_recargos', label: 'Recargos Especiales', type: 'number', step: '0.01', required: false, field: 'recargosEspecialesTotal' },
                 { id: 'ocr_otros_cargos', label: 'Otros Cargos', type: 'number', step: '0.01', required: false, field: 'otrosCargos' },
                 { id: 'ocr_total', label: 'Total Factura', type: 'number', step: '0.01', required: true, field: 'totalFactura' },
+                
                 { id: 'ocr_metodo_pago', label: 'Método Pago', type: 'text', required: false, field: 'metodoPago' },
                 { id: 'ocr_vencimiento', label: 'Fecha Vencimiento', type: 'date', required: false, field: 'fechaVencimiento' },
                 { id: 'ocr_estado_pago', label: 'Estado Pago', type: 'select', options: ['Pendiente', 'Pagado'], required: false, field: 'estadoPago' },
-                { id: 'ocr_observaciones', label: 'Observaciones', type: 'textarea', required: false, field: 'observacionesRevision' },
+                { id: 'ocr_observaciones', label: 'Observaciones', type: 'textarea', required: false, field: 'observacionesRevision' }
                 
-                // B) Visible NO modificable (Informativos)
-                { id: 'ocr_impuestos_totales', label: 'Impuestos Totales', type: 'number', step: '0.01', readOnly: true, field: 'impuestosTotales' },
-                { id: 'ocr_origen', label: 'Origen', type: 'text', readOnly: true, field: 'origenRegistro' },
-                { id: 'ocr_confianza', label: 'Confianza OCR', type: 'text', readOnly: true, field: 'confianzaOcr' },
-                { id: 'ocr_estado_revision', label: 'Estado Revisión', type: 'text', readOnly: true, field: 'estadoRevision' },
-                { id: 'ocr_usuario', label: 'Usuario', type: 'text', readOnly: true, field: 'usuarioResponsable' },
-                { id: 'ocr_fecha_registro', label: 'Fecha Registro', type: 'date', readOnly: true, field: 'fechaRegistroApp' },
-                { id: 'ocr_archivo_nombre', label: 'Archivo', type: 'text', readOnly: true, field: 'archivoNombre' },
-                { id: 'ocr_archivo_url', label: 'URL Archivo', type: 'text', readOnly: true, field: 'archivoUrl' }
+                // Campos ocultos/internos eliminados de la vista OCR para no saturar el desplegable
             ],
             'albaran': [
                 // A) Visible y modificable
                 { id: 'ocr_numero', label: 'Nº Albarán', type: 'text', required: true, field: 'numeroAlbaran' },
                 { id: 'ocr_fecha', label: 'Fecha Albarán', type: 'date', required: true, field: 'fechaAlbaran' },
-                { id: 'ocr_proveedor', label: 'Nombre Proveedor', type: 'text', required: true, field: 'proveedorNombre' },
+                // Regla 3: proveedor_nombre SIEMPRE es razon_social
+                { id: 'ocr_proveedor', label: 'Proveedor (Razón Social)', type: 'text', required: true, field: 'proveedorRazonSocial' },
                 { id: 'ocr_proveedor_cif', label: 'CIF Proveedor', type: 'text', required: false, field: 'proveedorCif' },
-                { id: 'ocr_proveedor_razon', label: 'Razón Social', type: 'text', required: false, field: 'proveedorRazonSocial' },
                 { id: 'ocr_referencia', label: 'Referencia Pedido', type: 'text', required: false, field: 'referenciaPedido' },
+                
                 { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', step: '0.01', required: true, field: 'subtotal' },
                 { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', step: '0.01', required: false, field: 'descuentoTotal' },
                 { id: 'ocr_iva', label: 'IVA Total', type: 'number', step: '0.01', required: true, field: 'ivaTotal' },
                 { id: 'ocr_recargos', label: 'Recargos Especiales', type: 'number', step: '0.01', required: false, field: 'recargosEspecialesTotal' },
                 { id: 'ocr_otros_cargos', label: 'Otros Cargos', type: 'number', step: '0.01', required: false, field: 'otrosCargos' },
                 { id: 'ocr_total', label: 'Total Albarán', type: 'number', step: '0.01', required: true, field: 'totalAlbaran' },
-                { id: 'ocr_observaciones', label: 'Observaciones', type: 'textarea', required: false, field: 'observacionesRevision' },
-
-                // B) Visible NO modificable
-                { id: 'ocr_impuestos_totales', label: 'Impuestos Totales', type: 'number', step: '0.01', readOnly: true, field: 'impuestosTotales' },
-                { id: 'ocr_estado_revision', label: 'Estado Revisión', type: 'text', readOnly: true, field: 'estadoRevision' },
-                { id: 'ocr_usuario', label: 'Usuario', type: 'text', readOnly: true, field: 'usuarioResponsable' },
-                { id: 'ocr_archivo_nombre', label: 'Archivo', type: 'text', readOnly: true, field: 'archivoNombre' },
-                { id: 'ocr_origen', label: 'Origen', type: 'text', readOnly: true, field: 'origenRegistro' },
-                { id: 'ocr_confianza', label: 'Confianza OCR', type: 'text', readOnly: true, field: 'confianzaOcr' },
-                { id: 'ocr_fecha_registro', label: 'Fecha Registro', type: 'date', readOnly: true, field: 'fechaRegistroApp' }
+                { id: 'ocr_observaciones', label: 'Observaciones', type: 'textarea', required: false, field: 'observacionesRevision' }
             ],
             'ticket': [
                 // A) Visible y modificable
-                { id: 'ocr_fecha', label: 'Fecha Ticket', type: 'date', required: true, field: 'fechaTicket' },
-                { id: 'ocr_hora', label: 'Hora Ticket', type: 'time', required: false, field: 'horaTicket' },
                 { id: 'ocr_numero', label: 'Nº Ticket', type: 'text', required: false, field: 'numeroTicket' },
-                { id: 'ocr_canal', label: 'Canal Venta', type: 'text', required: false, field: 'canalVenta' },
-                { id: 'ocr_zona', label: 'Zona POS', type: 'text', required: false, field: 'zonaPos' },
-                { id: 'ocr_camarero', label: 'Camarero', type: 'text', required: false, field: 'camareroResponsable' },
-                { id: 'ocr_mesa', label: 'Mesa', type: 'text', required: false, field: 'mesa' },
-                { id: 'ocr_comensales', label: 'Nº Comensales', type: 'number', required: false, field: 'numeroComensales' },
-                { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', step: '0.01', required: false, field: 'descuentoTotal' },
-                { id: 'ocr_metodo_pago', label: 'Método Pago', type: 'text', required: false, field: 'metodoPago' },
-                { id: 'ocr_estado_pago', label: 'Estado Pago', type: 'text', required: false, field: 'estadoPago' },
-                
-                // B) Visible NO modificable (pero editables en OCR por si acaso)
-                { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', step: '0.01', required: false, field: 'subtotal' },
-                { id: 'ocr_impuestos', label: 'Impuestos Total', type: 'number', step: '0.01', readOnly: true, field: 'impuestosTotal' },
+                { id: 'ocr_fecha', label: 'Fecha Ticket', type: 'date', required: true, field: 'fechaTicket' },
+                // Regla 3: proveedor_nombre SIEMPRE es razon_social
+                { id: 'ocr_proveedor', label: 'Proveedor (Razón Social)', type: 'text', required: true, field: 'proveedorRazonSocial' },
                 { id: 'ocr_total', label: 'Total Ticket', type: 'number', step: '0.01', required: true, field: 'totalTicket' }
             ],
             'venta_pos': [
@@ -3025,11 +3000,9 @@ export class App {
                 banco: { label: 'Banco', type: 'text', section: 'A' },
                 categoriaPrincipalCompra: { label: 'Categoría Principal', type: 'text', section: 'A' },
                 subcategoriasCompra: { label: 'Subcategorías', type: 'text', section: 'A' },
-                notasInternas: { label: 'Notas Internas', type: 'textarea', section: 'A' },
-                estado: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'], section: 'A' },
+                estado: { label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'], section: 'A' }
                 
-                // B) Visible NO modificable
-                fechaAlta: { label: 'Fecha Alta', type: 'date', section: 'B', readonly: true }
+                // B) Visible NO modificable (Eliminados fechaAlta y notasInternas de la vista general)
             },
             'facturas': {
                 // A) Visible y modificable
@@ -3038,9 +3011,8 @@ export class App {
                 fechaFactura: { label: 'Fecha Factura', type: 'date', section: 'A' },
                 periodoInicio: { label: 'Periodo Inicio', type: 'date', section: 'A' },
                 periodoFin: { label: 'Periodo Fin', type: 'date', section: 'A' },
-                proveedorNombre: { label: 'Proveedor', type: 'text', section: 'A' },
+                proveedorRazonSocial: { label: 'Proveedor (Razón Social)', type: 'text', section: 'A' },
                 proveedorCif: { label: 'CIF Proveedor', type: 'text', section: 'A' },
-                proveedorRazonSocial: { label: 'Razón Social', type: 'text', section: 'A' },
                 subtotal: { label: 'Subtotal', type: 'number', step: '0.01', section: 'A' },
                 descuentoTotal: { label: 'Descuento Total', type: 'number', step: '0.01', section: 'A' },
                 ivaTotal: { label: 'IVA Total', type: 'number', step: '0.01', section: 'A' },
@@ -3050,25 +3022,16 @@ export class App {
                 metodoPago: { label: 'Método Pago', type: 'text', section: 'A' },
                 fechaVencimiento: { label: 'Fecha Vencimiento', type: 'date', section: 'A' },
                 estadoPago: { label: 'Estado Pago', type: 'select', options: ['Pendiente', 'Pagado'], section: 'A' },
-                observacionesRevision: { label: 'Observaciones', type: 'textarea', section: 'A' },
+                observacionesRevision: { label: 'Observaciones', type: 'textarea', section: 'A' }
                 
-                // B) Visible NO modificable
-                impuestosTotales: { label: 'Impuestos Totales', type: 'number', readOnly: true, section: 'B' },
-                origenRegistro: { label: 'Origen', type: 'text', readOnly: true, section: 'B' },
-                confianzaOcr: { label: 'Confianza OCR', type: 'number', readOnly: true, section: 'B' },
-                estadoRevision: { label: 'Estado Revisión', type: 'text', readOnly: true, section: 'B' },
-                usuarioResponsable: { label: 'Usuario', type: 'text', readOnly: true, section: 'B' },
-                fechaRegistroApp: { label: 'Fecha Registro', type: 'date', readOnly: true, section: 'B' },
-                archivoNombre: { label: 'Archivo', type: 'text', readOnly: true, section: 'B' },
-                archivoUrl: { label: 'URL Archivo', type: 'text', readOnly: true, section: 'B' }
+                // B) Visible NO modificable (Eliminados campos internos)
             },
             'albaranes': {
                 // A) Visible y modificable
                 numeroAlbaran: { label: 'Nº Albarán', type: 'text', section: 'A' },
                 fechaAlbaran: { label: 'Fecha Albarán', type: 'date', section: 'A' },
-                proveedorNombre: { label: 'Proveedor', type: 'text', section: 'A' },
+                proveedorRazonSocial: { label: 'Proveedor (Razón Social)', type: 'text', section: 'A' },
                 proveedorCif: { label: 'CIF Proveedor', type: 'text', section: 'A' },
-                proveedorRazonSocial: { label: 'Razón Social', type: 'text', section: 'A' },
                 referenciaPedido: { label: 'Ref. Pedido', type: 'text', section: 'A' },
                 subtotal: { label: 'Subtotal', type: 'number', step: '0.01', section: 'A' },
                 descuentoTotal: { label: 'Descuento Total', type: 'number', step: '0.01', section: 'A' },
@@ -3076,17 +3039,9 @@ export class App {
                 recargosEspecialesTotal: { label: 'Recargos', type: 'number', step: '0.01', section: 'A' },
                 otrosCargos: { label: 'Otros Cargos', type: 'number', step: '0.01', section: 'A' },
                 totalAlbaran: { label: 'Total Albarán', type: 'number', step: '0.01', section: 'A' },
-                observacionesRevision: { label: 'Observaciones', type: 'text', section: 'A' },
+                observacionesRevision: { label: 'Observaciones', type: 'text', section: 'A' }
                 
-                // B) Visible NO modificable
-                impuestosTotales: { label: 'Impuestos Totales', type: 'number', readOnly: true, section: 'B' },
-                estadoRevision: { label: 'Estado Revisión', type: 'text', readOnly: true, section: 'B' },
-                usuarioResponsable: { label: 'Usuario', type: 'text', readOnly: true, section: 'B' },
-                archivoNombre: { label: 'Archivo', type: 'text', readOnly: true, section: 'B' },
-                origenRegistro: { label: 'Origen', type: 'text', readOnly: true, section: 'B' },
-                confianzaOcr: { label: 'Confianza OCR', type: 'number', readOnly: true, section: 'B' },
-                fechaRegistroApp: { label: 'Fecha Registro', type: 'date', readOnly: true, section: 'B' },
-                archivoHash: { label: 'Hash', type: 'text', hidden: true, section: 'C' }
+                // B) Visible NO modificable (Eliminados campos internos)
             },
             'productos': {
                 nombre: { label: 'Nombre', type: 'text', section: 'A' },
@@ -3260,20 +3215,39 @@ export class App {
         const confidence = data[field.field] ? data[field.field].confidence : 0;
         
         let confidenceBadge = '';
+        let isHighConfidence = false;
+
         if (confidence > 0) {
             const color = confidence > 80 ? '#27ae60' : (confidence > 50 ? '#f39c12' : '#c0392b');
             confidenceBadge = `<span style="color: ${color}; font-size: 0.8em; margin-left: 5px;">● ${Math.round(confidence)}%</span>`;
+            
+            // Regla OCR 1: Si confianza >= 90%, campo bloqueado (readonly)
+            if (confidence >= 90) {
+                isHighConfidence = true;
+                confidenceBadge += ` <span title="Lectura de alta confianza" style="cursor:help">🔒</span>`;
+            }
         }
+
+        // Determinar si es readonly por esquema o por confianza OCR
+        const isReadOnly = field.readOnly || isHighConfidence;
+        const readOnlyAttr = isReadOnly ? 'readonly' : '';
+        const readOnlyClass = isReadOnly ? 'input-readonly' : '';
 
         let inputHtml = '';
         if (field.type === 'select') {
-            inputHtml = `<select id="${field.id}" class="form-control">
+            // Los selects no soportan readonly igual que inputs, se suelen deshabilitar o usar CSS
+            // Si es high confidence, lo deshabilitamos pero enviamos valor en hidden si fuera necesario (aquí simplificado)
+            const disabledAttr = isReadOnly ? 'disabled' : '';
+            inputHtml = `<select id="${field.id}" class="form-control ${readOnlyClass}" ${disabledAttr}>
                 ${field.options.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('')}
             </select>`;
+            if (isReadOnly) {
+                inputHtml += `<input type="hidden" id="${field.id}_hidden" value="${value}">`; // Fallback para valor
+            }
         } else if (field.type === 'textarea') {
-            inputHtml = `<textarea id="${field.id}" class="form-control" rows="3">${value}</textarea>`;
+            inputHtml = `<textarea id="${field.id}" class="form-control ${readOnlyClass}" rows="3" ${readOnlyAttr}>${value}</textarea>`;
         } else {
-            inputHtml = `<input type="${field.type}" id="${field.id}" value="${value}" class="form-control" ${field.required ? 'required' : ''}>`;
+            inputHtml = `<input type="${field.type}" id="${field.id}" value="${value}" class="form-control ${readOnlyClass}" ${field.required ? 'required' : ''} ${readOnlyAttr}>`;
         }
 
         return `
