@@ -4376,6 +4376,23 @@ export class App {
         this.calcularTotalesCierre();
     }
 
+    iniciarInventario() {
+        const fecha = document.getElementById('inventarioFecha').value;
+        const familia = document.getElementById('inventarioFamilia').value;
+
+        if (!fecha) {
+            this.showToast('⚠️ Selecciona una fecha para el inventario', true);
+            return;
+        }
+
+        // Ocultar paso 1 y mostrar paso 2
+        const step1 = document.getElementById('inventarioStep1');
+        const form = document.getElementById('inventarioForm');
+        
+        if (step1) step1.classList.add('hidden');
+        if (form) form.classList.remove('hidden');
+    }
+
     handleCierreSubmit(e) {
         e.preventDefault();
         const form = e.target;
