@@ -1,6 +1,6 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versión:** 4.28.2 UX Accordion Tables (Noviembre 2025)  
+**Versión:** 4.28.3 Smart Dropdowns & Global Click (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hostelería profesional (restaurantes, cafeterías)  
 **Estado:** ✅ APLICACIÓN FUNCIONAL - OCR INTELIGENTE COMPLETO + INVENTARIO PROFESIONAL + UX MEJORADA
@@ -8,6 +8,28 @@
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.28.3 - SMART DROPDOWNS & GLOBAL CLICK (Noviembre 22, 2025)
+
+**MEJORAS IMPLEMENTADAS:**
+
+**1. POSICIONAMIENTO INTELIGENTE DE DESPLEGABLES**
+- **Problema:** Los desplegables personalizados (como el filtro de documentos) siempre se abrían hacia abajo, pudiendo quedar cortados por el borde de la pantalla.
+- **Solución:** Implementada lógica de detección de espacio en `toggleDocumentFilter`. Si no hay suficiente espacio abajo y hay más espacio arriba, el desplegable se abre hacia arriba (`open-up`).
+- **Adaptabilidad:** El sistema calcula dinámicamente la posición cada vez que se abre el menú.
+
+**2. CIERRE GLOBAL AL HACER CLIC FUERA**
+- **Problema:** Los desplegables personalizados no se cerraban al hacer clic en otra parte de la aplicación, obligando al usuario a volver a hacer clic en el trigger para cerrarlos.
+- **Solución:** Añadido un `Global Click Listener` en `initializeEventListeners`.
+- **Comportamiento:** Al hacer clic en cualquier parte del documento (`document`), se verifica si el clic ocurrió fuera de los contenedores de desplegables (`.custom-select-wrapper`, `.smart-dropdown-container`). Si es así, se cierran automáticamente.
+
+**3. MEJORA EN SMART DROPDOWNS**
+- **Refuerzo:** Aunque los Smart Dropdowns ya usaban el evento `blur` en el input, el listener global añade una capa extra de robustez para asegurar que se cierren correctamente en todas las interacciones.
+
+**ARCHIVOS MODIFICADOS:**
+- `app/js/app.js`: Actualización de `toggleDocumentFilter` y `initializeEventListeners`.
+
+---
 
 ### VERSIÓN 4.28.2 - UX ACCORDION TABLES & INTERACTION POLISH (Noviembre 22, 2025)
 

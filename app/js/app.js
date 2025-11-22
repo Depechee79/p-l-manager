@@ -217,6 +217,33 @@ export class App {
             if (el) el.addEventListener(event, handler);
         };
 
+        // --- GLOBAL CLICK LISTENER (Cerrar Dropdowns al hacer click fuera) ---
+        document.addEventListener('click', (e) => {
+            // 1. Document Filter Dropdown
+            const docFilterWrapper = document.getElementById('documentFilterWrapper');
+            if (docFilterWrapper && !docFilterWrapper.contains(e.target)) {
+                const options = document.getElementById('documentFilterOptions');
+                const trigger = docFilterWrapper.querySelector('.custom-select-trigger');
+                if (options && !options.classList.contains('hidden')) {
+                    options.classList.add('hidden');
+                    if (trigger) trigger.classList.remove('active');
+                    options.classList.remove('open-up');
+                }
+            }
+
+            // 2. Smart Dropdowns (Cerrar si se hace click fuera)
+            // Nota: Los smart dropdowns ya usan 'blur' en el input, pero esto es un refuerzo
+            // para asegurar que se cierran si el foco no cambia correctamente.
+            if (!e.target.closest('.smart-dropdown-container')) {
+                document.querySelectorAll('.smart-dropdown-list').forEach(list => {
+                    if (list.style.display === 'block') {
+                        list.style.display = 'none';
+                        // Resetear input si es necesario (lógica simplificada aquí, el blur maneja el valor)
+                    }
+                });
+            }
+        });
+
         // Mobile Menu Toggle
         addSafeListener('mobileMenuBtn', 'click', () => {
             const navMenu = document.querySelector('.nav-menu');
@@ -8692,8 +8719,31 @@ export class App {
         const options = document.getElementById('documentFilterOptions');
         const trigger = document.querySelector('#documentFilterWrapper .custom-select-trigger');
         if (options) {
-            options.classList.toggle('hidden');
-            if (trigger) trigger.classList.toggle('active');
+            const isHidden = options.classList.contains('hidden');
+            
+            if (isHidden) {
+                // Abrir
+                options.classList.remove('hidden');
+                if (trigger) trigger.classList.add('active');
+                
+                // Calcular posición óptima (Arriba o Abajo)
+                const rect = trigger.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                const dropdownHeight = 250; // Altura máxima estimada
+                
+                // Si hay poco espacio abajo y más espacio arriba, abrir hacia arriba
+                if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                    options.classList.add('open-up');
+                } else {
+                    options.classList.remove('open-up');
+                }
+            } else {
+                // Cerrar
+                options.classList.add('hidden');
+                if (trigger) trigger.classList.remove('active');
+                options.classList.remove('open-up'); // Resetear posición
+            }
         }
     }
 
