@@ -26,8 +26,9 @@
                 <button class="nav-item" data-view="productos">🥘 Productos</button>
                 <button class="nav-item" data-view="escandallos">📋 Escandallos</button>
                 <button class="nav-item" data-view="inventario">📦 Control de Stock</button>
-                <button class="nav-item" data-view="delivery">🛵 Delivery</button>
                 <button class="nav-item" data-view="pnl">💰 P&L</button>
+                <div style="flex-grow: 1;"></div>
+                <button class="nav-item" onclick="window.logout()" style="margin-top: 20px; color: #ff6b6b; border-top: 1px solid rgba(255,255,255,0.1);">🚪 Cerrar Sesión</button>
             </nav>
         </aside>
 
@@ -118,13 +119,6 @@
                     </div>
                 </div>
 
-                <div id="recentDocumentsList" style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
-                    <h4 style="font-size: 14px; color: #64748b; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">🕒 Últimos documentos subidos</h4>
-                    <div id="recentDocsContainer" style="display: flex; flex-direction: column; gap: 10px;">
-                        <!-- Se llenará dinámicamente -->
-                    </div>
-                </div>
-
                 <div id="ocrDataCard" class="form-card hidden">
                     <h3 style="font-size: 16px; color: #475569; margin-bottom: 15px;">3️⃣ Revisa los datos</h3>
                     <div id="ocrDynamicForm"></div>
@@ -134,8 +128,25 @@
                     </div>
                 </div>
 
+                <div class="table-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                    <input type="hidden" id="documentFilter" value="all">
+                    <div id="documentFilterWrapper" class="custom-select-wrapper" style="width: 250px;">
+                        <div class="custom-select-trigger" onclick="window.app.toggleDocumentFilter(event)">
+                            <span id="documentFilterText">Todos los documentos</span>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div id="documentFilterOptions" class="custom-select-options hidden">
+                            <div class="custom-option" onclick="window.app.setDocumentFilter('all', 'Todos los documentos')">Todos los documentos</div>
+                            <div class="custom-option" onclick="window.app.setDocumentFilter('factura', 'Facturas')">Facturas</div>
+                            <div class="custom-option" onclick="window.app.setDocumentFilter('ticket', 'Tickets')">Tickets</div>
+                            <div class="custom-option" onclick="window.app.setDocumentFilter('albaran', 'Albaranes')">Albaranes</div>
+                            <div class="custom-option" onclick="window.app.setDocumentFilter('cierre', 'Cierres')">Cierres</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="listaFacturas"></div>
-                <div id="listaAlbaranes"></div>
+                <!-- listaAlbaranes removed as we are unifying lists -->
             </div>
 
             <div id="cierresView" class="view hidden">
@@ -222,6 +233,16 @@
                             <div class="total-efectivo-bar" style="margin-top: 15px; background: #2c3e50; color: white; padding: 10px 20px; border-radius: 6px; display: flex; justify-content: space-between; font-weight: 600;">
                                 <span>TOTAL OTROS MEDIOS</span>
                                 <span id="totalOtrosDisplay">0.00 €</span>
+                            </div>
+                        </div>
+
+                        <div class="cierre-section">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                <h4>🛵 Delivery (Real - Plataformas)</h4>
+                            </div>
+                            <div class="form-group">
+                                <label>Total Ingresado en Plataformas</label>
+                                <input type="number" id="realDelivery" step="0.01" placeholder="0.00" oninput="window.app.calcularTotalesCierre()">
                             </div>
                         </div>
 
@@ -549,34 +570,6 @@
                 <div id="listaInventarios"></div>
             </div>
             
-            <div id="deliveryView" class="view hidden">
-                <div id="deliveryFormCard" class="form-card hidden">
-                    <h3>🛵 Nuevo Registro Delivery</h3>
-                    <form id="deliveryForm">
-                        <div class="form-row">
-                            <div class="form-group"><label>Plataforma *</label>
-                                <select id="deliveryPlataforma" required>
-                                    <option value="Uber Eats">Uber Eats</option>
-                                    <option value="Glovo">Glovo</option>
-                                    <option value="Just Eat">Just Eat</option>
-                                    <option value="Propio">Reparto Propio</option>
-                                </select>
-                            </div>
-                            <div class="form-group"><label>Fecha *</label><input type="date" id="deliveryFecha" required></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group"><label>Ventas Brutas (€) *</label><input type="number" id="deliveryVentas" step="0.01" required></div>
-                            <div class="form-group"><label>Comisión (%)</label><input type="number" id="deliveryComision" step="0.01" value="30"></div>
-                        </div>
-                        
-                        <div class="form-actions" style="text-align: right;">
-                            <button type="button" class="btn-secondary" onclick="window.app.expandForm('delivery')">Cancelar</button>
-                            <button type="submit" class="btn-primary">✓ Guardar Registro</button>
-                        </div>
-                    </form>
-                </div>
-                <div id="listaDelivery"></div>
-            </div>
             <div id="pnlView" class="view hidden"></div>
 
     <div id="confirmModal" class="modal">

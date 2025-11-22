@@ -34,6 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Exponer logout globalmente
+    window.logout = () => authService.logout();
+
     // 2. Manejar el Submit del Login
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {

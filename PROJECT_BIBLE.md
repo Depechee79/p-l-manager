@@ -9,6 +9,42 @@
 
 ## 📊 CHANGELOG
 
+### VERSIÓN 4.28.1 - MEJORAS UX Y CORRECCIONES LÓGICAS (Noviembre 22, 2025)
+
+**MEJORAS IMPLEMENTADAS:**
+
+**1. EDICIÓN INLINE DE INVENTARIO**
+- **Problema:** El botón "Modificar Inventario" lanzaba un error `TypeError` al intentar abrir un modal inexistente (`abrirModalEditarInventario`).
+- **Solución:** Implementada lógica de edición inline. Al editar un inventario, la app cambia a la vista de inventario (`inventarioView`), carga los datos en el formulario principal y establece el `dataset.editId`.
+- **Beneficio:** Flujo de edición fluido y consistente con el resto de la aplicación, sin popups intrusivos.
+
+**2. EDICIÓN INLINE DE FACTURAS Y ALBARANES (NO-POPUP)**
+- **Problema:** El usuario solicitó eliminar los popups para la edición de facturas y albaranes.
+- **Solución:** Refactorizado `editItem` para redirigir a la vista OCR (`ocrView`) en modo edición.
+- **Mejora Técnica:** Actualizado `saveOCRData` para soportar actualizaciones (`PUT`) además de creaciones (`POST`), manteniendo el ID original.
+
+**3. CORRECCIÓN LÓGICA EN CIERRES (CÁLCULO DE EFECTIVO)**
+- **Problema:** El campo "Real Contado" mostraba 0.00€ al guardar un cierre.
+- **Causa:** `handleCierreSubmit` intentaba leer el valor de un elemento `<span>` (`totalEfectivoDisplay`) usando `.value`, lo cual devuelve `undefined` o vacío.
+- **Solución:** Reescribimos la lógica para recalcular el total sumando directamente los inputs de billetes y monedas (`b500` * 500 + ...).
+- **Aviso Legacy:** Se añadió una advertencia para registros antiguos que no tienen el desglose guardado, indicando que deben editarse y guardarse de nuevo para corregir el total.
+
+**4. CORRECCIÓN LISTADO DE CIERRES**
+- **Problema:** El listado de cierres mostraba 0.00€ en "Real Contado" para los registros afectados por el bug anterior.
+- **Solución:** Actualizado `renderCierres` para recalcular dinámicamente el total visualizado basándose en el desglose guardado (si existe) o el total persistido, asegurando consistencia visual.
+
+**5. MEJORA EN DESPLEGABLES (UI/UX)**
+- **Estilo Unificado:** Todos los elementos `<select>` de la aplicación ahora comparten el mismo estilo CSS que el desplegable personalizado de documentos (bordes, padding, flecha SVG).
+- **Comportamiento:** Añadido listener global para cerrar automáticamente los desplegables personalizados al hacer clic fuera de ellos.
+- **Filtro Documentos:** Renombrado "Últimos documentos escaneados" a "Todos los documentos" y corregido el ancho para evitar saltos de línea. Añadida opción "Tickets".
+
+**ARCHIVOS MODIFICADOS:**
+- `app/js/app.js`: Lógica de edición inline, cálculo de cierres, renderizado de listas, listeners globales.
+- `app/index.html`: Estructura del dropdown de filtro, opciones actualizadas.
+- `app/styles.css`: Estilos unificados para `select` y `.custom-select-trigger`.
+
+---
+
 ### VERSIÓN 4.28 - REFACTORIZACIÓN DE MODALES Y LIMPIEZA (Actual)
 
 **MEJORAS IMPLEMENTADAS:**

@@ -75,6 +75,21 @@ export class App {
         return `<span class="field-confidence ${cls}" title="${texto}: ${Math.round(conf)}%">${icon}</span>`;
     }
 
+    formatDate(dateString) {
+        if (!dateString) return '';
+        // Si ya viene en formato DD/MM/YYYY, devolver tal cual
+        if (typeof dateString === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+            return dateString;
+        }
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        return date.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
     // Método robusto para colapsar formularios (usa múltiples estrategias)
     collapseForm(type) {
         const formCard = document.getElementById(`${type}FormCard`);
@@ -1537,6 +1552,63 @@ export class App {
         `).join('') : '<p class="empty-state">No hay albaranes registradas</p>';
         
         document.getElementById('listaAlbaranes').innerHTML = albaranesHtml;
+
+        // --- NUEVO: Renderizar lista unificada para OCR View ---
+        const recentDocsContainer = document.getElementById('recentDocsContainer');
+        if (recentDocsContainer) {
+            const filter = document.getElementById('documentFilter') ? document.getElementById('documentFilter').value : 'all';
+            let allDocs = [];
+
+            // 1. Facturas
+            if (filter === 'all' || filter === 'factura' || filter === 'ticket') {
+                let facts = this.db.getByPeriod('facturas', this.currentPeriod);
+                if (filter === 'ticket') {
+                    facts = facts.filter(f => f.categoria && f.categoria.toLowerCase().includes('ticket'));
+                }
+                allDocs = [...allDocs, ...facts.map(f => ({...f, type: 'factura', label: 'Factura'}))];
+            }
+
+            // 2. Albaranes
+            if (filter === 'all' || filter === 'albaran') {
+                const albs = this.db.getByPeriod('albaranes', this.currentPeriod);
+                allDocs = [...allDocs, ...albs.map(a => ({...a, type: 'albaran', label: 'Albarán'}))];
+            }
+
+            // 3. Cierres
+            if (filter === 'all' || filter === 'cierre') {
+                const cierres = this.db.getByPeriod('cierres', this.currentPeriod);
+                allDocs = [...allDocs, ...cierres.map(c => ({...c, type: 'cierre', label: 'Cierre', proveedor: 'Cierre de Caja', total: c.totalReal}))];
+            }
+
+            // Ordenar por fecha descendente
+            allDocs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+            // Renderizar
+            if (allDocs.length === 0) {
+                recentDocsContainer.innerHTML = '<p class="empty-state" style="text-align:center; padding:20px; color:#94a3b8;">No hay documentos recientes</p>';
+            } else {
+                recentDocsContainer.innerHTML = allDocs.map(doc => `
+                    <div class="recent-doc-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; transition: transform 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; font-size: 20px;">
+                                ${doc.type === 'factura' ? '🧾' : doc.type === 'albaran' ? '📦' : doc.type === 'cierre' ? '💰' : '📄'}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; color: #1e293b;">${doc.proveedor || 'Desconocido'}</div>
+                                <div style="font-size: 13px; color: #64748b;">${doc.label} • ${this.formatDate(doc.fecha)}</div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: #1e293b;">${(doc.total || 0).toFixed(2)} €</div>
+                            <div style="display: flex; gap: 5px; justify-content: flex-end; margin-top: 5px;">
+                                <button class="btn-icon" onclick="window.app.editItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})" title="Editar">✏️</button>
+                                <button class="btn-icon delete" onclick="window.app.deleteItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})" title="Eliminar">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
     }
 
     filtrarCompras() {
@@ -3583,6 +3655,8 @@ export class App {
                 { id: 'ocr_proveedor', label: 'Proveedor (Razón Social)', type: 'text', required: true, field: 'proveedorRazonSocial' },
                 { id: 'ocr_proveedor_cif', label: 'CIF Proveedor', type: 'text', required: false, field: 'proveedorCif' },
                 
+                { id: 'ocr_categoria', label: 'Categoría', type: 'select', options: ['Comida', 'Bebida', 'Otros', 'Ticket'], required: true, field: 'categoria' },
+
                 { id: 'ocr_subtotal', label: 'Subtotal', type: 'number', step: '0.01', required: true, field: 'subtotal' },
                 { id: 'ocr_descuento', label: 'Descuento Total', type: 'number', step: '0.01', required: false, field: 'descuentoTotal' },
                 { id: 'ocr_iva', label: 'IVA Total', type: 'number', step: '0.01', required: true, field: 'ivaTotal' },
@@ -4089,6 +4163,11 @@ export class App {
             const form = document.getElementById('escandalloForm');
             form.dataset.editId = item.id;
             
+            // Actualizar título del formulario
+            const formCard = document.getElementById('escandalloFormCard');
+            const title = formCard.querySelector('h3');
+            if (title) title.textContent = `Editar Escandallo: ${item.nombre}`;
+
             document.getElementById('escandalloNombre').value = item.nombre;
             document.getElementById('escandalloCodigo').value = item.codigo || '';
             document.getElementById('escandalloPVPConIVA').value = item.pvpConIva;
@@ -4108,22 +4187,23 @@ export class App {
                     const rows = container.querySelectorAll('.ingrediente-item');
                     const lastRow = rows[rows.length - 1];
                     
-                    if (lastRow.dropdown) {
-                        lastRow.dropdown.setValue(ing.productoId);
+                    // Seleccionar producto en el select estándar
+                    const select = lastRow.querySelector('.ingrediente-producto');
+                    if (select) {
+                        select.value = ing.productoId;
+                        // Cargar datos por defecto del producto (unidad, coste)
+                        this.onIngredienteProductoChange(select);
                     }
                     
-                    // Forzar actualización de datos de la fila
-                    const product = this.db.productos.find(p => p.id === ing.productoId);
-                    if (product) {
-                        this.updateIngredienteRowData(lastRow, product);
-                    }
-                    
-                    // Restaurar cantidad específica de este escandallo
-                    lastRow.querySelector('.ingrediente-cantidad').value = ing.cantidad;
+                    // Restaurar valores específicos guardados (sobreescribiendo defaults si es necesario)
+                    if (ing.cantidad) lastRow.querySelector('.ingrediente-cantidad').value = ing.cantidad;
+                    if (ing.unidad) lastRow.querySelector('.ingrediente-unidad').value = ing.unidad;
+                    if (ing.costeUnitario) lastRow.querySelector('.ingrediente-coste-unitario').value = ing.costeUnitario;
                     
                     // Recalcular total de la fila
+                    const cantidad = parseFloat(lastRow.querySelector('.ingrediente-cantidad').value) || 0;
                     const costeUnitario = parseFloat(lastRow.querySelector('.ingrediente-coste-unitario').value) || 0;
-                    lastRow.querySelector('.ingrediente-coste-total').value = (ing.cantidad * costeUnitario).toFixed(2);
+                    lastRow.querySelector('.ingrediente-coste-total').value = (cantidad * costeUnitario).toFixed(2);
                 });
                 this.calcularCostesEscandallo();
             }
@@ -4133,41 +4213,128 @@ export class App {
             return;
         }
 
-        // 4. DELIVERY
-        if (collection === 'delivery') {
-            this.expandForm('delivery');
-            const form = document.getElementById('deliveryForm');
+        // 4. INVENTARIOS
+        if (collection === 'inventarios') {
+            // 1. Cambiar a la vista de inventarios
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            const view = document.getElementById('inventarioView');
+            if (view) view.classList.remove('hidden');
+            
+            // Actualizar menú lateral
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            const navBtn = document.querySelector('.nav-item[data-view="inventarios"]');
+            if (navBtn) navBtn.classList.add('active');
+            
+            // 2. Preparar formulario
+            const formCard = document.getElementById('inventarioFormCard');
+            if (formCard) formCard.classList.remove('hidden');
+            
+            const form = document.getElementById('inventarioForm');
             form.dataset.editId = item.id;
             
-            document.getElementById('deliveryPlataforma').value = item.plataforma;
-            document.getElementById('deliveryFecha').value = item.fecha;
-            document.getElementById('deliveryVentas').value = item.ventasBrutas;
-            document.getElementById('deliveryComision').value = item.comisionPorcentaje;
+            // 3. Cargar datos
+            document.getElementById('inventarioFecha').value = item.fecha;
+            document.getElementById('inventarioFamilia').value = item.familia;
+            
+            // Inicializar estado
+            this.inventarioState = {
+                step: 2,
+                counts: {},
+                currentProduct: null
+            };
+            
+            if (item.productos) {
+                item.productos.forEach(p => {
+                    this.inventarioState.counts[p.id] = p.stockReal;
+                });
+            }
+            
+            // 4. Mostrar paso 2 directamente
+            const step1 = document.getElementById('inventarioStep1');
+            if (step1) step1.classList.add('hidden');
+            form.classList.remove('hidden');
+            
+            // 5. Actualizar UI
+            const title = formCard.querySelector('h3');
+            if (title) title.textContent = `Editar Inventario: ${item.fecha}`;
             
             const btn = form.querySelector('button[type="submit"]');
-            if(btn) btn.textContent = '✓ Actualizar Registro';
+            if (btn) btn.textContent = '✓ Actualizar Inventario';
+            
+            // 6. Renderizar tabla
+            this.populateInventarioFilters();
+            this.filterInventarioTable();
+            
             return;
         }
 
-        // 5. MODALES ESPECÍFICOS (Facturas, Albaranes, Cierres)
-        if (collection === 'facturas') {
-            if (this.abrirModalEditarFactura) this.abrirModalEditarFactura(item);
+        // 5. MODALES ESPECÍFICOS (Facturas, Albaranes, Cierres) -> AHORA INLINE
+        if (collection === 'facturas' || collection === 'albaranes') {
+            // 1. Cambiar a la vista de escáner
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            const view = document.getElementById('ocrView');
+            if (view) view.classList.remove('hidden');
+            
+            // Actualizar menú lateral
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            const navBtn = document.querySelector('.nav-item[data-view="ocr"]');
+            if (navBtn) navBtn.classList.add('active');
+
+            // 2. Ocultar tarjetas de carga y mostrar formulario de datos
+            const optionsCard = document.getElementById('scanOptionsCard');
+            const uploadCard = document.getElementById('ocrUploadCard');
+            const dataCard = document.getElementById('ocrDataCard');
+            
+            if (optionsCard) optionsCard.classList.add('hidden');
+            if (uploadCard) uploadCard.classList.add('hidden');
+            if (dataCard) dataCard.classList.remove('hidden');
+            
+            // 3. Preparar datos para el formulario OCR
+            const tipo = collection === 'facturas' ? 'factura' : 'albaran';
+            const ocrData = {
+                tipoFactura: { value: item.tipoFactura || 'Detallada', confidence: 1 },
+                numeroFactura: { value: item.numeroFactura, confidence: 1 },
+                numeroAlbaran: { value: item.numeroAlbaran, confidence: 1 },
+                fechaFactura: { value: item.fecha, confidence: 1 },
+                fechaAlbaran: { value: item.fecha, confidence: 1 },
+                proveedorRazonSocial: { value: item.proveedor, confidence: 1 },
+                proveedorCif: { value: item.nifCif, confidence: 1 },
+                subtotal: { value: item.baseImponible || item.subtotal, confidence: 1 },
+                ivaTotal: { value: (item.total - (item.baseImponible || item.subtotal)), confidence: 1 },
+                totalFactura: { value: item.total, confidence: 1 },
+                totalAlbaran: { value: item.total, confidence: 1 },
+                categoria: { value: item.categoria, confidence: 1 },
+                observacionesRevision: { value: item.observacionesRevision || '', confidence: 1 }
+            };
+            
+            // 4. Renderizar formulario
+            this.currentOCRType = tipo;
+            this.renderDynamicOCRForm(ocrData, tipo);
+            
+            // 5. Configurar botón de guardado
+            const btn = document.getElementById('ocrSaveBtn');
+            if (btn) {
+                btn.textContent = collection === 'facturas' ? '✓ Actualizar Factura' : '✓ Actualizar Albarán';
+                btn.disabled = false;
+            }
+            
+            dataCard.dataset.editId = item.id;
+            dataCard.dataset.editCollection = collection;
+            
+            // 6. Actualizar título
+            const title = dataCard.querySelector('h3');
+            if (title) title.textContent = `✏️ Editar ${collection === 'facturas' ? 'Factura' : 'Albarán'}: ${item.proveedor}`;
+            
             return;
         }
-        if (collection === 'albaranes') {
-            if (this.abrirModalEditarAlbaran) this.abrirModalEditarAlbaran(item);
-            return;
-        }
+
         if (collection === 'cierres') {
             if (this.abrirModalEditarCierre) this.abrirModalEditarCierre(item.id);
             return;
         }
         
-        // 6. INVENTARIOS (Edición limitada o no soportada completamente aún)
-        if (collection === 'inventarios') {
-            this.showToast('⚠️ La edición completa de inventarios no está disponible. Elimina y crea uno nuevo si hay errores graves.', true);
-            return;
-        }
+        // 6. INVENTARIOS (Ya manejado arriba)
+        // if (collection === 'inventarios') { ... }
 
         console.warn(`Edición no implementada para ${collection}`);
         this.showToast(`⚠️ La edición de ${collection} no está disponible`);
@@ -4724,6 +4891,10 @@ export class App {
                     <input type="number" id="posTarjetas" step="0.01" placeholder="0.00" value="${valoresPrevios['posTarjetas'] || 0}">
                 </div>
             </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Delivery (Plataformas)</label>
+                <input type="number" id="posDelivery" step="0.01" placeholder="0.00" value="${valoresPrevios['posDelivery'] || 0}">
+            </div>
         `;
         
         // Añadir campos extra solo si existen en "Otros Medios"
@@ -4805,8 +4976,16 @@ export class App {
             return parseFloat(el.value) || 0;
         };
 
-        // Recopilar billetes y monedas (usamos ids en el cálculo, no aquí)
-        const efectivoContado = readSafe('totalEfectivoDisplay', 'float'); // Lee el total calculado del display
+        // Recopilar billetes y monedas (Recalcular para asegurar precisión)
+        let efectivoContado = 0;
+        const valores = [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.50, 0.20, 0.10, 0.05, 0.02, 0.01];
+        const ids = ['b500', 'b200', 'b100', 'b50', 'b20', 'b10', 'b5', 'm2', 'm1', 'm050', 'm020', 'm010', 'm005', 'm002', 'm001'];
+        
+        ids.forEach((id, index) => {
+            const el = document.getElementById(id);
+            const val = el ? (parseFloat(el.value) || 0) : 0;
+            efectivoContado += val * valores[index];
+        });
         
         // Recopilar desglose de efectivo (NUEVO: Guardar cantidades de billetes/monedas)
         const desgloseEfectivo = {};
@@ -4844,6 +5023,8 @@ export class App {
         // Datos POS (con comprobaciones de existencia para evitar el TypeError)
         const posEfectivo = readSafe('posEfectivo');
         const posTarjetas = readSafe('posTarjetas');
+        const posDelivery = readSafe('posDelivery');
+        const realDelivery = readSafe('realDelivery');
         const posTickets = readSafe('posTickets', 'int');
         
         // Suma de extras POS (Bizum, Transferencia, etc.)
@@ -4851,8 +5032,8 @@ export class App {
         document.querySelectorAll('.pos-extra-input').forEach(el => posExtrasTotal += parseFloat(el.value) || 0);
         
         // Calcular totales
-        const totalReal = efectivoContado + totalDatafonos + totalOtrosMedios;
-        const totalPOS = posEfectivo + posTarjetas + posExtrasTotal;
+        const totalReal = efectivoContado + totalDatafonos + totalOtrosMedios + realDelivery;
+        const totalPOS = posEfectivo + posTarjetas + posExtrasTotal + posDelivery;
         const descuadreTotal = totalReal - totalPOS;
 
         const cierre = {
@@ -4865,9 +5046,11 @@ export class App {
             totalDatafonos: totalDatafonos,
             otrosMedios: otrosMedios,
             totalOtrosMedios: totalOtrosMedios,
+            realDelivery: realDelivery,
             
             posEfectivo: posEfectivo,
             posTarjetas: posTarjetas,
+            posDelivery: posDelivery,
             posTickets: posTickets,
             
             descuadreTotal: descuadreTotal,
@@ -4941,11 +5124,15 @@ export class App {
         // 3. Calcular Totales POS (Ticket de Caja)
         const posEfectivo = parseFloat(document.getElementById('posEfectivo')?.value) || 0;
         const posTarjetas = parseFloat(document.getElementById('posTarjetas')?.value) || 0;
+        const posDelivery = parseFloat(document.getElementById('posDelivery')?.value) || 0;
         let posOtrosTotal = 0;
         document.querySelectorAll('.pos-extra-input').forEach(el => posOtrosTotal += parseFloat(el.value) || 0);
         
-        const totalReal = totalEfectivo + totalDatafonos + totalOtros;
-        const totalPOS = posEfectivo + posTarjetas + posOtrosTotal;
+        // Calcular Totales Reales (incluyendo Delivery)
+        const realDelivery = parseFloat(document.getElementById('realDelivery')?.value) || 0;
+
+        const totalReal = totalEfectivo + totalDatafonos + totalOtros + realDelivery;
+        const totalPOS = posEfectivo + posTarjetas + posOtrosTotal + posDelivery;
         const diferenciaTotal = totalReal - totalPOS;
         
         // 4. Generar Tabla Resumen DINÁMICA (CLARIFICANDO COLUMNAS)
@@ -4978,6 +5165,16 @@ export class App {
                     <td>${posTarjetas.toFixed(2)} €</td>
                     <td>${totalDatafonos.toFixed(2)} €</td>
                     <td style="color: ${this.getColor(difTarjetas)}">${(difTarjetas > 0 ? '+' : '')}${difTarjetas.toFixed(2)} €</td>
+                </tr>`;
+
+            // Fila Delivery
+            const difDelivery = realDelivery - posDelivery;
+            html += `
+                <tr>
+                    <td>🛵 Delivery</td>
+                    <td>${posDelivery.toFixed(2)} €</td>
+                    <td>${realDelivery.toFixed(2)} €</td>
+                    <td style="color: ${this.getColor(difDelivery)}">${(difDelivery > 0 ? '+' : '')}${difDelivery.toFixed(2)} €</td>
                 </tr>`;
 
             // Filas Dinámicas (Otros Medios)
@@ -7597,8 +7794,8 @@ export class App {
             this.renderEscandallos();
         } else if (collection === 'inventarios') {
             this.renderInventarios();
-        } else if (collection === 'delivery') {
-            this.renderDelivery();
+        // } else if (collection === 'delivery') {
+        //    this.renderDelivery();
         }
     }
 
@@ -7809,8 +8006,8 @@ export class App {
 
         recentDocs.forEach(doc => {
             const date = new Date(doc.id);
-            const timeStr = !isNaN(date.getTime()) ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-            const dateStr = !isNaN(date.getTime()) ? date.toLocaleDateString() : (doc.displayDate || '');
+            const timeStr = !isNaN(date.getTime()) ? date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
+            const dateStr = !isNaN(date.getTime()) ? date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : (doc.displayDate || '');
             
             const item = document.createElement('div');
             item.className = 'recent-doc-item';
@@ -8029,8 +8226,17 @@ export class App {
         // Recopilar ingredientes
         const ingredientes = [];
         document.querySelectorAll('.ingrediente-item').forEach(item => {
+            // Intentar obtener ID desde Smart Dropdown o Select estándar
+            let productoId = null;
             const hiddenInput = item.querySelector('.smart-dropdown-value');
-            const productoId = hiddenInput ? parseInt(hiddenInput.value) : null;
+            if (hiddenInput && hiddenInput.value) {
+                productoId = parseInt(hiddenInput.value);
+            } else {
+                const select = item.querySelector('.ingrediente-producto');
+                if (select && select.value) {
+                    productoId = parseInt(select.value);
+                }
+            }
             
             if (productoId) {
                 ingredientes.push({
@@ -8375,18 +8581,23 @@ export class App {
                 </thead>
                 <tbody>
                     ${cierres.map(c => {
-                        const descuadreAbs = Math.abs(c.descuadreTotal);
+                        // Recalcular valores para asegurar consistencia (especialmente para registros antiguos)
+                        const efectivoReal = (c.efectivoContado && c.efectivoContado > 0) ? c.efectivoContado : this.calcularEfectivo(c.desgloseEfectivo);
+                        const totalReal = efectivoReal + (c.totalDatafonos || 0) + (c.totalOtrosMedios || 0) + (c.realDelivery || 0);
+                        const descuadreTotal = totalReal - (c.totalPos || 0);
+                        
+                        const descuadreAbs = Math.abs(descuadreTotal);
                         const cuadra = descuadreAbs <= 0.01;
                         const badgeClass = cuadra ? 'badge-cuadra' : 'badge-descuadre';
                         const badgeText = cuadra ? '✅ CUADRA' : `⚠ ${descuadreAbs.toFixed(2)} €`;
                         
                         return `
                         <tr id="row-cierres-${c.id}">
-                            <td>${c.fecha}</td>
+                            <td>${this.formatDate(c.fecha)}</td>
                             <td>${c.turno}</td>
                             <td>${c.totalPos.toFixed(2)} €</td>
-                            <td>${c.totalReal.toFixed(2)} €</td>
-                            <td style="color: ${c.descuadreTotal >= 0 ? 'green' : 'red'}">${c.descuadreTotal.toFixed(2)} €</td>
+                            <td>${totalReal.toFixed(2)} €</td>
+                            <td style="color: ${descuadreTotal >= 0 ? 'green' : 'red'}">${descuadreTotal.toFixed(2)} €</td>
                             <td><span class="badge ${badgeClass}">${badgeText}</span></td>
                             <td class="actions-cell">
                                 <button class="btn-icon" onclick="window.app.abrirModalEditarCierre(${c.id})" title="Editar">✏️</button>
@@ -8414,9 +8625,9 @@ export class App {
                                             <tr style="border-bottom: 1px solid #eee;">
                                                 <td style="padding: 10px;">💵 Efectivo</td>
                                                 <td style="text-align: right; padding: 10px;">${(c.posEfectivo || 0).toFixed(2)} €</td>
-                                                <td style="text-align: right; padding: 10px;">${(c.efectivoContado || 0).toFixed(2)} €</td>
-                                                <td style="text-align: right; padding: 10px; color: ${((c.efectivoContado || 0) - (c.posEfectivo || 0)) >= 0 ? 'green' : 'red'};">
-                                                    ${((c.efectivoContado || 0) - (c.posEfectivo || 0)) > 0 ? '+' : ''}${((c.efectivoContado || 0) - (c.posEfectivo || 0)).toFixed(2)} €
+                                                <td style="text-align: right; padding: 10px;">${efectivoReal.toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px; color: ${(efectivoReal - (c.posEfectivo || 0)) >= 0 ? 'green' : 'red'};">
+                                                    ${(efectivoReal - (c.posEfectivo || 0)) > 0 ? '+' : ''}${(efectivoReal - (c.posEfectivo || 0)).toFixed(2)} €
                                                 </td>
                                             </tr>
                                             <!-- Tarjetas -->
@@ -8426,6 +8637,15 @@ export class App {
                                                 <td style="text-align: right; padding: 10px;">${(c.totalDatafonos || 0).toFixed(2)} €</td>
                                                 <td style="text-align: right; padding: 10px; color: ${((c.totalDatafonos || 0) - (c.posTarjetas || 0)) >= 0 ? 'green' : 'red'};">
                                                     ${((c.totalDatafonos || 0) - (c.posTarjetas || 0)) > 0 ? '+' : ''}${((c.totalDatafonos || 0) - (c.posTarjetas || 0)).toFixed(2)} €
+                                                </td>
+                                            </tr>
+                                            <!-- Delivery -->
+                                            <tr style="border-bottom: 1px solid #eee;">
+                                                <td style="padding: 10px;">🛵 Delivery</td>
+                                                <td style="text-align: right; padding: 10px;">${(c.posDelivery || 0).toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px;">${(c.realDelivery || 0).toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px; color: ${((c.realDelivery || 0) - (c.posDelivery || 0)) >= 0 ? 'green' : 'red'};">
+                                                    ${((c.realDelivery || 0) - (c.posDelivery || 0)) > 0 ? '+' : ''}${((c.realDelivery || 0) - (c.posDelivery || 0)).toFixed(2)} €
                                                 </td>
                                             </tr>
                                             <!-- Otros Medios -->
@@ -8450,9 +8670,9 @@ export class App {
                                             <tr style="background-color: #eef2f7; font-weight: bold;">
                                                 <td style="padding: 10px;">TOTAL</td>
                                                 <td style="text-align: right; padding: 10px;">${(c.totalPos || 0).toFixed(2)} €</td>
-                                                <td style="text-align: right; padding: 10px;">${(c.totalReal || 0).toFixed(2)} €</td>
-                                                <td style="text-align: right; padding: 10px; color: ${(c.descuadreTotal || 0) >= 0 ? '#2980b9' : '#c0392b'};">
-                                                    ${(c.descuadreTotal || 0) > 0 ? '+' : ''}${(c.descuadreTotal || 0).toFixed(2)} €
+                                                <td style="text-align: right; padding: 10px;">${totalReal.toFixed(2)} €</td>
+                                                <td style="text-align: right; padding: 10px; color: ${descuadreTotal >= 0 ? '#2980b9' : '#c0392b'};">
+                                                    ${descuadreTotal > 0 ? '+' : ''}${descuadreTotal.toFixed(2)} €
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -8470,6 +8690,31 @@ export class App {
         document.getElementById('listaCierres').innerHTML = html;
     }
 
+    toggleDocumentFilter(event) {
+        if (event) event.stopPropagation();
+        const options = document.getElementById('documentFilterOptions');
+        const trigger = document.querySelector('#documentFilterWrapper .custom-select-trigger');
+        if (options) {
+            options.classList.toggle('hidden');
+            if (trigger) trigger.classList.toggle('active');
+        }
+    }
+
+    setDocumentFilter(value, text) {
+        const hiddenInput = document.getElementById('documentFilter');
+        if (hiddenInput) {
+            hiddenInput.value = value;
+        }
+        
+        const displayText = document.getElementById('documentFilterText');
+        if (displayText) {
+            displayText.textContent = text;
+        }
+        
+        this.toggleDocumentFilter();
+        this.renderCompras();
+    }
+
     renderCompras() {
         // Poblar datalist de proveedores para autocomplete
         const datalist = document.getElementById('datalistProveedores');
@@ -8479,7 +8724,83 @@ export class App {
                 .join('');
         }
 
+        // --- MODO OCR: Lista Unificada de Documentos Escaneados ---
+        if (this.currentView === 'ocr') {
+            const filter = document.getElementById('documentFilter') ? document.getElementById('documentFilter').value : 'all';
+            let allDocs = [];
+
+            // Helper para filtrar solo documentos escaneados (ocrProcessed = true)
+            const isScanned = (item) => item.ocrProcessed === true;
+
+            // 1. Facturas
+            if (filter === 'all' || filter === 'factura' || filter === 'ticket') {
+                let facts = this.db.getByPeriod('facturas', this.currentPeriod).filter(isScanned);
+                if (filter === 'ticket') {
+                    facts = facts.filter(f => f.categoria && f.categoria.toLowerCase().includes('ticket'));
+                }
+                allDocs = [...allDocs, ...facts.map(f => ({...f, type: 'factura', label: 'Factura'}))];
+            }
+
+            // 2. Albaranes
+            if (filter === 'all' || filter === 'albaran') {
+                const albs = this.db.getByPeriod('albaranes', this.currentPeriod).filter(isScanned);
+                allDocs = [...allDocs, ...albs.map(a => ({...a, type: 'albaran', label: 'Albarán'}))];
+            }
+
+            // 3. Cierres
+            if (filter === 'all' || filter === 'cierre') {
+                const cierres = this.db.getByPeriod('cierres', this.currentPeriod).filter(isScanned);
+                allDocs = [...allDocs, ...cierres.map(c => ({...c, type: 'cierre', label: 'Cierre', proveedor: 'Cierre de Caja', total: c.totalReal}))];
+            }
+
+            // Ordenar por fecha descendente
+            allDocs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+            const unifiedHtml = allDocs.length > 0 ? `
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Proveedor / Nombre</th>
+                            <th>Fecha</th>
+                            <th>Categoría / Info</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allDocs.map(doc => `
+                        <tr>
+                            <td>${doc.type === 'factura' ? '🧾' : doc.type === 'albaran' ? '📦' : doc.type === 'cierre' ? '💰' : '📄'}</td>
+                            <td>${doc.proveedor || 'Desconocido'}</td>
+                            <td>${this.formatDate(doc.fecha)}</td>
+                            <td>${doc.label}</td>
+                            <td>${(doc.total || 0).toFixed(2)} €</td>
+                            <td class="actions-cell">
+                                <button class="btn-icon" onclick="window.app.editItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})" title="Editar">✏️</button>
+                                <button class="btn-icon delete" onclick="window.app.deleteItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})" title="Eliminar">🗑️</button>
+                            </td>
+                        </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>` : '<p class="empty-state">No hay documentos escaneados recientes</p>';
+
+            // Renderizar en listaFacturas (contenedor principal en OCR view)
+            const container = document.getElementById('listaFacturas');
+            if (container) container.innerHTML = unifiedHtml;
+            
+            // Limpiar listaAlbaranes si existe
+            const containerAlbaranes = document.getElementById('listaAlbaranes');
+            if (containerAlbaranes) containerAlbaranes.innerHTML = '';
+            
+            return; // Salir, ya que en modo OCR no renderizamos las tablas separadas
+        }
+
+        // --- MODO COMPRAS (Original) ---
         let facturas = this.db.getByPeriod('facturas', this.currentPeriod);
+
         let albaranes = this.db.getByPeriod('albaranes', this.currentPeriod);
 
         // Aplicar filtros si existen
@@ -8525,7 +8846,7 @@ export class App {
                     <tr id="row-facturas-${f.id}">
                         <td>${f.proveedor}</td>
                         <td>${f.numeroFactura}</td>
-                        <td>${f.fecha}</td>
+                        <td>${this.formatDate(f.fecha)}</td>
                         <td>${f.categoria}</td>
                         <td>${f.total.toFixed(2)} €</td>
                         <td class="actions-cell">
@@ -8559,7 +8880,7 @@ export class App {
                     <tr id="row-albaranes-${a.id}">
                         <td>${a.proveedor}</td>
                         <td>${a.numeroAlbaran}</td>
-                        <td>${a.fecha}</td>
+                        <td>${this.formatDate(a.fecha)}</td>
                         <td>${a.verificado ? '✅ Verificado' : '⏳ Pendiente'}</td>
                         <td class="actions-cell">
                             <button class="btn-icon" onclick="window.app.editItem('albaranes', ${a.id})" title="Editar">✏️</button>
@@ -8609,7 +8930,7 @@ export class App {
 
                         return `
                         <tr id="row-inventarios-${i.id}">
-                            <td>${i.fecha}</td>
+                            <td>${this.formatDate(i.fecha)}</td>
                             <td>${i.familia}</td>
                             <td>${numProductos}</td>
                             <td style="${colorStyle}">${valorTotal.toFixed(2)} €</td>
@@ -8651,45 +8972,7 @@ export class App {
         document.getElementById('listaInventarios').innerHTML = html;
     }
 
-    renderDelivery() {
-        let delivery = this.db.getByPeriod('delivery', this.currentPeriod);
-        delivery = this.sortData(delivery, 'delivery');
-
-        const html = delivery.length > 0 ? `
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th onclick="window.app.handleSort('delivery', 'fecha')" style="cursor:pointer">Fecha${this.getSortIndicator('delivery', 'fecha')}</th>
-                        <th onclick="window.app.handleSort('delivery', 'plataforma')" style="cursor:pointer">Plataforma${this.getSortIndicator('delivery', 'plataforma')}</th>
-                        <th onclick="window.app.handleSort('delivery', 'ventasBrutas')" style="cursor:pointer">Ventas Brutas${this.getSortIndicator('delivery', 'ventasBrutas')}</th>
-                        <th onclick="window.app.handleSort('delivery', 'comisionPorcentaje')" style="cursor:pointer">Comisión %${this.getSortIndicator('delivery', 'comisionPorcentaje')}</th>
-                        <th onclick="window.app.handleSort('delivery', 'comisionImporte')" style="cursor:pointer">Comisión €${this.getSortIndicator('delivery', 'comisionImporte')}</th>
-                        <th onclick="window.app.handleSort('delivery', 'ingresoNeto')" style="cursor:pointer">Ingreso Neto${this.getSortIndicator('delivery', 'ingresoNeto')}</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${delivery.map(d => `
-                    <tr id="row-delivery-${d.id}">
-                        <td>${d.fecha}</td>
-                        <td>${d.plataforma}</td>
-                        <td>${d.ventasBrutas.toFixed(2)} €</td>
-                        <td>${d.comisionPorcentaje.toFixed(2)}%</td>
-                        <td>${d.comisionImporte.toFixed(2)} €</td>
-                        <td style="font-weight: bold;">${d.ingresoNeto.toFixed(2)} €</td>
-                        <td class="actions-cell">
-                            <button class="btn-icon" onclick="window.app.editItem('delivery', ${d.id})" title="Editar">✏️</button>
-                            <button class="btn-icon delete" onclick="window.app.deleteItem('delivery', ${d.id})" title="Eliminar">🗑️</button>
-                        </td>
-                    </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>` : '<p class="empty-state">No hay pedidos registrados</p>';
-        
-        document.getElementById('listaDelivery').innerHTML = html;
-    }
+    // renderDelivery eliminado por unificación con Cierres
 
     renderProductos() {
         let productos = this.db.productos;
@@ -8812,7 +9095,7 @@ export class App {
             case 'facturas': this.renderCompras(); break; // Facturas y albaranes están en Compras
             case 'albaranes': this.renderCompras(); break;
             case 'inventarios': this.renderControlStock(); break;
-            case 'delivery': this.renderDelivery(); break;
+            // case 'delivery': eliminado
             case 'productos': this.renderProductos(); break;
             case 'proveedores': this.renderProveedores(); break;
         }
