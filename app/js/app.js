@@ -482,43 +482,117 @@ export class App {
         if (!product) return;
 
         this.inventarioState.currentProduct = product;
-        
-        // Setup Modal
-        document.getElementById('invCounterTitle').textContent = product.nombre;
-        document.getElementById('invCounterTeorico').textContent = (product.stockActualUnidades || 0).toFixed(2) + ' ' + product.unidadBase;
-        
         const currentCount = this.inventarioState.counts[productId];
-        const input = document.getElementById('invCounterInput');
-        input.value = currentCount !== undefined ? currentCount : '';
-        input.focus();
 
-        // Show Modal
-        const modal = document.getElementById('inventarioCounterModal');
-        modal.style.display = 'flex';
-        modal.classList.add('show');
+        // Detectar si es móvil (ancho < 768px)
+        const isMobile = window.innerWidth < 768;
+
+        if (isMobile) {
+            // MODO MÓVIL: Pantalla completa con Numpad
+            document.getElementById('invCounterTitle').textContent = product.nombre;
+            document.getElementById('invCounterTeorico').textContent = (product.stockActualUnidades || 0).toFixed(2) + ' ' + product.unidadBase;
+            
+            const input = document.getElementById('invCounterInput');
+            input.value = currentCount !== undefined ? currentCount : '';
+            
+            const modal = document.getElementById('inventarioCounterModal');
+            modal.style.display = 'block'; // Block para ocupar todo
+            // Asegurar que esté arriba del todo
+            window.scrollTo(0, 0);
+        } else {
+            // MODO ESCRITORIO: Desplegar fila abajo
+            
+            // 1. Cerrar cualquier otra fila de contador abierta
+            const existingRows = document.querySelectorAll('.inv-counter-row');
+            existingRows.forEach(row => row.remove());
+
+            // 2. Encontrar la fila del producto
+            // Nota: renderInventarioTable no pone IDs a las filas, vamos a buscarlas por el onclick o regenerar
+            // Para hacerlo robusto, vamos a buscar el tr que contiene el onclick con este ID
+            const rows = document.querySelectorAll('#inventarioTableBody tr');
+            let targetRow = null;
+            rows.forEach(row => {
+                if (row.getAttribute('onclick') && row.getAttribute('onclick').includes(`(${productId})`)) {
+                    targetRow = row;
+                }
+            });
+
+            if (targetRow) {
+                // 3. Insertar nueva fila
+                const newRow = document.createElement('tr');
+                newRow.className = 'inv-counter-row';
+                newRow.style.background = '#f8f9fa';
+                newRow.innerHTML = `
+                    <td colspan="4" style="padding: 15px; border-bottom: 1px solid #ddd;">
+                        <div style="display: flex; align-items: center; gap: 20px; justify-content: flex-start;">
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="font-size: 0.85em; color: #666;">Stock Teórico</span>
+                                <strong style="font-size: 1.1em;">${(product.stockActualUnidades || 0).toFixed(2)} ${product.unidadBase}</strong>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <label style="font-weight: 600;">Cantidad Real:</label>
+                                <input type="number" id="inv-desktop-input-${productId}" class="form-control" 
+                                    style="width: 120px; padding: 8px; font-size: 1.1em; border: 2px solid #3498db; border-radius: 6px;" 
+                                    value="${currentCount !== undefined ? currentCount : ''}" step="any">
+                                <span style="color: #666;">${product.unidadBase}</span>
+                            </div>
+
+                            <div style="display: flex; gap: 10px; margin-left: auto;">
+                                <button class="btn-secondary" onclick="window.app.closeInventarioCounter()">Cancelar</button>
+                                <button class="btn-primary" onclick="window.app.confirmInventarioCount(${productId}, 'desktop')">Confirmar</button>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                targetRow.parentNode.insertBefore(newRow, targetRow.nextSibling);
+                
+                // Focus al input
+                setTimeout(() => {
+                    const input = document.getElementById(`inv-desktop-input-${productId}`);
+                    if (input) input.focus();
+                }, 50);
+            }
+        }
     }
 
     closeInventarioCounter() {
+        // Cerrar modal móvil
         const modal = document.getElementById('inventarioCounterModal');
-        modal.style.display = 'none';
-        modal.classList.remove('show');
+        if (modal) modal.style.display = 'none';
+        
+        // Cerrar fila escritorio
+        const existingRows = document.querySelectorAll('.inv-counter-row');
+        existingRows.forEach(row => row.remove());
+        
         this.inventarioState.currentProduct = null;
     }
 
-    confirmInventarioCount() {
-        const input = document.getElementById('invCounterInput');
-        const val = parseFloat(input.value);
+    confirmInventarioCount(productId = null, mode = 'mobile') {
+        let val;
+        let product = this.inventarioState.currentProduct;
+
+        if (mode === 'desktop' && productId) {
+            const input = document.getElementById(`inv-desktop-input-${productId}`);
+            val = parseFloat(input.value);
+            // Si venimos de desktop, el currentProduct puede no estar set si se abrió otro, 
+            // pero aquí pasamos el ID explícito, así que buscamos el producto
+            product = this.db.productos.find(p => p.id === productId);
+        } else {
+            // Mobile
+            const input = document.getElementById('invCounterInput');
+            val = parseFloat(input.value);
+        }
         
         if (isNaN(val)) {
             this.showToast('⚠️ Introduce una cantidad válida', true);
             return;
         }
 
-        const product = this.inventarioState.currentProduct;
         if (product) {
             this.inventarioState.counts[product.id] = val;
-            this.filterInventarioTable(); // Re-render to show update
-            this.closeInventarioCounter();
+            this.filterInventarioTable(); // Re-render to show update (esto borrará la fila expandida también)
+            this.closeInventarioCounter(); // Asegurar limpieza
             this.showToast(`✓ ${product.nombre}: ${val} ${product.unidadBase}`);
         }
     }
