@@ -8368,6 +8368,21 @@ export class App {
         const row = document.getElementById(id);
         if (row) {
             const isHidden = row.style.display === 'none';
+            
+            // Si vamos a abrir una fila, primero cerramos todas las demás
+            if (isHidden) {
+                const allPreviews = document.querySelectorAll('tr[id^="preview-"]');
+                allPreviews.forEach(preview => {
+                    if (preview.style.display !== 'none' && preview.id !== id) {
+                        preview.style.display = 'none';
+                        // Resetear el botón asociado
+                        const btnId = 'btn-' + preview.id;
+                        const otherBtn = document.getElementById(btnId);
+                        if (otherBtn) otherBtn.textContent = '▶';
+                    }
+                });
+            }
+
             row.style.display = isHidden ? 'table-row' : 'none';
             if (btn) btn.textContent = isHidden ? '▼' : '▶';
         }
