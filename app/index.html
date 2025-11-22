@@ -439,7 +439,9 @@
             <div id="inventarioView" class="view hidden">
                 <div id="inventarioFormCard" class="form-card hidden" style="border-left: 4px solid #e67e22;">
                     <h3>📦 Nuevo Inventario Físico</h3>
-                    <form id="inventarioForm">
+                    
+                    <!-- PASO 1: Configuración Inicial -->
+                    <div id="inventarioStep1">
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Fecha del Conteo</label>
@@ -455,9 +457,16 @@
                                 </select>
                             </div>
                         </div>
-                        
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="btn-secondary" onclick="window.app.collapseForm('inventario')">Cancelar</button>
+                            <button type="button" class="btn-primary" onclick="window.app.iniciarInventario()">Comenzar Inventario</button>
+                        </div>
+                    </div>
+
+                    <!-- PASO 2: Conteo (Oculto inicialmente) -->
+                    <form id="inventarioForm" class="hidden">
                         <div id="inventarioProductosContainer">
-                            </div>
+                        </div>
                         
                         <div style="margin-top: 20px; text-align: center;">
                             <button type="button" id="addProductoInventario" class="btn-secondary" style="width: 100%; padding: 15px; border: 2px dashed #cbd5e1;">

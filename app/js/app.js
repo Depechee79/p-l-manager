@@ -118,6 +118,28 @@ export class App {
             // Resetear pasos del formulario de cierre
             this.resetCierreForm();
         }
+
+        // Restaurar lista de inventarios si se ocultó
+        if (type === 'inventario') {
+            const lista = document.getElementById('listaInventarios');
+            if (lista) lista.style.display = 'block';
+            
+            // Resetear pasos del formulario de inventario
+            const step1 = document.getElementById('inventarioStep1');
+            const form = document.getElementById('inventarioForm');
+            if (step1) step1.classList.remove('hidden');
+            if (form) form.classList.add('hidden');
+            
+            // Limpiar contenedor de productos
+            const container = document.getElementById('inventarioProductosContainer');
+            if (container) container.innerHTML = '';
+            
+            // Resetear estado de inventario
+            this.inventarioState.hasEditingLine = false;
+            this.inventarioState.editingLineId = null;
+            const addBtn = document.getElementById('addProductoInventario');
+            if (addBtn) addBtn.disabled = false;
+        }
     }
 
     // Método robusto para expandir formularios
@@ -134,10 +156,10 @@ export class App {
                     formCard.style.display = 'block';
                     
                     // Lógica específica por tipo
-                    if (type === 'cierre') {
-                        // Ocultar botón "Nuevo Cierre" y la lista para evitar conflictos
+                    if (type === 'cierre' || type === 'inventario') {
+                        // Ocultar botón "Nuevo Cierre/Inventario" y la lista para evitar conflictos
                         if (toggleBtn) toggleBtn.style.display = 'none';
-                        const lista = document.getElementById('listaCierres');
+                        const lista = document.getElementById(type === 'cierre' ? 'listaCierres' : 'listaInventarios');
                         if (lista) lista.style.display = 'none';
                     } else {
                         if (toggleBtn) toggleBtn.textContent = '− Cancelar';
