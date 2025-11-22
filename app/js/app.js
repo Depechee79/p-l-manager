@@ -256,6 +256,7 @@ export class App {
             const listaFacturas = document.getElementById('listaFacturas');
             const listaAlbaranes = document.getElementById('listaAlbaranes');
             const recentDocs = document.getElementById('recentDocumentsList');
+            const tableControls = document.getElementById('ocrTableControls');
             
             if (optionsCard) {
                 optionsCard.classList.remove('hidden');
@@ -264,6 +265,7 @@ export class App {
             if (listaFacturas) listaFacturas.classList.add('hidden');
             if (listaAlbaranes) listaAlbaranes.classList.add('hidden');
             if (recentDocs) recentDocs.classList.add('hidden');
+            if (tableControls) tableControls.classList.add('hidden');
         });
 
         addSafeListener('btnCancelScan', 'click', () => {
@@ -271,6 +273,7 @@ export class App {
             const listaFacturas = document.getElementById('listaFacturas');
             const listaAlbaranes = document.getElementById('listaAlbaranes');
             const recentDocs = document.getElementById('recentDocumentsList');
+            const tableControls = document.getElementById('ocrTableControls');
 
             if (optionsCard) {
                 optionsCard.classList.add('hidden');
@@ -279,6 +282,7 @@ export class App {
             if (listaFacturas) listaFacturas.classList.remove('hidden');
             if (listaAlbaranes) listaAlbaranes.classList.remove('hidden');
             if (recentDocs) recentDocs.classList.remove('hidden');
+            if (tableControls) tableControls.classList.remove('hidden');
         });
 
         // --- DELEGACIÓN DE EVENTOS GLOBAL (CRÍTICO) ---
@@ -789,7 +793,7 @@ export class App {
             <div class="form-row">
                 <div class="form-group">
                     <label>Tipo Conteo *</label>
-                    <select class="inventario-tipo-conteo" onchange="app.updateTipoConteoInventario(${rowId})" required>
+                    <select class="inventario-tipo-conteo form-select" onchange="app.updateTipoConteoInventario(${rowId})" required>
                         <option value="">Seleccionar...</option>
                         <option value="solo-unidad">Solo unidad base</option>
                         <option value="solo-empaques">Solo empaques</option>
@@ -1998,7 +2002,7 @@ export class App {
         row.innerHTML = `
             <div class="form-group">
                 <label>Producto *</label>
-                <select class="ingrediente-producto" required onchange="app.onIngredienteProductoChange(this)">
+                <select class="ingrediente-producto form-select" required onchange="app.onIngredienteProductoChange(this)">
                     <option value="">Seleccionar...</option>
                     ${productosOptions}
                 </select>
@@ -2009,7 +2013,7 @@ export class App {
             </div>
             <div class="form-group">
                 <label>Unidad *</label>
-                <select class="ingrediente-unidad" required onchange="app.calcularCostesEscandallo()">
+                <select class="ingrediente-unidad form-select" required onchange="app.calcularCostesEscandallo()">
                     <option value="">Seleccionar...</option>
                     <option value="kg">kg</option>
                     <option value="g">g</option>
@@ -2148,500 +2152,395 @@ export class App {
         // TODO SIN IVA · ESTRUCTURA PROFESIONAL COMPLETA
         // ══════════════════════════════════════════════════════════════
 
-        // 0. INYECTAR ESTRUCTURA SI NO EXISTE
-        if (!document.getElementById('kpiIngresos')) {
-            const pnlView = document.getElementById('pnlView');
-            if (pnlView) {
-                pnlView.innerHTML = `
-                <div class="pnl-dashboard">
-                    <div class="pnl-header">
-                        <h2>Cuenta de Explotación</h2>
-                        <p>Resumen financiero del período</p>
-                    </div>
+        const pnlView = document.getElementById('pnlView');
+        if (!pnlView) return;
 
-                    <!-- KPIs -->
-                    <div class="pnl-kpis-grid">
-                        <div class="pnl-kpi-card">
-                            <div class="pnl-kpi-label">Ingresos</div>
-                            <div class="pnl-kpi-value" id="kpiIngresos">0€</div>
-                            <div class="pnl-kpi-compare" id="kpiIngresosCompare"></div>
-                        </div>
-                        <div class="pnl-kpi-card">
-                            <div class="pnl-kpi-label">Food Cost</div>
-                            <div class="pnl-kpi-value" id="kpiFoodCost">0%</div>
-                            <div class="pnl-kpi-compare" id="kpiFoodCostCompare"></div>
-                        </div>
-                        <div class="pnl-kpi-card">
-                            <div class="pnl-kpi-label">Margen Bruto</div>
-                            <div class="pnl-kpi-value" id="kpiMargen">0%</div>
-                            <div class="pnl-kpi-compare" id="kpiMargenCompare"></div>
-                        </div>
-                        <div class="pnl-kpi-card">
-                            <div class="pnl-kpi-label">EBITDA</div>
-                            <div class="pnl-kpi-value" id="kpiEBITDA">0%</div>
-                            <div class="pnl-kpi-compare" id="kpiEBITDACompare"></div>
-                        </div>
-                    </div>
-
-                    <!-- Alertas -->
-                    <div id="pnlAlertas" class="pnl-alertas-container" style="margin-bottom: 20px;"></div>
-
-                    <!-- Detalle -->
-                    <div class="pnl-cuenta-card">
-                        
-                        <!-- 1. INGRESOS -->
-                        <div class="pnl-section">
-                            <div class="pnl-section-title">1. INGRESOS OPERATIVOS</div>
-                            <div class="pnl-line">
-                                <span>Ventas Local</span>
-                                <span id="plVentasLocal">0.00€</span>
-                            </div>
-                            <div class="pnl-line">
-                                <span>Ventas Delivery</span>
-                                <span id="plVentasDelivery">0.00€</span>
-                            </div>
-                            <div class="pnl-line total" style="font-weight:bold; border-top:1px solid #eee;">
-                                <span>TOTAL INGRESOS</span>
-                                <span id="plTotalIngresos">0.00€</span>
-                            </div>
-                        </div>
-
-                        <!-- 2. COGS -->
-                        <div class="pnl-section">
-                            <div class="pnl-section-title">2. COSTE DE VENTAS (COGS)</div>
-                            <div class="pnl-line">
-                                <span>Inventario Inicial</span>
-                                <span id="plInvInicial">0.00€</span>
-                            </div>
-                            <div class="pnl-line">
-                                <span>+ Compras Netas</span>
-                                <span id="plComprasNetas">0.00€</span>
-                            </div>
-                            <div class="pnl-line">
-                                <span>- Inventario Final</span>
-                                <span id="plInvFinal">0.00€</span>
-                            </div>
-                            <div class="pnl-line total" style="font-weight:bold; border-top:1px solid #eee;">
-                                <span>COGS TOTAL</span>
-                                <span id="plCOGSTotal">0.00€</span>
-                            </div>
-                            <div class="pnl-line pnl-indent" style="font-style:italic; color:#7f8c8d;">
-                                <span>COGS Comida (Est. 60%)</span>
-                                <span id="plCOGSComida">0.00€</span>
-                            </div>
-                            <div class="pnl-line pnl-indent" style="font-style:italic; color:#7f8c8d;">
-                                <span>COGS Bebida (Est. 40%)</span>
-                                <span id="plCOGSBebida">0.00€</span>
-                            </div>
-                            <div class="pnl-line" style="color:#e67e22; font-weight:bold;">
-                                <span>Food Cost %</span>
-                                <span id="plFoodCostPct">0.0%</span>
-                            </div>
-                        </div>
-
-                        <!-- 3. MARGEN BRUTO -->
-                        <div class="pnl-section">
-                            <div class="pnl-line total" style="font-size:1.1em; font-weight:bold; background:#f8f9fa;">
-                                <span>MARGEN BRUTO</span>
-                                <span id="plMargenBruto">0.00€</span>
-                            </div>
-                            <div class="pnl-line" style="text-align:right;">
-                                <span style="width:100%; text-align:right;" id="plMargenPct">0.0%</span>
-                            </div>
-                        </div>
-
-                        <!-- 4. PERSONAL -->
-                        <div class="pnl-section">
-                            <div class="pnl-section-title">3. GASTOS DE PERSONAL</div>
-                            <div class="pnl-line">
-                                <span>Salarios</span>
-                                <span id="plSalarios">0.00€</span>
-                            </div>
-                            <div class="pnl-line">
-                                <span>Seguridad Social</span>
-                                <span id="plSeguridadSocial">0.00€</span>
-                            </div>
-                            <div class="pnl-line total" style="font-weight:bold;">
-                                <span>TOTAL PERSONAL</span>
-                                <span id="plTotalPersonal">0.00€</span>
-                            </div>
-                            <div class="pnl-line">
-                                <span>% sobre Ventas</span>
-                                <span id="plPersonalPct">0.0%</span>
-                            </div>
-                        </div>
-
-                        <!-- 5. OPEX -->
-                        <div class="pnl-section">
-                            <div class="pnl-section-title">4. GASTOS OPERATIVOS (OPEX)</div>
-                            <div class="pnl-line"><span>Alquiler</span><span id="plAlquiler">0.00€</span></div>
-                            <div class="pnl-line"><span>Suministros</span><span id="plSuministros">0.00€</span></div>
-                            <div class="pnl-line"><span>Servicios</span><span id="plServicios">0.00€</span></div>
-                            <div class="pnl-line"><span>Marketing</span><span id="plMarketing">0.00€</span></div>
-                            <div class="pnl-line"><span>Comisiones Delivery</span><span id="plComisiones">0.00€</span></div>
-                            <div class="pnl-line"><span>Limpieza</span><span id="plLimpieza">0.00€</span></div>
-                            <div class="pnl-line"><span>Seguros</span><span id="plSeguros">0.00€</span></div>
-                            <div class="pnl-line"><span>Otros</span><span id="plOtrosOpex">0.00€</span></div>
-                            <div class="pnl-line total" style="font-weight:bold; border-top:1px solid #eee;">
-                                <span>TOTAL OPEX</span>
-                                <span id="plTotalOpex">0.00€</span>
-                            </div>
-                            <div class="pnl-line">
-                                <span>% sobre Ventas</span>
-                                <span id="plOpexPct">0.0%</span>
-                            </div>
-                        </div>
-
-                        <!-- 6. EBITDA -->
-                        <div class="pnl-section">
-                            <div class="pnl-line total" style="font-size:1.1em; font-weight:bold; background:#e8f6f3; color:#27ae60;">
-                                <span>EBITDA (Rto. Operativo)</span>
-                                <span id="plEBITDA">0.00€</span>
-                            </div>
-                            <div class="pnl-line" style="text-align:right;">
-                                <span style="width:100%; text-align:right;" id="plEBITDAPct">0.0%</span>
-                            </div>
-                        </div>
-
-                        <!-- 7. FINANCIEROS -->
-                        <div class="pnl-section">
-                            <div class="pnl-section-title">5. FINANCIEROS Y AMORTIZACIONES</div>
-                            <div class="pnl-line"><span>Gastos Financieros</span><span id="plFinancieros">0.00€</span></div>
-                            <div class="pnl-line"><span>Amortizaciones</span><span id="plAmortizaciones">0.00€</span></div>
-                        </div>
-
-                        <!-- 8. BENEFICIO NETO -->
-                        <div class="pnl-section" style="border:none;">
-                            <div class="pnl-line total" style="font-size:1.2em; font-weight:bold; background:#2c3e50; color:white; padding:15px;">
-                                <span>BENEFICIO NETO (BAI)</span>
-                                <span id="plBeneficioNeto">0.00€</span>
-                            </div>
-                            <div class="pnl-line" style="text-align:right;">
-                                <span style="width:100%; text-align:right;" id="plMargenNetoPct">0.0%</span>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-                `;
-            }
+        // 1. OBTENER DATOS
+        // Si no hay periodo seleccionado, usar mes actual por defecto
+        if (!this.currentPeriod) {
+            const now = new Date();
+            this.currentPeriod = {
+                month: now.getMonth(),
+                year: now.getFullYear()
+            };
         }
-
+        
         const cierres = this.db.getByPeriod('cierres', this.currentPeriod);
         const delivery = this.db.getByPeriod('delivery', this.currentPeriod);
         const facturas = this.db.getByPeriod('facturas', this.currentPeriod);
-        const inventarios = this.db.inventarios;
+        // Inventarios ya no se usan en P&L por solicitud del usuario
+        // const inventarios = this.db.inventarios;
 
         // ────────────────────────────────────────────────────────────
-        // 1. INGRESOS NETOS (SIN IVA)
+        // 2. CÁLCULOS FINANCIEROS
         // ────────────────────────────────────────────────────────────
-        const ventasLocal = cierres.reduce((sum, c) => sum + (c.totalReal || 0), 0);
-        const ventasDelivery = delivery.reduce((sum, d) => sum + (d.ingresoNeto || 0), 0);
+
+        // A. INGRESOS
+        // Ventas Local = Total Real - Real Delivery (from Cierres)
+        const ventasLocal = cierres.reduce((sum, c) => sum + ((c.totalReal || 0) - (c.realDelivery || 0)), 0);
+        
+        // Ventas Delivery = Real Delivery (from Cierres) + Ingreso Neto (from Delivery module)
+        const ventasDeliveryCierres = cierres.reduce((sum, c) => sum + (c.realDelivery || 0), 0);
+        const ventasDeliveryPlataformas = delivery.reduce((sum, d) => sum + (d.ingresoNeto || 0), 0);
+        const ventasDelivery = ventasDeliveryCierres + ventasDeliveryPlataformas;
+        
         const totalIngresos = ventasLocal + ventasDelivery;
 
-        // ────────────────────────────────────────────────────────────
-        // 2. COGS (COSTE DE MERCANCÍA VENDIDA)
-        // Fórmula: COGS = InvInicial + ComprasNetas - InvFinal
-        // ────────────────────────────────────────────────────────────
-        
-        // Inventario inicial (último inventario del período anterior o primer inventario disponible)
-        const invInicial = inventarios.length > 0 ? 
-            inventarios[0].productos?.reduce((sum, p) => sum + (p.stockTeorico * p.precioUnitario), 0) || 0 : 0;
-        
-        // Compras netas del período (facturas SIN IVA)
-        const comprasNetas = facturas.reduce((sum, f) => sum + (f.total || 0), 0);
-        
-        // Inventario final (último inventario disponible)
-        const invFinal = inventarios.length > 0 ? 
-            inventarios[inventarios.length - 1].productos?.reduce((sum, p) => sum + (p.stockRealUnidades * p.precioUnitario), 0) || 0 : 0;
-        
-        // COGS TOTAL
-        const cogsTotal = invInicial + comprasNetas - invFinal;
-        
-        // COGS por categoría (estimado: 60% comida, 40% bebida)
-        const cogsComida = cogsTotal * 0.6;
-        const cogsBebida = cogsTotal * 0.4;
-        
-        // Food Cost %
-        const foodCostPct = totalIngresos > 0 ? (cogsTotal / totalIngresos * 100) : 0;
+        // B. MATERIAS / PRODUCTO (COGS) - SOLO COMPRAS (FACTURAS)
+        // El usuario ha solicitado eliminar la lógica de inventarios de la P&L.
+        // Solo se mostrarán los gastos de materia prima provenientes de facturas.
 
-        // ────────────────────────────────────────────────────────────
-        // 3. MARGEN BRUTO
-        // ────────────────────────────────────────────────────────────
-        const margenBruto = totalIngresos - cogsTotal;
+        // Helper para detectar facturas de delivery
+        // Eliminamos 'reparto' y 'delivery' como palabras clave genéricas en el proveedor
+        // para evitar falsos positivos con proveedores de logística o distribución.
+        const deliveryKeywords = ['glovo', 'uber', 'just eat', 'deliveroo'];
+        const isDeliveryInvoice = (f) => {
+            const proveedor = (f.proveedorNombre || f.proveedor || '').toLowerCase();
+            const categoria = (f.categoria || '').toLowerCase();
+            
+            // Solo si el proveedor contiene explícitamente el nombre de la plataforma
+            const isPlatform = deliveryKeywords.some(k => proveedor.includes(k));
+            
+            // O si la categoría es explícitamente 'delivery' (pero no 'reparto' genérico)
+            const isCategory = categoria === 'delivery' || categoria === 'comisiones delivery';
+            
+            return isPlatform || isCategory;
+        };
+
+        // 1. Compras (Facturas)
+        let comprasComida = 0;
+        let comprasBebida = 0;
+
+        facturas.forEach(f => {
+            // Si es factura de delivery, NO es materia prima (se va a OPEX)
+            if (isDeliveryInvoice(f)) return;
+
+            const cat = (f.categoria || '').toLowerCase();
+            const val = f.baseImponible || f.total || 0; // Usar base imponible si existe, sino total (asumiendo sin IVA)
+            
+            // Clasificación simple basada en categoría
+            if (cat.includes('bebida') || cat.includes('licor') || cat.includes('vino') || cat.includes('cerveza') || cat.includes('café') || cat.includes('refresco')) {
+                comprasBebida += val;
+            } else if (cat.includes('comida') || cat.includes('alimento') || cat.includes('carne') || cat.includes('pescado') || cat.includes('fruta') || cat.includes('verdura')) {
+                comprasComida += val;
+            } else {
+                // Si no es explícitamente bebida, y es una factura de proveedor de materia prima, asumimos comida por defecto
+                // O podríamos tener una categoría "Otros Insumos"
+                comprasComida += val; 
+            }
+        });
+
+        // 2. Cálculo Consumos (Directamente Compras)
+        const consumoComida = comprasComida;
+        const consumoBebida = comprasBebida;
+        const totalMaterias = consumoComida + consumoBebida;
+
+        const foodCostPct = totalIngresos > 0 ? (totalMaterias / totalIngresos * 100) : 0;
+
+        // C. MARGEN BRUTO
+        const margenBruto = totalIngresos - totalMaterias;
         const margenBrutoPct = totalIngresos > 0 ? (margenBruto / totalIngresos * 100) : 0;
 
-        // ────────────────────────────────────────────────────────────
-        // 4. GASTOS DE PERSONAL (SIMULADO - en producción conectar con nóminas)
-        // ────────────────────────────────────────────────────────────
-        const salarios = 0; // Placeholder - integrar con módulo nóminas
-        const seguridadSocial = 0; // Placeholder
+        // D. PERSONAL (Simulado)
+        const salarios = 0;
+        const seguridadSocial = 0;
         const totalPersonal = salarios + seguridadSocial;
         const personalPct = totalIngresos > 0 ? (totalPersonal / totalIngresos * 100) : 0;
 
-        // ────────────────────────────────────────────────────────────
-        // 5. GASTOS OPERATIVOS (SIMULADO - en producción conectar con gastos)
-        // ────────────────────────────────────────────────────────────
+        // E. OPEX
+        // Lógica Delivery: Comisiones (Ventas) + Facturas (Gastos)
+        // El usuario pide NO incluir comisiones delivery en gastos generales si no hay factura
+        // Pero si las tenemos calculadas de las ventas, las mostramos solo si > 0
+        const comisionesVentas = delivery.reduce((sum, d) => sum + (d.comisionImporte || 0), 0);
+        
+        // Buscar facturas de delivery (Glovo, Uber, etc.)
+        // Usamos el mismo helper isDeliveryInvoice definido arriba para consistencia
+        const facturasDelivery = facturas.filter(isDeliveryInvoice);
+        const gastosDeliveryFacturas = facturasDelivery.reduce((sum, f) => sum + (f.baseImponible || f.total || 0), 0);
+
         const alquiler = 0;
         const suministros = 0;
         const servicios = 0;
         const marketing = 0;
-        const comisiones = delivery.reduce((sum, d) => sum + (d.comisionImporte || 0), 0);
         const limpieza = 0;
         const seguros = 0;
         const otrosOpex = 0;
         
-        const totalOpex = alquiler + suministros + servicios + marketing + comisiones + limpieza + seguros + otrosOpex;
+        // Solo sumamos comisionesVentas si queremos considerarlas gasto (normalmente sí, se restan del ingreso neto o se ponen como gasto)
+        // El usuario dijo: "no poner gastos delivery ni comisiones delivery, solo mostrar si hay alguna factura de servicios delivery en el sistema."
+        // Interpretación: Si hay factura, se muestra. Si es un cálculo automático (comisionesVentas), quizás no quiere verlo aquí si no hay "factura".
+        // Sin embargo, si no lo ponemos, el EBITDA será falso.
+        // Voy a mantener el cálculo pero en la visualización (HTML) ya puse la condición de mostrar solo si > 0.
+        
+        const totalOpex = alquiler + suministros + servicios + marketing + comisionesVentas + gastosDeliveryFacturas + limpieza + seguros + otrosOpex;
         const opexPct = totalIngresos > 0 ? (totalOpex / totalIngresos * 100) : 0;
 
-        // ────────────────────────────────────────────────────────────
-        // 6. EBITDA (Resultado Operativo)
-        // ────────────────────────────────────────────────────────────
+        // F. EBITDA
         const ebitda = margenBruto - totalPersonal - totalOpex;
         const ebitdaPct = totalIngresos > 0 ? (ebitda / totalIngresos * 100) : 0;
 
-        // ────────────────────────────────────────────────────────────
-        // 7. FINANCIEROS Y AMORTIZACIONES (SIMULADO)
-        // ────────────────────────────────────────────────────────────
+        // G. NETO
         const financieros = 0;
         const amortizaciones = 0;
-
-        // ────────────────────────────────────────────────────────────
-        // 8. BENEFICIO NETO (BAI)
-        // ────────────────────────────────────────────────────────────
         const beneficioNeto = ebitda - financieros - amortizaciones;
         const margenNetoPct = totalIngresos > 0 ? (beneficioNeto / totalIngresos * 100) : 0;
 
-        // ══════════════════════════════════════════════════════════════
-        // ACTUALIZAR UI - KPIs PRINCIPALES
-        // ══════════════════════════════════════════════════════════════
-        const setContent = (id, text) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = text;
-        };
-
-        setContent('kpiIngresos', totalIngresos.toFixed(0) + '€');
-        setContent('kpiFoodCost', foodCostPct.toFixed(1) + '%');
-        setContent('kpiMargen', margenBrutoPct.toFixed(1) + '%');
-        setContent('kpiEBITDA', ebitdaPct.toFixed(1) + '%');
-
-        // Comparaciones (placeholder - implementar comparación períodos)
-        setContent('kpiIngresosCompare', '');
-        setContent('kpiFoodCostCompare', '');
-        setContent('kpiMargenCompare', '');
-        setContent('kpiEBITDACompare', '');
-
-        // ══════════════════════════════════════════════════════════════
-        // ACTUALIZAR UI - CUENTA DETALLADA
-        // ══════════════════════════════════════════════════════════════
+        // ────────────────────────────────────────────────────────────
+        // 3. RENDERIZADO (NUEVO DISEÑO TABLA)
+        // ────────────────────────────────────────────────────────────
         
-        // 1. INGRESOS
-        setContent('plVentasLocal', ventasLocal.toFixed(2) + '€');
-        setContent('plVentasDelivery', ventasDelivery.toFixed(2) + '€');
-        setContent('plTotalIngresos', totalIngresos.toFixed(2) + '€');
+        const formatCurrency = (val) => val.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+        const formatPct = (val) => val.toFixed(1) + '%';
+        const calcPct = (val) => totalIngresos > 0 ? formatPct(val / totalIngresos * 100) : '0.0%';
 
-        // 2. COGS
-        setContent('plInvInicial', invInicial.toFixed(2) + '€');
-        setContent('plComprasNetas', comprasNetas.toFixed(2) + '€');
-        setContent('plInvFinal', invFinal.toFixed(2) + '€');
-        setContent('plCOGSTotal', cogsTotal.toFixed(2) + '€');
-        setContent('plCOGSComida', cogsComida.toFixed(2) + '€');
-        setContent('plCOGSBebida', cogsBebida.toFixed(2) + '€');
-        setContent('plFoodCostPct', foodCostPct.toFixed(1) + '%');
+        pnlView.innerHTML = `
+        <div class="pnl-dashboard">
+            <div class="pnl-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h2>Cuenta de Explotación</h2>
+                    <p>Resumen financiero del período</p>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label for="pnlMonthPicker" style="font-weight: 600; color: #555;">Periodo:</label>
+                    <input type="month" id="pnlMonthPicker" class="form-control" style="width: auto;" value="${(this.currentPeriod && this.currentPeriod.year) ? `${this.currentPeriod.year}-${String(this.currentPeriod.month + 1).padStart(2, '0')}` : new Date().toISOString().slice(0, 7)}">
+                    <button class="btn-primary" id="btnUpdatePnL">Actualizar</button>
+                </div>
+            </div>
 
-        // 3. MARGEN BRUTO
-        setContent('plMargenBruto', margenBruto.toFixed(2) + '€');
-        setContent('plMargenPct', margenBrutoPct.toFixed(1) + '%');
+            <!-- KPIs -->
+            <div class="pnl-kpis-grid">
+                <div class="pnl-kpi-card">
+                    <div class="pnl-kpi-label">Ingresos</div>
+                    <div class="pnl-kpi-value">${formatCurrency(totalIngresos)}</div>
+                </div>
+                <div class="pnl-kpi-card">
+                    <div class="pnl-kpi-label">Product Cost</div>
+                    <div class="pnl-kpi-value">${formatPct(foodCostPct)}</div>
+                </div>
+                <div class="pnl-kpi-card">
+                    <div class="pnl-kpi-label">Margen Bruto</div>
+                    <div class="pnl-kpi-value">${formatPct(margenBrutoPct)}</div>
+                </div>
+                <div class="pnl-kpi-card">
+                    <div class="pnl-kpi-label">EBITDA</div>
+                    <div class="pnl-kpi-value">${formatPct(ebitdaPct)}</div>
+                </div>
+            </div>
 
-        // 4. PERSONAL
-        setContent('plSalarios', salarios.toFixed(2) + '€');
-        setContent('plSeguridadSocial', seguridadSocial.toFixed(2) + '€');
-        setContent('plTotalPersonal', totalPersonal.toFixed(2) + '€');
-        setContent('plPersonalPct', personalPct.toFixed(1) + '%');
+            <!-- Alertas -->
+            <div id="pnlAlertas" class="pnl-alertas-container" style="margin-bottom: 20px;"></div>
 
-        // 5. OPEX
-        setContent('plAlquiler', alquiler.toFixed(2) + '€');
-        setContent('plSuministros', suministros.toFixed(2) + '€');
-        setContent('plServicios', servicios.toFixed(2) + '€');
-        setContent('plMarketing', marketing.toFixed(2) + '€');
-        setContent('plComisiones', comisiones.toFixed(2) + '€');
-        setContent('plLimpieza', limpieza.toFixed(2) + '€');
-        setContent('plSeguros', seguros.toFixed(2) + '€');
-        setContent('plOtrosOpex', otrosOpex.toFixed(2) + '€');
-        setContent('plTotalOpex', totalOpex.toFixed(2) + '€');
-        setContent('plOpexPct', opexPct.toFixed(1) + '%');
-
-        // 6. EBITDA
-        setContent('plEBITDA', ebitda.toFixed(2) + '€');
-        setContent('plEBITDAPct', ebitdaPct.toFixed(1) + '%');
-
-        // 7. FINANCIEROS Y AMORTIZACIONES
-        setContent('plFinancieros', financieros.toFixed(2) + '€');
-        setContent('plAmortizaciones', amortizaciones.toFixed(2) + '€');
-
-        // 8. BENEFICIO NETO
-        setContent('plBeneficioNeto', beneficioNeto.toFixed(2) + '€');
-        setContent('plMargenNetoPct', margenNetoPct.toFixed(1) + '%');
-
-        // ══════════════════════════════════════════════════════════════
-        // ALERTAS AUTOMÁTICAS
-        // ══════════════════════════════════════════════════════════════
-        const alertas = [];
-
-        if (foodCostPct > 32) {
-            alertas.push({
-                tipo: 'critica',
-                mensaje: `⚠️ FOOD COST CRÍTICO: ${foodCostPct.toFixed(1)}% (objetivo <32%). Revisar precios compras y mermas.`
-            });
-        }
-
-        if (personalPct > 38 && totalPersonal > 0) {
-            alertas.push({
-                tipo: 'advertencia',
-                mensaje: `⚠️ Gastos de Personal: ${personalPct.toFixed(1)}% (objetivo <38%). Optimizar turnos.`
-            });
-        }
-
-        if (opexPct > 20 && totalOpex > 0) {
-            alertas.push({
-                tipo: 'advertencia',
-                mensaje: `⚠️ OPEX alto: ${opexPct.toFixed(1)}% (objetivo <20%). Revisar gastos operativos.`
-            });
-        }
-
-        if (margenBrutoPct < 60) {
-            alertas.push({
-                tipo: 'advertencia',
-                mensaje: `⚠️ Margen Bruto bajo: ${margenBrutoPct.toFixed(1)}% (objetivo >60%). Ajustar precios o reducir COGS.`
-            });
-        }
-
-        if (ebitdaPct < 10 && totalIngresos > 0) {
-            alertas.push({
-                tipo: 'advertencia',
-                mensaje: `⚠️ EBITDA bajo: ${ebitdaPct.toFixed(1)}% (objetivo >10%). Negocio poco rentable.`
-            });
-        }
-
-        if (beneficioNeto < 0) {
-            alertas.push({
-                tipo: 'critica',
-                mensaje: `🚨 PÉRDIDAS: Beneficio Neto negativo (${beneficioNeto.toFixed(2)}€). Acción urgente requerida.`
-            });
-        }
-
-        if (totalIngresos === 0) {
-            alertas.push({
-                tipo: 'info',
-                mensaje: `ℹ️ Sin datos de ventas en este período. Registra cierres y pedidos delivery.`
-            });
-        }
-
-        // Renderizar alertas
-        const alertasHtml = alertas.map(a => 
-            `<div class="pnl-alerta ${a.tipo}">${a.mensaje}</div>`
-        ).join('');
-        document.getElementById('pnlAlertas').innerHTML = alertasHtml;
-    }
-
-    async handleOCRImageUpload(file) {
-        // Aseguramos que el Toast sea accesible si el contexto 'this' se pierde
-        const showToast = (msg, isError) => window.app.showToast(msg, isError);
-        
-        document.getElementById('fileNameDisplay').textContent = file.name;
-        document.getElementById('fileSelectedInfo').classList.remove('hidden');
-        document.getElementById('fileSelectedInfo').style.display = 'flex';
-        
-        // Ocultar la zona de drag & drop
-        const uploadZone = document.querySelector('.file-upload-zone');
-        if (uploadZone) uploadZone.style.display = 'none';
-        
-        // Ocultar bot�n cancelar carga (porque ya hay archivo)
-        const cancelContainer = document.getElementById('ocrUploadCancelContainer');
-        if (cancelContainer) cancelContainer.classList.add('hidden');
-
-        const fileName = file.name.toLowerCase();
-        const fileExtension = fileName.split('.').pop();
-        const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'tif', 'pdf'];
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'application/pdf'];
-        
-        if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
-            showToast('⚠️ Formato no soportado. Use: JPG, PNG, WEBP, TIFF o PDF', true);
-            document.getElementById('ocrFile').value = '';
-            return;
-        }
-        
-        if (file.size > 20 * 1024 * 1024) {
-            showToast('⚠️ El archivo es demasiado grande (máximo 20MB)', true);
-            document.getElementById('ocrFile').value = '';
-            return;
-        }
-
-        // --- LÓGICA DE PDF ---
-        if (file.type === 'application/pdf' || fileExtension === 'pdf') {
-            showToast('📝 Procesando PDF...');
-            try {
-                if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js no está cargado');
-                const extractedText = await this.extractPDFText(file);
+            <!-- TABLA P&L REDISEÑADA -->
+            <div class="pnl-sections-container">
                 
-                if (extractedText && extractedText.length > 100) {
-                    this.currentPDFText = extractedText;
-                    this.isPDFWithEmbeddedText = true;
-                    const imageData = await this.convertPDFToImage(file);
-                    document.getElementById('ocrPreviewImg').src = imageData;
-                } else {
-                    this.isPDFWithEmbeddedText = false;
+                <!-- 1. INGRESOS -->
+                <div class="pnl-section pnl-ingresos">
+                    <div class="pnl-section-header">
+                        <h3>1. Ingresos Operativos</h3>
+                        <span style="font-size: 18px; font-weight: 700; color: #2dce89;">${formatCurrency(totalIngresos)}</span>
+                    </div>
+                    <table class="pnl-table">
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th class="text-right">Importe</th>
+                                <th class="text-right percentage-col">% Ventas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Ventas Local</td>
+                                <td class="text-right">${formatCurrency(ventasLocal)}</td>
+                                <td class="text-right">${calcPct(ventasLocal)}</td>
+                            </tr>
+                            <tr>
+                                <td>Ventas Delivery</td>
+                                <td class="text-right">${formatCurrency(ventasDelivery)}</td>
+                                <td class="text-right">${calcPct(ventasDelivery)}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td>TOTAL INGRESOS</td>
+                                <td class="text-right">${formatCurrency(totalIngresos)}</td>
+                                <td class="text-right">100.0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-        // Ocultar opciones de escaneo si est�n abiertas
-        const scanOptionsCard = document.getElementById('scanOptionsCard');
-        if (scanOptionsCard) {
-             scanOptionsCard.classList.add('hidden');
-             scanOptionsCard.style.display = 'none';
-        }
+                <!-- 2. GASTOS -->
+                <div class="pnl-section pnl-gastos">
+                    <div class="pnl-section-header">
+                        <h3>2. Gastos Operativos</h3>
+                        <span style="font-size: 18px; font-weight: 700; color: #f5365c;">${formatCurrency(totalMaterias + totalPersonal + totalOpex)}</span>
+                    </div>
 
-        // Mostrar listas de nuevo
-        const listaFacturas = document.getElementById('listaFacturas');
-        const listaAlbaranes = document.getElementById('listaAlbaranes');
-        const recentDocs = document.getElementById('recentDocumentsList');
-        if (listaFacturas) listaFacturas.classList.remove('hidden');
-        if (listaAlbaranes) listaAlbaranes.classList.remove('hidden');
-        if (recentDocs) recentDocs.classList.remove('hidden');
-                    const imageData = await this.convertPDFToImage(file);
-                    this.currentImageData = imageData;
-                    document.getElementById('ocrPreviewImg').src = imageData;
-                }
-                showToast('✅ PDF cargado. Listo para analizar.');
-            } catch (error) {
-                console.error('Error convirtiendo PDF:', error);
-                showToast('❌ Error al procesar PDF.', true);
-                document.getElementById('ocrFile').value = '';
+                    <!-- 2.1 MATERIAS / PRODUCTO -->
+                    <div class="pnl-subsection">
+                        <h4 class="pnl-subsection-title">2.1 Materias / Producto (Coste de Ventas)</h4>
+                        <table class="pnl-table">
+                            <tbody>
+                                <!-- COMIDA -->
+                                <tr class="subtotal-row">
+                                    <td colspan="3" style="color: #1171ef;">Comida (Food)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 40px;">Compras Comida</td>
+                                    <td class="text-right">${formatCurrency(comprasComida)}</td>
+                                    <td class="text-right">${calcPct(comprasComida)}</td>
+                                </tr>
+
+                                <!-- BEBIDA -->
+                                <tr class="subtotal-row">
+                                    <td colspan="3" style="color: #1171ef;">Bebida (Beverage)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 40px;">Compras Bebida</td>
+                                    <td class="text-right">${formatCurrency(comprasBebida)}</td>
+                                    <td class="text-right">${calcPct(comprasBebida)}</td>
+                                </tr>
+
+                                <tr class="total-row">
+                                    <td>TOTAL MATERIAS / PRODUCTO</td>
+                                    <td class="text-right">${formatCurrency(totalMaterias)}</td>
+                                    <td class="text-right">${formatPct(foodCostPct)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 2.2 PERSONAL -->
+                    <div class="pnl-subsection">
+                        <h4 class="pnl-subsection-title">2.2 Personal</h4>
+                        <table class="pnl-table">
+                            <tbody>
+                                <tr>
+                                    <td>Salarios y Seguros Sociales</td>
+                                    <td class="text-right">${formatCurrency(totalPersonal)}</td>
+                                    <td class="text-right">${formatPct(personalPct)}</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td>TOTAL PERSONAL</td>
+                                    <td class="text-right">${formatCurrency(totalPersonal)}</td>
+                                    <td class="text-right">${formatPct(personalPct)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 2.3 OPEX -->
+                    <div class="pnl-subsection">
+                        <h4 class="pnl-subsection-title">2.3 Gastos Generales (OPEX)</h4>
+                        <table class="pnl-table">
+                            <tbody>
+                                <tr>
+                                    <td>Alquiler</td>
+                                    <td class="text-right">${formatCurrency(alquiler)}</td>
+                                    <td class="text-right">${calcPct(alquiler)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Suministros (Luz, Agua, Gas)</td>
+                                    <td class="text-right">${formatCurrency(suministros)}</td>
+                                    <td class="text-right">${calcPct(suministros)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Servicios Profesionales</td>
+                                    <td class="text-right">${formatCurrency(servicios)}</td>
+                                    <td class="text-right">${calcPct(servicios)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Marketing y Publicidad</td>
+                                    <td class="text-right">${formatCurrency(marketing)}</td>
+                                    <td class="text-right">${calcPct(marketing)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Limpieza y Mantenimiento</td>
+                                    <td class="text-right">${formatCurrency(limpieza)}</td>
+                                    <td class="text-right">${calcPct(limpieza)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Seguros</td>
+                                    <td class="text-right">${formatCurrency(seguros)}</td>
+                                    <td class="text-right">${calcPct(seguros)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Otros Gastos Operativos</td>
+                                    <td class="text-right">${formatCurrency(otrosOpex)}</td>
+                                    <td class="text-right">${calcPct(otrosOpex)}</td>
+                                </tr>
+                                ${comisionesVentas > 0 ? `
+                                <tr>
+                                    <td>Comisiones Delivery</td>
+                                    <td class="text-right">${formatCurrency(comisionesVentas)}</td>
+                                    <td class="text-right">${calcPct(comisionesVentas)}</td>
+                                </tr>` : ''}
+                                ${gastosDeliveryFacturas > 0 ? `
+                                <tr>
+                                    <td>Gastos Delivery (Facturas)</td>
+                                    <td class="text-right">${formatCurrency(gastosDeliveryFacturas)}</td>
+                                    <td class="text-right">${calcPct(gastosDeliveryFacturas)}</td>
+                                </tr>` : ''}
+                                <tr class="total-row">
+                                    <td>TOTAL OPEX</td>
+                                    <td class="text-right">${formatCurrency(totalOpex)}</td>
+                                    <td class="text-right">${formatPct(opexPct)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- RESULTADOS -->
+                <div class="pnl-section">
+                    <div class="pnl-section-header">
+                        <h3>3. Resultados</h3>
+                    </div>
+                    <table class="pnl-table">
+                        <tbody>
+                            <tr class="total-row" style="background: #f6f9fc;">
+                                <td>MARGEN BRUTO</td>
+                                <td class="text-right">${formatCurrency(margenBruto)}</td>
+                                <td class="text-right">${formatPct(margenBrutoPct)}</td>
+                            </tr>
+                            <tr class="total-row" style="background: #e8f5e9; color: #2dce89; font-size: 16px;">
+                                <td>EBITDA (Resultado Operativo)</td>
+                                <td class="text-right">${formatCurrency(ebitda)}</td>
+                                <td class="text-right">${formatPct(ebitdaPct)}</td>
+                            </tr>
+                            <tr>
+                                <td>Amortizaciones e Intereses</td>
+                                <td class="text-right">${formatCurrency(financieros + amortizaciones)}</td>
+                                <td class="text-right">${calcPct(financieros + amortizaciones)}</td>
+                            </tr>
+                            <tr class="total-row" style="background: #2dce89; color: white;">
+                                <td>BENEFICIO NETO</td>
+                                <td class="text-right">${formatCurrency(beneficioNeto)}</td>
+                                <td class="text-right">${formatPct(margenNetoPct)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+        `;
+
+        // Event Listeners para el selector de fecha
+        setTimeout(() => {
+            const btnUpdate = document.getElementById('btnUpdatePnL');
+            const picker = document.getElementById('pnlMonthPicker');
+            
+            if (btnUpdate && picker) {
+                btnUpdate.onclick = () => {
+                    const val = picker.value; // "YYYY-MM"
+                    if (val) {
+                        const [year, month] = val.split('-').map(Number);
+                        this.currentPeriod = { month: month - 1, year: year }; // month is 0-indexed
+                        this.renderPnL();
+                        this.showToast(`📅 Periodo actualizado: ${month}/${year}`);
+                    }
+                };
             }
-            document.getElementById('ocrAnalyzeBtn').style.display = 'flex'; // Mostrar botón de analizar
-            document.getElementById('ocrPreviewContainer').classList.remove('hidden');
-            document.getElementById('ocrUploadCard').classList.remove('hidden');
-            return;
-        }
-
-        // --- LÓGICA DE IMAGEN ---
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const preprocessedImage = await this.preprocessImage(e.target.result);
-                document.getElementById('ocrPreviewImg').src = preprocessedImage;
-                this.currentImageData = preprocessedImage;
-                document.getElementById('ocrPreviewContainer').classList.remove('hidden');
-                document.getElementById('ocrAnalyzeBtn').style.display = 'flex'; // Mostrar botón de analizar
-                showToast('✅ Imagen cargada correctamente');
-            } catch (error) {
-                console.error('Error procesando imagen:', error);
-                showToast('❌ Error al procesar imagen', true);
-                document.getElementById('ocrFile').value = '';
-            }
-        };
-        reader.readAsDataURL(file);
-        document.getElementById('ocrAnalyzeBtn').style.display = 'flex'; // Mostrar botón de analizar
-        document.getElementById('ocrPreviewContainer').classList.remove('hidden');
-        document.getElementById('ocrUploadCard').classList.remove('hidden');
+        }, 100);
     }
 
     extractZonesFromTesseractData(tesseractData) {
@@ -3994,7 +3893,7 @@ export class App {
             // Los selects no soportan readonly igual que inputs, se suelen deshabilitar o usar CSS
             // Si es high confidence, lo deshabilitamos pero enviamos valor en hidden si fuera necesario (aquí simplificado)
             const disabledAttr = isReadOnly ? 'disabled' : '';
-            inputHtml = `<select id="${field.id}" class="form-control ${readOnlyClass}" ${disabledAttr}>
+            inputHtml = `<select id="${field.id}" class="form-select ${readOnlyClass}" ${disabledAttr}>
                 ${field.options.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('')}
             </select>`;
             if (isReadOnly) {
@@ -4158,23 +4057,23 @@ export class App {
             document.getElementById('proveedorNombreComercial').value = item.nombreComercial || '';
             document.getElementById('proveedorRazonSocial').value = item.nombreFiscal || item.nombre || '';
             document.getElementById('proveedorNifCif').value = item.nifCif || item.cif || '';
-            document.getElementById('proveedorPersonaContacto').value = item.contacto || '';
+            document.getElementById('proveedorPersonaContacto').value = item.personaContacto || item.contacto || '';
             document.getElementById('proveedorTelefono').value = item.telefono || '';
             document.getElementById('proveedorEmail').value = item.email || '';
             document.getElementById('proveedorWeb').value = item.web || '';
-            document.getElementById('proveedorDireccionFiscal').value = item.direccion || '';
+            document.getElementById('proveedorDireccionFiscal').value = item.direccionFiscal || item.direccion || '';
             document.getElementById('proveedorDireccionEnvioHabitual').value = item.direccionEnvio || '';
-            document.getElementById('proveedorCodigoPostal').value = item.cp || '';
+            document.getElementById('proveedorCodigoPostal').value = item.codigoPostal || item.cp || '';
             document.getElementById('proveedorCiudad').value = item.ciudad || '';
             document.getElementById('proveedorPais').value = item.pais || '';
-            document.getElementById('proveedorMetodoPagoPreferido').value = item.condicionesPago || '';
-            document.getElementById('proveedorPlazoPagoDias').value = item.plazoPago || '';
+            document.getElementById('proveedorMetodoPagoPreferido').value = item.metodoPago || item.condicionesPago || '';
+            document.getElementById('proveedorPlazoPagoDias').value = item.plazoPagoDias || item.plazoPago || '';
             document.getElementById('proveedorDescuentoAcordadoPorcentaje').value = item.descuento || '';
             document.getElementById('proveedorIban').value = item.iban || '';
             document.getElementById('proveedorBanco').value = item.banco || '';
             document.getElementById('proveedorCategoriaPrincipalCompra').value = item.categoria || '';
             document.getElementById('proveedorSubcategoriasCompra').value = item.subcategorias || '';
-            document.getElementById('proveedorNotasCondiciones').value = item.notas || '';
+            document.getElementById('proveedorNotasCondiciones').value = item.notasCondiciones || item.notas || '';
             document.getElementById('proveedorNotasInternas').value = item.notasInternas || '';
             document.getElementById('proveedorEstado').value = item.estado || 'Activo';
             document.getElementById('proveedorFechaAlta').value = item.fechaAlta || '';
@@ -4625,7 +4524,7 @@ export class App {
                 </div>
                 <div class="form-group full-width">
                     <label>Categoría</label>
-                    <select name="categoria">
+                    <select name="categoria" class="form-select">
                         <option value="Comida" ${factura.categoria === 'Comida' ? 'selected' : ''}>Comida</option>
                         <option value="Bebida" ${factura.categoria === 'Bebida' ? 'selected' : ''}>Bebida</option>
                         <option value="Otros" ${factura.categoria === 'Otros' ? 'selected' : ''}>Otros</option>
@@ -4858,7 +4757,7 @@ export class App {
         div.style.gap = '10px';
         div.style.marginBottom = '10px';
         div.innerHTML = `
-            <select class="otro-medio-tipo" style="flex: 2;">
+            <select class="otro-medio-tipo form-select" style="flex: 2;">
                 <option value="Bizum">Bizum</option>
                 <option value="Transferencia">Transferencia</option>
                 <option value="Glovo">Glovo (Pago App)</option>
@@ -5160,6 +5059,19 @@ export class App {
 
         const totalReal = totalEfectivo + totalDatafonos + totalOtros + realDelivery;
         const totalPOS = posEfectivo + posTarjetas + posOtrosTotal + posDelivery;
+        
+        // Actualizar display de Delivery Real
+        const dispDelivery = document.getElementById('totalDeliveryDisplay');
+        if(dispDelivery) {
+            dispDelivery.textContent = realDelivery.toFixed(2) + ' €';
+        }
+
+        // Actualizar display de Total POS
+        const dispPOS = document.getElementById('totalPOSDisplay');
+        if(dispPOS) {
+            dispPOS.textContent = totalPOS.toFixed(2) + ' €';
+        }
+
         const diferenciaTotal = totalReal - totalPOS;
         
         // 4. Generar Tabla Resumen DINÁMICA (CLARIFICANDO COLUMNAS)
@@ -5439,7 +5351,7 @@ export class App {
             <div class="form-row">
                 <div class="form-group">
                     <label>Tipo Conteo *</label>
-                    <select class="inventario-tipo-conteo" onchange="app.updateTipoConteoInventario(${rowId})" required>
+                    <select class="inventario-tipo-conteo form-select" onchange="app.updateTipoConteoInventario(${rowId})" required>
                         <option value="">Seleccionar...</option>
                         <option value="solo-unidad">Solo unidad base</option>
                         <option value="solo-empaques">Solo empaques</option>
@@ -6571,7 +6483,7 @@ export class App {
         row.innerHTML = `
             <div class="form-group">
                 <label>Producto *</label>
-                <select class="ingrediente-producto" required onchange="app.onIngredienteProductoChange(this)">
+                <select class="ingrediente-producto form-select" required onchange="app.onIngredienteProductoChange(this)">
                     <option value="">Seleccionar...</option>
                     ${productosOptions}
                 </select>
@@ -6582,7 +6494,7 @@ export class App {
             </div>
             <div class="form-group">
                 <label>Unidad *</label>
-                <select class="ingrediente-unidad" required onchange="app.calcularCostesEscandallo()">
+                <select class="ingrediente-unidad form-select" required onchange="app.calcularCostesEscandallo()">
                     <option value="">Seleccionar...</option>
                     <option value="kg">kg</option>
                     <option value="g">g</option>
@@ -7740,7 +7652,7 @@ export class App {
                     const options = (config.options || []).map(opt => 
                         `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`
                     ).join('');
-                    inputHtml = `<select name="${key}" class="inline-input ${readOnlyClass}" ${isReadOnly}>${options}</select>`;
+                    inputHtml = `<select name="${key}" class="form-select ${readOnlyClass}" ${isReadOnly}>${options}</select>`;
                 } else if (config.type === 'number') {
                     inputHtml = `<input type="number" name="${key}" value="${value}" step="${config.step || 'any'}" class="inline-input ${readOnlyClass}" ${isReadOnly}>`;
                 } else if (config.type === 'date') {
@@ -8520,7 +8432,6 @@ export class App {
                         <th onclick="window.app.handleSort('escandallos', 'costeTotalNeto')" style="cursor:pointer">Coste Neto${this.getSortIndicator('escandallos', 'costeTotalNeto')}</th>
                         <th onclick="window.app.handleSort('escandallos', 'foodCost')" style="cursor:pointer">Food Cost %${this.getSortIndicator('escandallos', 'foodCost')}</th>
                         <th onclick="window.app.handleSort('escandallos', 'margenPorcentaje')" style="cursor:pointer">Margen %${this.getSortIndicator('escandallos', 'margenPorcentaje')}</th>
-                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -8534,17 +8445,17 @@ export class App {
                             <td>${e.costeTotalNeto.toFixed(2)} €</td>
                             <td style="${fcClass}">${e.foodCost.toFixed(1)}%</td>
                             <td>${e.margenPorcentaje.toFixed(1)}%</td>
-                            <td class="actions-cell" onclick="event.stopPropagation()">
-                                <button class="btn-icon" onclick="window.app.editItem('escandallos', ${e.id})" title="Editar">✏️</button>
-                                <button class="btn-icon delete" onclick="window.app.deleteItem('escandallos', ${e.id})" title="Eliminar">🗑️</button>
-                            </td>
                         </tr>
                         <tr id="preview-escandallo-${e.id}" class="hidden accordion-content-row">
-                            <td colspan="6" style="padding: 20px;">
+                            <td colspan="5" style="padding: 20px;">
                                 <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
-                                    <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-                                        🥘 Detalle del Escandallo
-                                    </h4>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                                        <h4 style="margin: 0; color: #2c3e50;">🥘 Detalle del Escandallo</h4>
+                                        <div style="display: flex; gap: 10px;">
+                                            <button class="btn-secondary btn-small" onclick="window.app.editItem('escandallos', ${e.id})">✏️ Editar</button>
+                                            <button class="btn-danger btn-small" onclick="window.app.deleteItem('escandallos', ${e.id})">🗑️ Eliminar</button>
+                                        </div>
+                                    </div>
                                     <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
                                         <thead>
                                             <tr style="background-color: #f1f2f6; color: #555;">
@@ -8583,6 +8494,17 @@ export class App {
 
     renderCierres() {
         let cierres = this.db.getByPeriod('cierres', this.currentPeriod);
+        
+        // Filtro por mes
+        const filtroMes = document.getElementById('filtroMesCierres');
+        if (filtroMes && filtroMes.value !== 'all') {
+            const mes = parseInt(filtroMes.value);
+            cierres = cierres.filter(c => {
+                const fecha = new Date(c.fecha);
+                return fecha.getMonth() === mes;
+            });
+        }
+
         cierres = this.sortData(cierres, 'cierres');
         
         if (cierres.length === 0) {
@@ -8601,7 +8523,6 @@ export class App {
                         <th onclick="window.app.handleSort('cierres', 'totalReal')" style="cursor:pointer">Total Real${this.getSortIndicator('cierres', 'totalReal')}</th>
                         <th onclick="window.app.handleSort('cierres', 'descuadreTotal')" style="cursor:pointer">Descuadre${this.getSortIndicator('cierres', 'descuadreTotal')}</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -8624,17 +8545,17 @@ export class App {
                             <td>${totalReal.toFixed(2)} €</td>
                             <td style="color: ${descuadreTotal >= 0 ? 'green' : 'red'}">${descuadreTotal.toFixed(2)} €</td>
                             <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-                            <td class="actions-cell" onclick="event.stopPropagation()">
-                                <button class="btn-icon" onclick="window.app.abrirModalEditarCierre(${c.id})" title="Editar">✏️</button>
-                                <button class="btn-icon delete" onclick="window.app.deleteItem('cierres', ${c.id})" title="Eliminar">🗑️</button>
-                            </td>
                         </tr>
                         <tr id="preview-cierre-${c.id}" class="hidden accordion-content-row">
-                            <td colspan="7" style="padding: 20px;">
+                            <td colspan="6" style="padding: 20px;">
                                 <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
-                                    <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-                                        ✅ BALANCE CIERRE DE CAJA
-                                    </h4>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                                        <h4 style="margin: 0; color: #2c3e50;">✅ BALANCE CIERRE DE CAJA</h4>
+                                        <div style="display: flex; gap: 10px;">
+                                            <button class="btn-secondary btn-small" onclick="window.app.abrirModalEditarCierre(${c.id})">✏️ Editar</button>
+                                            <button class="btn-danger btn-small" onclick="window.app.deleteItem('cierres', ${c.id})">🗑️ Eliminar</button>
+                                        </div>
+                                    </div>
                                     <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
                                         <thead>
                                             <tr style="background-color: #f1f2f6; color: #555;">
@@ -8818,7 +8739,6 @@ export class App {
                             <th>Tipo</th>
                             <th>Proveedor / Nombre</th>
                             <th>Total</th>
-                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -8856,6 +8776,10 @@ export class App {
 
                                 expandedContent = `
                                 <div class="cierre-detalle-desplegable" style="padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px;">
+                                        <button class="btn-secondary btn-small" onclick="window.app.editItem('cierres', ${doc.id})">✏️ Editar</button>
+                                        <button class="btn-danger btn-small" onclick="window.app.deleteItem('cierres', ${doc.id})">🗑️ Eliminar</button>
+                                    </div>
                                     <div class="cierre-tabla-wrapper">
                                         <table class="cierre-tabla-metodos" style="width: 100%; border-collapse: collapse; font-size: 14px;">
                                             <thead>
@@ -8898,9 +8822,17 @@ export class App {
                                 expandedContent = `
                                 <div style="display: flex; gap: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                                     <div style="flex: 1;">
-                                        <h4 style="margin: 0 0 15px 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                                            ${doc.type === 'factura' ? '🧾 Detalle de Factura' : doc.type === 'albaran' ? '📦 Detalle de Albarán' : '📄 Detalle del Documento'}
-                                        </h4>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                                            <h4 style="margin: 0; color: #2c3e50;">
+                                                ${doc.type === 'factura' ? '🧾 Detalle de Factura' : doc.type === 'albaran' ? '📦 Detalle de Albarán' : '📄 Detalle del Documento'}
+                                            </h4>
+                                            <div style="display: flex; gap: 10px;">
+                                                ${doc.archivoData ? `<button class="btn-secondary btn-small" onclick="window.app.verArchivoFactura(${doc.id})">🔍 Ver Archivo</button>` : ''}
+                                                ${doc.type === 'factura' ? `<button class="btn-secondary btn-small" onclick="window.app.verificarFacturaAlbaranes(${doc.id})">📋 Verificar</button>` : ''}
+                                                <button class="btn-secondary btn-small" onclick="window.app.editItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})">✏️ Editar</button>
+                                                <button class="btn-danger btn-small" onclick="window.app.deleteItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})">🗑️ Eliminar</button>
+                                            </div>
+                                        </div>
                                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 14px;">
                                             <div>
                                                 <span style="display: block; color: #7f8c8d; font-size: 12px;">Número Documento</span>
@@ -8947,13 +8879,9 @@ export class App {
                             <td>${doc.label}</td>
                             <td>${doc.proveedor || 'Desconocido'}</td>
                             <td>${(doc.total || 0).toFixed(2)} €</td>
-                            <td class="actions-cell" onclick="event.stopPropagation()">
-                                <button class="btn-icon" onclick="window.app.editItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})" title="Editar">✏️</button>
-                                <button class="btn-icon delete" onclick="window.app.deleteItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})" title="Eliminar">🗑️</button>
-                            </td>
                         </tr>
                         <tr id="${uniqueId}" class="hidden accordion-content-row" style="background-color: #f8f9fa;">
-                            <td colspan="6" style="padding: 15px;">
+                            <td colspan="5" style="padding: 15px;">
                                 ${expandedContent}
                             </td>
                         </tr>
@@ -9083,7 +9011,6 @@ export class App {
                         <th onclick="window.app.handleSort('inventarios', 'familia')" style="cursor:pointer">Familia${this.getSortIndicator('inventarios', 'familia')}</th>
                         <th>Nº Productos</th>
                         <th>Diferencia Valor</th>
-                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -9109,17 +9036,17 @@ export class App {
                             <td>${i.familia}</td>
                             <td>${numProductos}</td>
                             <td style="${colorStyle}">${valorTotal.toFixed(2)} €</td>
-                            <td class="actions-cell" onclick="event.stopPropagation()">
-                                <button class="btn-icon" onclick="window.app.editItem('inventarios', ${i.id})" title="Editar">✏️</button>
-                                <button class="btn-icon delete" onclick="window.app.deleteItem('inventarios', ${i.id})" title="Eliminar">🗑️</button>
-                            </td>
                         </tr>
                         <tr id="preview-inventario-${i.id}" class="hidden accordion-content-row">
                             <td colspan="5" style="padding: 20px;">
                                 <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
-                                    <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-                                        📦 DETALLE INVENTARIO
-                                    </h4>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                                        <h4 style="margin: 0; color: #2c3e50;">📦 DETALLE INVENTARIO</h4>
+                                        <div style="display: flex; gap: 10px;">
+                                            <button class="btn-secondary btn-small" onclick="window.app.editItem('inventarios', ${i.id})">✏️ Editar</button>
+                                            <button class="btn-danger btn-small" onclick="window.app.deleteItem('inventarios', ${i.id})">🗑️ Eliminar</button>
+                                        </div>
+                                    </div>
                                     <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
                                         <thead>
                                             <tr style="background-color: #f1f2f6; color: #555;">
@@ -9161,7 +9088,6 @@ export class App {
                         <th onclick="window.app.handleSort('productos', 'precioPromedioNeto')" style="cursor:pointer">Precio${this.getSortIndicator('productos', 'precioPromedioNeto')}</th>
                         <th onclick="window.app.handleSort('productos', 'proveedorNombre')" style="cursor:pointer">Proveedor${this.getSortIndicator('productos', 'proveedorNombre')}</th>
                         <th onclick="window.app.handleSort('productos', 'stockActualUnidades')" style="cursor:pointer">Stock${this.getSortIndicator('productos', 'stockActualUnidades')}</th>
-                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -9178,14 +9104,46 @@ export class App {
                         }
 
                         return `
-                        <tr id="row-productos-${p.id}">
+                        <tr id="row-productos-${p.id}" onclick="window.app.toggleTableAccordion('preview-producto-${p.id}', this)" style="cursor: pointer;">
                             <td>${p.nombre}</td>
                             <td>${precio.toFixed(2)} €/${unidad}</td>
                             <td>${proveedor}</td>
                             <td>${stock.toFixed(2)} ${unidad}${empaqueInfo}</td>
-                            <td class="actions-cell">
-                                <button class="btn-icon" onclick="window.app.editItem('productos', ${p.id})" title="Editar">✏️</button>
-                                <button class="btn-icon delete" onclick="window.app.deleteItem('productos', ${p.id})" title="Eliminar">🗑️</button>
+                        </tr>
+                        <tr id="preview-producto-${p.id}" class="hidden accordion-content-row">
+                            <td colspan="5" style="padding: 20px;">
+                                <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                                        <h4 style="margin: 0; color: #2c3e50;">📦 Detalle del Producto</h4>
+                                        <div style="display: flex; gap: 10px;">
+                                            <button class="btn-secondary btn-small" onclick="window.app.editItem('productos', ${p.id})">✏️ Editar</button>
+                                            <button class="btn-danger btn-small" onclick="window.app.deleteItem('productos', ${p.id})">🗑️ Eliminar</button>
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 14px;">
+                                        <div>
+                                            <span style="display: block; color: #7f8c8d; font-size: 12px;">Nombre</span>
+                                            <strong style="color: #2c3e50;">${p.nombre}</strong>
+                                        </div>
+                                        <div>
+                                            <span style="display: block; color: #7f8c8d; font-size: 12px;">Proveedor</span>
+                                            <strong style="color: #2c3e50;">${proveedor}</strong>
+                                        </div>
+                                        <div>
+                                            <span style="display: block; color: #7f8c8d; font-size: 12px;">Precio Promedio</span>
+                                            <strong style="color: #2c3e50;">${precio.toFixed(2)} €/${unidad}</strong>
+                                        </div>
+                                        <div>
+                                            <span style="display: block; color: #7f8c8d; font-size: 12px;">Stock Actual</span>
+                                            <strong style="color: #2c3e50;">${stock.toFixed(2)} ${unidad}</strong>
+                                        </div>
+                                        ${p.esEmpaquetado ? `
+                                        <div>
+                                            <span style="display: block; color: #7f8c8d; font-size: 12px;">Formato Compra</span>
+                                            <strong style="color: #2c3e50;">${p.tipoEmpaque} de ${p.unidadesPorEmpaque} ${unidad}s</strong>
+                                        </div>` : ''}
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         `;
@@ -9212,21 +9170,55 @@ export class App {
                         <th onclick="window.app.handleSort('proveedores', 'telefono')" style="cursor:pointer">Teléfono${this.getSortIndicator('proveedores', 'telefono')}</th>
                         <th onclick="window.app.handleSort('proveedores', 'email')" style="cursor:pointer">Email${this.getSortIndicator('proveedores', 'email')}</th>
                         <th onclick="window.app.handleSort('proveedores', 'estado')" style="cursor:pointer">Estado${this.getSortIndicator('proveedores', 'estado')}</th>
-                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${proveedores.map(p => `
-                    <tr id="row-proveedores-${p.id}">
+                    <tr id="row-proveedores-${p.id}" onclick="window.app.toggleTableAccordion('preview-proveedor-${p.id}', this)" style="cursor: pointer;">
                         <td>${p.nombreComercial || '-'}</td>
                         <td>${p.nombreFiscal || p.nombre || '-'}</td>
-                        <td>${p.contacto || '-'}</td>
+                        <td>${p.personaContacto || p.contacto || '-'}</td>
                         <td>${p.telefono || '-'}</td>
                         <td>${p.email || '-'}</td>
                         <td><span class="badge badge-${(p.estado || 'Activo').toLowerCase()}">${p.estado || 'Activo'}</span></td>
-                        <td class="actions-cell">
-                            <button class="btn-icon" onclick="window.app.editItem('proveedores', ${p.id})" title="Editar">✏️</button>
-                            <button class="btn-icon delete" onclick="window.app.deleteItem('proveedores', ${p.id})" title="Eliminar">🗑️</button>
+                    </tr>
+                    <tr id="preview-proveedor-${p.id}" class="hidden accordion-content-row">
+                        <td colspan="6" style="padding: 20px;">
+                            <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                                    <h4 style="margin: 0; color: #2c3e50;">🏢 Detalle del Proveedor</h4>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn-secondary btn-small" onclick="window.app.editItem('proveedores', ${p.id})">✏️ Editar</button>
+                                        <button class="btn-danger btn-small" onclick="window.app.deleteItem('proveedores', ${p.id})">🗑️ Eliminar</button>
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 14px;">
+                                    <div>
+                                        <span style="display: block; color: #7f8c8d; font-size: 12px;">Nombre Comercial</span>
+                                        <strong style="color: #2c3e50;">${p.nombreComercial || '-'}</strong>
+                                    </div>
+                                    <div>
+                                        <span style="display: block; color: #7f8c8d; font-size: 12px;">Razón Social</span>
+                                        <strong style="color: #2c3e50;">${p.nombreFiscal || p.nombre || '-'}</strong>
+                                    </div>
+                                    <div>
+                                        <span style="display: block; color: #7f8c8d; font-size: 12px;">Contacto</span>
+                                        <strong style="color: #2c3e50;">${p.personaContacto || p.contacto || '-'}</strong>
+                                    </div>
+                                    <div>
+                                        <span style="display: block; color: #7f8c8d; font-size: 12px;">Teléfono</span>
+                                        <strong style="color: #2c3e50;">${p.telefono || '-'}</strong>
+                                    </div>
+                                    <div>
+                                        <span style="display: block; color: #7f8c8d; font-size: 12px;">Email</span>
+                                        <strong style="color: #2c3e50;">${p.email || '-'}</strong>
+                                    </div>
+                                    <div>
+                                        <span style="display: block; color: #7f8c8d; font-size: 12px;">Estado</span>
+                                        <strong style="color: #2c3e50;">${p.estado || 'Activo'}</strong>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     `).join('')}

@@ -126,7 +126,7 @@
                     </div>
                 </div>
 
-                <div class="table-controls" style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                <div id="ocrTableControls" class="table-controls" style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
                     <input type="hidden" id="documentFilter" value="all">
                     <div id="documentFilterWrapper" class="custom-select-wrapper" style="flex: 1;">
                         <div class="custom-select-trigger" onclick="window.app.toggleDocumentFilter(event)">
@@ -152,7 +152,7 @@
             </div>
 
             <div id="cierresView" class="view hidden">
-                <div id="cierreFormCard" class="form-card hidden" style="background: #fff; border-left: 4px solid #1171ef;">
+                <div id="cierreFormCard" class="form-card hidden" style="background: #fff;">
                     <h3>🧾 Nuevo Cierre de Caja</h3>
                     
                     <!-- PASO 1: FECHA Y TURNO -->
@@ -164,7 +164,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Turno</label>
-                                <select id="cierreTurno">
+                                <select id="cierreTurno" class="form-select">
                                     <option value="dia_completo" selected>Día Completo</option>
                                     <option value="comida">Comida</option>
                                     <option value="cena">Cena</option>
@@ -246,6 +246,10 @@
                                 <label>Total Ingresado en Plataformas</label>
                                 <input type="number" id="realDelivery" step="0.01" placeholder="0.00" oninput="window.app.calcularTotalesCierre()">
                             </div>
+                            <div class="total-efectivo-bar" style="margin-top: 15px; background: #2c3e50; color: white; padding: 10px 20px; border-radius: 6px; display: flex; justify-content: space-between; font-weight: 600;">
+                                <span>TOTAL DELIVERY</span>
+                                <span id="totalDeliveryDisplay">0.00 €</span>
+                            </div>
                         </div>
 
                         <div class="cierre-section" style="border-left-color: #34c759;">
@@ -256,6 +260,10 @@
                             <div class="form-group">
                                 <label>Nº Tickets / Comensales</label>
                                 <input type="number" id="posTickets" value="0">
+                            </div>
+                            <div class="total-efectivo-bar" style="margin-top: 15px; background: #2c3e50; color: white; padding: 10px 20px; border-radius: 6px; display: flex; justify-content: space-between; font-weight: 600;">
+                                <span>TOTAL POS (TICKET)</span>
+                                <span id="totalPOSDisplay">0.00 €</span>
                             </div>
                         </div>
 
@@ -326,7 +334,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Estado</label>
-                                <select id="proveedorEstado">
+                                <select id="proveedorEstado" class="form-select">
                                     <option value="Activo">Activo</option>
                                     <option value="Inactivo">Inactivo</option>
                                 </select>
@@ -354,7 +362,7 @@
                         <div class="form-row">
                             <div class="form-group"><label>Precio Neto Compra (€) *</label><input type="number" id="productoPrecio" step="0.001" required></div>
                             <div class="form-group"><label>Unidad Base *</label>
-                                <select id="productoUnidadBase">
+                                <select id="productoUnidadBase" class="form-select">
                                     <option value="kg">Kilogramo (kg)</option>
                                     <option value="L">Litro (L)</option>
                                     <option value="ud">Unidad (ud)</option>
@@ -364,7 +372,7 @@
                         <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                             <div class="form-group">
                                 <label>¿Este producto viene empaquetado? (Ej: Caja de 6 botellas)</label>
-                                <select id="productoEsEmpaquetado" onchange="window.app.toggleEmpaqueFields()">
+                                <select id="productoEsEmpaquetado" class="form-select" onchange="window.app.toggleEmpaqueFields()">
                                     <option value="false">No, compro por unidades sueltas</option>
                                     <option value="true">Sí, compro por cajas/packs</option>
                                 </select>
@@ -410,7 +418,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Tipo IVA (%) *</label>
-                                <select id="escandalloTipoIVA" required onchange="window.app.calcularPVPNeto()">
+                                <select id="escandalloTipoIVA" class="form-select" required onchange="window.app.calcularPVPNeto()">
                                     <option value="10" selected>10% (Restauración)</option>
                                     <option value="21">21% (Alcohol/Otros)</option>
                                     <option value="4">4% (Superreducido)</option>
@@ -460,7 +468,7 @@
             </div>
             
             <div id="inventarioView" class="view hidden">
-                <div id="inventarioFormCard" class="form-card hidden" style="border-left: 4px solid #e67e22;">
+                <div id="inventarioFormCard" class="form-card hidden">
                     <h3>📦 Nuevo Inventario Físico</h3>
                     
                     <!-- PASO 1: Configuración Inicial -->
@@ -472,7 +480,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Zona / Familia</label>
-                                <select id="inventarioFamilia">
+                                <select id="inventarioFamilia" class="form-select">
                                     <option value="Todo">Todo el local</option>
                                     <option value="Barra">Barra / Bebidas</option>
                                     <option value="Cocina">Cocina / Alimentos</option>
@@ -494,12 +502,12 @@
                                 <input type="text" id="invSearch" placeholder="🔍 Buscar producto..." oninput="window.app.filterInventarioTable()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                             </div>
                             <div style="flex: 1; min-width: 150px;">
-                                <select id="invFamiliaFilter" onchange="window.app.filterInventarioTable()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <select id="invFamiliaFilter" class="form-select" onchange="window.app.filterInventarioTable()">
                                     <option value="">Todas las Familias</option>
                                 </select>
                             </div>
                             <div style="flex: 1; min-width: 150px;">
-                                <select id="invSubfamiliaFilter" onchange="window.app.filterInventarioTable()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <select id="invSubfamiliaFilter" class="form-select" onchange="window.app.filterInventarioTable()">
                                     <option value="">Todas las Subfamilias</option>
                                 </select>
                             </div>

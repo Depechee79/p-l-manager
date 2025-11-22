@@ -1,6 +1,6 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versión:** 4.28.3 Smart Dropdowns & Global Click (Noviembre 2025)  
+**Versión:** 4.28.7 P&L Refinamiento y Pulido UI (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hostelería profesional (restaurantes, cafeterías)  
 **Estado:** ✅ APLICACIÓN FUNCIONAL - OCR INTELIGENTE COMPLETO + INVENTARIO PROFESIONAL + UX MEJORADA
@@ -8,6 +8,83 @@
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.28.7 - P&L REFINEMENT & UI POLISH (Noviembre 22, 2025)
+
+**MEJORAS IMPLEMENTADAS:**
+
+**1. REFINAMIENTO CUENTA DE EXPLOTACIÓN (P&L)**
+- **Restauración de Gastos OPEX:** Se han recuperado todas las líneas de gastos operativos detallados (Suministros, Servicios, Marketing, Limpieza, Seguros, Otros) que se habían simplificado excesivamente en versiones anteriores.
+- **Terminología:** Cambio de "Food Cost" a **"Product Cost"** en los KPIs para reflejar mejor que incluye tanto comida como bebida.
+- **Lógica de Ventas:** Ajuste en el cálculo de ingresos para separar correctamente "Ventas Local" (Total Real - Delivery) y "Ventas Delivery" (Delivery Real + Plataformas), evitando doble contabilidad.
+- **UI Compacta:** Reducción significativa del tamaño de las tarjetas de KPI y ajuste de estilos para una visualización más densa y profesional.
+- **Selector de Fecha:** Nuevo estilo para el selector de mes (`#pnlMonthPicker`) acorde al diseño general de la aplicación.
+
+**2. MEJORAS EN CIERRES DE CAJA**
+- **Barras de Totales:** Añadidas barras de resumen visual ("Total Delivery", "Total POS") en el formulario de cierre, consistentes con las secciones de Efectivo y Tarjetas.
+- **Filtro por Mes:** Implementado un selector de mes en la cabecera de la vista de Cierres para facilitar la navegación histórica.
+- **Reubicación de Botón:** El botón "+ Nuevo Cierre" se ha movido junto al filtro de mes para mejorar la ergonomía.
+
+**3. CORRECCIONES Y AJUSTES UI**
+- **Proveedores:** Solucionado un bug crítico donde los campos no se poblaban correctamente en el formulario de edición debido a discrepancias en los nombres de las propiedades de la base de datos.
+- **Escáner (OCR):** Rediseño de los botones de selección de tipo de documento para hacerlos más compactos y menos intrusivos visualmente.
+
+**ARCHIVOS MODIFICADOS:**
+- `app/js/app.js`: Lógica de P&L, renderizado de Cierres, corrección en Proveedores.
+- `app/styles.css`: Estilos para KPIs compactos, botones OCR, selector de fecha y barras de totales.
+- `app/index.html`: Estructura del formulario de Cierres y botones OCR.
+
+---
+
+### VERSIÓN 4.28.6 - P&L REDESIGN & DELIVERY EXPENSES (Noviembre 22, 2025)
+
+**MEJORAS IMPLEMENTADAS:**
+
+**1. REDISEÑO CUENTA DE EXPLOTACIÓN (P&L)**
+- **Problema:** La vista anterior utilizaba tarjetas y elementos demasiado grandes, dificultando la lectura rápida de los datos financieros.
+- **Solución:** Se ha migrado a una estructura de **tabla compacta y profesional**.
+- **Diseño:** Filas alternas, tipografía optimizada, alineación numérica correcta y jerarquía visual clara (negritas para totales, sangrías para subcategorías).
+- **Beneficio:** Aspecto de reporte financiero profesional, mucho más fácil de leer y analizar de un vistazo.
+
+**2. INTEGRACIÓN DE GASTOS DELIVERY (FACTURAS)**
+- **Requerimiento:** Incluir costes de facturas de compañías de delivery (Glovo, Uber, etc.) escaneadas, además de las comisiones de venta.
+- **Lógica:** Se busca automáticamente en las facturas escaneadas (`facturas`) aquellas cuyo proveedor contenga palabras clave como "Glovo", "Uber", "Just Eat", "Deliveroo", "Delivery".
+- **Visualización:** Se añade una nueva línea "Facturas Delivery (Docs)" en la sección OPEX si se detectan importes, sumándose al total de gastos operativos.
+
+**ARCHIVOS MODIFICADOS:**
+- `app/js/app.js`: Reescribida función `renderPnL` con nueva estructura HTML y lógica de cálculo de facturas delivery.
+- `app/styles.css`: Añadidos estilos `.pnl-table`, `.pnl-table-container` y clases auxiliares para el nuevo diseño.
+
+---
+
+### VERSIÓN 4.28.5 - RELOCALIZACIÓN BOTONES DE ACCIÓN (Noviembre 22, 2025)
+
+**MEJORAS IMPLEMENTADAS:**
+
+**1. RELOCALIZACIÓN DE BOTONES DE ACCIÓN (UI/UX)**
+- **Problema:** Los botones de "Editar" y "Eliminar" ocupaban espacio valioso en la fila principal de la tabla y recargaban la vista.
+- **Solución:** Se ha eliminado la columna "Acciones" de la vista principal de las tablas. Los botones se han movido a la esquina superior derecha del panel de detalles expandido (Acordeón).
+- **Ámbito:** Aplicado a todas las tablas principales: **Productos**, **Proveedores**, **Escandallos**, **Cierres**, **Compras/OCR** e **Inventarios**.
+- **Beneficio:** Interfaz más limpia, más espacio para datos relevantes en la fila principal y separación clara entre acciones de "visualización" y "gestión".
+
+**ARCHIVOS MODIFICADOS:**
+- `app/js/app.js`: Actualización de `renderProductos`, `renderProveedores`, `renderEscandallos`, `renderCierres`, `renderCompras`, `renderInventarios`.
+
+---
+
+### VERSIÓN 4.28.4 - DROPDOWN HEIGHT FIX (Noviembre 22, 2025)
+
+**MEJORAS IMPLEMENTADAS:**
+
+**1. AUMENTO DE ALTURA EN DESPLEGABLES**
+- **Problema:** Los desplegables (`.custom-select-options` y `.smart-dropdown-list`) tenían una altura máxima (`max-height`) demasiado restrictiva (200px/250px), obligando a hacer scroll innecesario incluso con pocas opciones y espacio disponible en pantalla.
+- **Solución:** Se ha aumentado el `max-height` a **400px** en ambos componentes.
+- **Beneficio:** Mejor visibilidad de las opciones y reducción de la necesidad de scroll, aprovechando mejor el espacio vertical de pantallas modernas.
+
+**ARCHIVOS MODIFICADOS:**
+- `app/styles.css`: Ajuste de `max-height` en `.custom-select-options` y `.smart-dropdown-list`.
+
+---
 
 ### VERSIÓN 4.28.3 - SMART DROPDOWNS & GLOBAL CLICK (Noviembre 22, 2025)
 
@@ -408,10 +485,10 @@ ${transReal > 0 || transPOS > 0 ? `<tr>...Transferencias...</tr>` : ''}
   - Warning visual con borde naranja
 
 **BENEFICIOS:**
-- ✅ **Modal legible:** Ahora se ve correctamente el HTML formateado
-- ✅ **Prevención proactiva:** Usuario sabe ANTES de guardar que hay duplicado
-- ✅ **UX clara:** Botones con iconos y textos descriptivos
-- ✅ **Menos errores:** Advertencia instantánea evita duplicados accidentales
+- ✅ Modal legible: Ahora se ve correctamente el HTML formateado
+- ✅ Prevención proactiva: Usuario sabe ANTES de guardar que hay duplicado
+- ✅ UX clara: Botones con iconos y textos descriptivos
+- ✅ Menos errores: Advertencia instantánea evita duplicados accidentales
 
 ---
 
@@ -540,33 +617,26 @@ ${bizumReal > 0 || bizumPOS > 0 ? `
 **2. DETECCIÓN DE FACTURAS DUPLICADAS EN OCR**
 
 **Antes:**
-- OCR guardaba facturas sin verificar duplicados
-- Posibilidad de duplicar facturas con mismo número y proveedor
+- El modal mostraba símbolos HTML raros (`<strong>`, `<br>`) en lugar de texto formateado
+- No había forma de personalizar los textos de los botones
+- Mensaje confuso sin jerarquía visual
 
-**Después:**
-- ✅ **Detección automática** de factura duplicada (mismo número + proveedor)
-- ✅ **Modal de confirmación** con 2 opciones:
-  - **Sustituir factura:** Elimina la anterior y guarda la nueva
-  - **Cancelar:** Mantiene la factura existente sin duplicar
-- ✅ Información detallada de factura existente (fecha, total)
-- ✅ Previene duplicados accidentales
+**Solución:**
+- ✅ **`showConfirm()` ahora usa `innerHTML`** en lugar de `textContent` (línea 4459)
+- ✅ **Botones personalizables:** Nuevos parámetros `confirmText` y `cancelText`
+- ✅ **Mensaje mejorado con HTML:**
+  - Fondo amarillo para destacar datos de factura existente
+  - Fecha y total en bloque separado
+  - Pregunta clara: "¿Deseas sustituir la factura anterior?"
+- ✅ **Botones con iconos:** "✓ Sustituir factura" / "✗ Cancelar"
 
-**Código (app.js líneas ~3519):**
+**Código (app.js líneas ~4458-4461):**
 ```javascript
-const facturaDuplicada = this.db.facturas.find(f => 
-    f.numeroFactura === numeroFactura && 
-    f.proveedor.toLowerCase() === nombreProveedor.toLowerCase()
-);
-
-if (facturaDuplicada) {
-    this.showConfirm(
-        '⚠️ Factura Duplicada',
-        `Ya existe factura ${numeroFactura} de ${nombreProveedor}...`,
-        () => {
-            this.db.delete('facturas', facturaDuplicada.id);
-            this.continuarGuardadoFactura(..., true); // Sustituir
-        }
-    );
+showConfirm(title, message, onConfirm, confirmText = 'Confirmar', cancelText = 'Cancelar') {
+    // ...
+    modalMessage.innerHTML = message; // ← Ahora renderiza HTML
+    btnConfirm.textContent = confirmText;
+    btnCancel.textContent = cancelText;
 }
 ```
 
@@ -740,21 +810,31 @@ if (lineaTrim.match(/\b(S\.?L\.?U\.?|S\.?L\.?L\.?|S\.?L\.?|S\.?A\.?|S\.?COOP\.?)
 Todos los campos ahora buscan **primero en la zona correcta**:
 
 ```javascript
-// CIF: Buscar solo en zona proveedor
-const textoBusquedaCIF = tieneZonas && zonaProveedor ? zonaProveedor : text;
+// Detectar si texto viene con zonas
+const tieneZonas = text.includes('ZONA_PROVEEDOR:');
 
-// Teléfono: Buscar solo en zona proveedor
-const textoBusquedaTelefono = tieneZonas && zonaProveedor ? zonaProveedor : text;
+if (tieneZonas) {
+    // Extraer zonas
+    zonaProveedor = extraerZona('ZONA_PROVEEDOR');
+    zonaCliente = extraerZona('ZONA_CLIENTE');
+    zonaTotales = extraerZona('ZONA_TOTALES');
+}
 
-// Email: Buscar solo en zona proveedor
-const textoBusquedaEmail = tieneZonas && zonaProveedor ? zonaProveedor : text;
+// PRIORIDAD 0: Buscar en zona correcta
+if (tieneZonas && zonaProveedor) {
+    // Buscar CIF solo en zona proveedor
+    const cifMatch = zonaProveedor.match(/\b([A-HJ-NP-SUVW][0-9]{7}[A-Z0-9])\b/i);
+    
+    // Buscar nombre empresa solo en zona proveedor
+    const empresaMatch = zonaProveedor.match(/S\.?L\.?|S\.?A\.?/i);
+}
 ```
 
 **Ventajas:**
-- ✅ CIF del proveedor ≠ CIF del cliente
-- ✅ Teléfono del proveedor ≠ nuestro teléfono
-- ✅ Email del proveedor ≠ nuestro email
-- ✅ Menos falsos positivos
+- ✅ CIF del proveedor nunca se confunde con CIF del cliente
+- ✅ Nombre de empresa en zona clara (no mezclado con dirección)
+- ✅ Totales en zona específica (no confundidos con precios de productos)
+- ✅ Menos falsos positivos en la detección
 
 **4. COMPATIBILIDAD UNIVERSAL**
 
@@ -787,14 +867,6 @@ console.log('✓ Proveedor detectado (zona proveedor con forma societaria):', li
 - ✅ **Empresa segura**: Si tiene S.L./S.A./etc, es nombre empresa
 - ✅ **Búsqueda inteligente**: Buscar cada campo en su zona correcta
 - ✅ **Compatibilidad total**: Mismo comportamiento en todos los formatos
-
-**Archivos modificados:**
-- `app/app.js` líneas 2301-2376 (extractZonesFromTesseractData)
-- `app/app.js` líneas 2745-2758 (runTesseractOCR con zonas)
-- `app/app.js` líneas 2834-2853 (CIF validado)
-- `app/app.js` líneas 2859-2886 (Empresa reforzada)
-- `app/app.js` líneas 3168-3212 (Teléfono validado)
-- `app/app.js` líneas 3217-3234 (Email detectado)
 
 **Próximas mejoras:**
 - Fine-tuning de thresholds de zonas según feedback
@@ -988,11 +1060,6 @@ console.log('📋 DEBUG RENDER - HTML insertado correctamente. Children:', conte
 - ✅ Botones editar/borrar operativos
 - ✅ IDs HTML únicos (estándar W3C)
 
-**Archivos modificados:**
-- `app/index.html` línea 293 (`id="datalistProveedores"`)
-- `app/app.js` línea 1393 (actualizada referencia)
-- `app/app.js` líneas 1561-1568 (logs debugging temporales)
-
 ---
 
 ### VERSIÓN 4.26.5 - LIMPIEZA UI CIERRES - ELIMINAR DUPLICADO (Noviembre 19, 2025)
@@ -1098,204 +1165,6 @@ setTimeout(() => this.abrirModalEditarFactura(item), 100);  // ✅ Modal despué
 - ✅ Cambio de vista + modal funcionando en sincronía
 
 **Archivo modificado:** `app/app.js` líneas 3869, 3876
-
----
-
-**RESULTADO FINAL v4.26.4:**
-- ✅ Lista de proveedores muestra TODOS los proveedores (OCR y manuales)
-- ✅ Edición de facturas/albaranes funciona correctamente con modal
-- ✅ No se perdió ninguna funcionalidad existente
-
----
-
-### VERSIÓN 4.26.3 - OCR DEFINITIVO - EXTRACCIÓN COMPLETA DE DATOS (Noviembre 19, 2025)
-
-**MEJORAS APLICADAS (MODO BISTURÍ):**
-Refactorización DEFINITIVA del motor OCR para extraer TODOS los campos de factura: 1) Detección de proveedor MEJORADA con 4 patrones y mayor tolerancia, 2) Número de factura con 6 patrones que reconocen TODOS los formatos (PCK215, FAC-2024-001, ABC/12345/24), 3) Extracción automática de dirección, código postal, ciudad y teléfono del proveedor, 4) Auto-completado de campos adicionales con badges de confianza.
-
-**1. DETECCIÓN DE NOMBRE PROVEEDOR - MEJORADO CON 4 PATRONES**
-
-**Problema:**
-- OCR no detectaba consistentemente el nombre del proveedor
-- Patrones demasiado restrictivos excluían nombres válidos
-- No había suficiente tolerancia para variaciones de formato
-
-**Solución aplicada:**
-```javascript
-// Patrón 1: Búsqueda exhaustiva antes del CIF (8 líneas, no 5)
-// - Mayor longitud permitida (100 chars, no 80)
-// - Excluir palabras clave mejoradas (cliente, email, www, http, teléfono, calle, etc.)
-// - Excluir números/precios explícitamente
-// - Detectar palabras empresariales: GROUP, FOODS, RESTAURANT, SUMINISTROS
-
-// Patrón 2: Búsqueda después de palabras clave (SIN "Cliente:")
-// - Captura hasta 80 caracteres
-// - Limpieza automática de artefactos (NIF, CIF, Teléfono al final)
-
-// Patrón 3: Búsqueda en cabecera (10 líneas, no 3)
-// - Mayor tolerancia: acepta nombres con números (A&B Restaurant 2)
-// - Detecta empresas con formato mixto mayúsculas/minúsculas
-
-// Patrón 4: ÚLTIMO RECURSO (NUEVO)
-// - Busca líneas con 2+ palabras capitalizadas
-// - Útil para documentos con formato no estándar
-// - Confianza reducida (60%)
-```
-
-**Logs añadidos:**
-- `console.log('✓ Proveedor detectado (antes de CIF):', linea)`
-- `console.log('✓ Proveedor detectado (palabra clave):', nombreLimpio)`
-- `console.log('✓ Proveedor detectado (cabecera):', lineaTrim)`
-- `console.log('⚠️ Proveedor detectado (último recurso):', lineaTrim)`
-
-**Archivo modificado:** `app/app.js` líneas 2610-2678
-
----
-
-**2. DETECCIÓN DE NÚMERO DE FACTURA - MEJORADO CON 6 PATRONES**
-
-**Problema:**
-- Patrones limitados no capturaban todos los formatos de número de factura
-- Algunos números con formatos complejos no se detectaban
-
-**Solución aplicada:**
-```javascript
-const numeroPatterns = [
-    // 1. Número con prefijo después de palabra clave: "Factura: PCK215"
-    /(?:N[úu]mero|Factura|Invoice|Num|N[ºª°]?|#)\s*[:\s]*([A-Z]{2,}[\-\/]?[A-Z0-9\-\/]+)/i,
-    
-    // 2. Códigos comunes con guión o barra: PCK-215, FAC/2024/001
-    /(?:PCK|FCK|FAC|INV|ALB|DL|PED|ORD)[\-\/]?([A-Z0-9\-\/]+)/i,
-    
-    // 3. Después de "Número" o "Nº": Nº ABC123
-    /(?:N[úu]mero|N[ºª°]?)\s*[:\s]*([A-Z0-9][\-\/A-Z0-9]{2,})/i,
-    
-    // 4. Después de "Factura:": Factura: 20240001
-    /Factura[:\s]+([A-Z0-9][\-\/A-Z0-9]{2,})/i,
-    
-    // 5. Formato prefijo-números separados: ABC-12345, ABC/12345/24
-    /\b([A-Z]{2,4}[\-\/]\d{3,}[\-\/]?\d*)\b/,
-    
-    // 6. Formato pegado: PCK215, FAC20240001
-    /\b([A-Z]{3,}[\d]{3,})\b/
-];
-
-// VALIDACIÓN: descartar CIF y fechas que coincidan con patrones
-if (!numeroCompleto.match(/^[A-HJ-NP-SUVW]\d{7}[A-Z0-9]$/i) && // No es CIF
-    !numeroCompleto.match(/^\d{1,2}[\-\/]\d{1,2}[\-\/]\d{2,4}$/)) { // No es fecha
-```
-
-**Formatos reconocidos:**
-- ✅ PCK215, FCK123, FAC456
-- ✅ FAC-2024-001, INV/2024/0045
-- ✅ ABC-12345, XYZ/54321/24
-- ✅ Número: 20240001, Factura: A12345B
-- ✅ Soporte para formatos mixtos (guiones, barras, pegados)
-
-**Archivo modificado:** `app/app.js` líneas 2680-2703
-
----
-
-**3. EXTRACCIÓN DE DATOS ADICIONALES DEL PROVEEDOR - NUEVO**
-
-**Problema:**
-- OCR no extraía dirección, código postal, ciudad ni teléfono
-- Usuario tenía que escribir manualmente todos estos datos
-- La información SÍ estaba en el texto OCR pero no se procesaba
-
-**Solución aplicada:**
-```javascript
-// 7. DIRECCIÓN (2 patrones con limpieza automática)
-const direccionPatterns = [
-    /(?:Direcci[oó]n|Domicilio|Address)[:\s]*([A-ZÀ-ÿ][A-ZÀ-ÿ0-9\s,\.\/\-]{10,100})/i,
-    /\b((?:Calle|C\/|Avda|Avenida|Plaza|Pl\.|Paseo|Carrer)[A-ZÀ-ÿ0-9\s,\.\/\-]{5,80})/i
-];
-// Limpieza: cortar si encuentra CP, ciudad o teléfono
-
-// 8. CÓDIGO POSTAL (validación rango español 01000-52999)
-const cpMatch = text.match(/\b(\d{5})\b/);
-if (cpNum >= 1000 && cpNum <= 52999) { ... }
-
-// 9. CIUDAD (3 estrategias)
-// - Estrategia 1: Texto después del código postal detectado
-// - Estrategia 2: Después de palabra clave "Ciudad:", "Población:"
-// - Estrategia 3: Lista de 13 ciudades españolas principales
-
-// 10. TELÉFONO (4 patrones con normalización)
-const telefonoPatterns = [
-    /(?:Tel[eé]fono|Tel|Phone|Móvil)[:\s]*([\+\d][\d\s\-\(\)]{8,20})/i,
-    /\b(\+34\s?[6-9]\d{2}\s?\d{3}\s?\d{3})\b/,  // +34 6XX XXX XXX
-    /\b([6-9]\d{2}\s?\d{3}\s?\d{3})\b/,  // 6XX XXX XXX
-    /\b(\d{3}\s?\d{2}\s?\d{2}\s?\d{2})\b/  // 93 XXX XX XX
-];
-// Normalización: añadir +34 automático si falta
-```
-
-**Estructura de datos actualizada:**
-```javascript
-const data = {
-    // ... campos existentes ...
-    direccion: { value: '', confidence: 0 },
-    codigoPostal: { value: '', confidence: 0 },
-    ciudad: { value: '', confidence: 0 },
-    telefono: { value: '', confidence: 0 }
-};
-```
-
-**Archivo modificado:** `app/app.js` líneas 2582-2598, 2830-2910
-
----
-
-**4. AUTO-COMPLETADO DE CAMPOS ADICIONALES EN FORMULARIO OCR**
-
-**Problema:**
-- Campos adicionales del proveedor siempre vacíos
-- No se mostraban badges de confianza en estos campos
-- Usuario debía escribir todo manualmente
-
-**Solución aplicada:**
-```javascript
-<label>Teléfono ${data.telefono && data.telefono.value ? getConfidenceBadge(data.telefono.confidence) : ''}</label>
-<input type="tel" id="ocr_proveedor_telefono" value="${data.telefono ? data.telefono.value : ''}">
-
-<label>Dirección ${data.direccion && data.direccion.value ? getConfidenceBadge(data.direccion.confidence) : ''}</label>
-<input type="text" id="ocr_proveedor_direccion" value="${data.direccion ? data.direccion.value : ''}">
-
-<label>Código Postal ${data.codigoPostal && data.codigoPostal.value ? getConfidenceBadge(data.codigoPostal.confidence) : ''}</label>
-<input type="text" id="ocr_proveedor_cp" value="${data.codigoPostal ? data.codigoPostal.value : ''}">
-
-<label>Ciudad ${data.ciudad && data.ciudad.value ? getConfidenceBadge(data.ciudad.confidence) : ''}</label>
-<input type="text" id="ocr_proveedor_ciudad" value="${data.ciudad ? data.ciudad.value : ''}">
-```
-
-**Resultado:**
-- ✅ Campos se auto-completan con datos detectados
-- ✅ Badges de confianza (🟢/🟡/🔴) visibles en cada campo
-- ✅ Usuario solo revisa/corrige en lugar de escribir todo
-
-**Archivo modificado:** `app/app.js` líneas 3057-3082
-
----
-
-**5. GUARDAR PROVEEDOR AUTOMÁTICAMENTE - VALIDACIÓN**
-
-**Estado:**
-- ✅ Ya funcionaba correctamente en v4.26
-- ✅ `saveOCRData()` crea proveedor con TODOS los campos adicionales
-- ✅ Campo `creadoDesdeOCR: true` marca proveedores creados automáticamente
-
-**Archivo:** `app/app.js` líneas 3205-3239 (sin modificaciones en v4.26.3)
-
----
-
-**RESULTADO FINAL v4.27.1:**
-- ✅ **Zonas universales**: PDF + JPEG + PNG + todos los formatos
-- ✅ **CIF validado**: Solo formatos españoles válidos (letra + 7 dígitos + control)
-- ✅ **Teléfono normalizado**: 9 dígitos → +34XXXXXXXXX
-- ✅ **Email detectado**: Si tiene @, es email
-- ✅ **Empresa segura**: Si tiene S.L./S.A./etc, es nombre empresa
-- ✅ **Búsqueda inteligente**: Buscar cada campo en su zona correcta
-- ✅ **Compatibilidad total**: Mismo comportamiento en todos los formatos
 
 
 

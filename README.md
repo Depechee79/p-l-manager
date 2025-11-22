@@ -58,6 +58,7 @@ P&L/
 - Otros medios de pago
 - Comparación POS vs Real
 - Detección automática de descuadres
+- **Nuevo:** Filtro por meses y barras de totales en tiempo real
 
 ### 📦 Compras (Facturas & Albaranes)
 - Registro manual o vía OCR
@@ -73,7 +74,7 @@ P&L/
 - Catálogo de productos
 - Cálculo de coste por unidad
 - Ingredientes con cantidades
-- Food Cost % automático
+- Product Cost % automático
 
 ### 📊 Inventario
 - Control de stock
@@ -85,10 +86,10 @@ P&L/
 - Comisiones y costes
 
 ### 📈 P&L (Pérdidas y Ganancias)
-- Cuenta de explotación completa
-- KPIs principales
+- Cuenta de explotación completa y detallada (OPEX desglosado)
+- KPIs principales compactos (Product Cost, EBITDA, etc.)
 - Alertas automáticas
-- Comparación temporal
+- Comparación temporal con selector de mes
 
 ## ⚙️ Configuración
 
