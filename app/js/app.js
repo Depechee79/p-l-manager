@@ -7750,10 +7750,40 @@ export class App {
         e.preventDefault();
         const form = e.target;
         
+        const familia = document.getElementById('inventarioFamilia').value;
+        const fecha = document.getElementById('inventarioFecha').value;
+
+        // 1. Identificar productos en el alcance (Familia seleccionada)
+        let productsInScope = this.db.productos;
+        if (familia && familia !== 'Todo') {
+            productsInScope = productsInScope.filter(p => p.familia === familia);
+        }
+
+        // 2. Construir detalle del inventario
+        const productosDetalle = productsInScope.map(p => {
+            const stockTeorico = p.stockActualUnidades || 0;
+            // Si no se ha contado, asumimos 0 (o podríamos dejarlo como null si quisiéramos distinguir)
+            // Aquí asumimos que si finaliza el inventario, lo no contado es 0.
+            const stockReal = this.inventarioState.counts[p.id] !== undefined ? this.inventarioState.counts[p.id] : 0;
+            const diferencia = stockReal - stockTeorico;
+            const valorDiferencia = diferencia * (p.precioPromedioNeto || 0);
+
+            return {
+                id: p.id,
+                nombre: p.nombre,
+                unidad: p.unidadBase,
+                stockTeorico: stockTeorico,
+                stockReal: stockReal,
+                diferencia: diferencia,
+                valorDiferencia: valorDiferencia,
+                precio: p.precioPromedioNeto || 0
+            };
+        });
+
         const inventario = {
-            fecha: document.getElementById('inventarioFecha').value,
-            familia: document.getElementById('inventarioFamilia').value,
-            productos: [], 
+            fecha: fecha,
+            familia: familia,
+            productos: productosDetalle, 
             fechaCreacion: new Date().toISOString()
         };
         
@@ -7763,10 +7793,19 @@ export class App {
             this.showToast('✓ Inventario actualizado');
             delete form.dataset.editId;
         } else {
+            // Generar ID si es nuevo
+            inventario.id = Date.now();
             this.db.add('inventarios', inventario);
             this.showToast('✓ Inventario guardado');
         }
         
+        // Resetear estado del inventario
+        this.inventarioState = {
+            step: 1,
+            counts: {},
+            currentProduct: null
+        };
+
         form.reset();
         this.collapseForm('inventario');
         this.render();
@@ -8375,9 +8414,20 @@ export class App {
                 <tbody>
                     ${inventarios.map(i => {
                         const numProductos = i.productos ? i.productos.length : 0;
-                        const valorTotal = i.productos ? i.productos.reduce((sum, p) => sum + p.valorDiferencia, 0) : 0;
+                        const valorTotal = i.productos ? i.productos.reduce((sum, p) => sum + (p.valorDiferencia || 0), 0) : 0;
                         const colorStyle = Math.abs(valorTotal) > 50 ? 'color: #e74c3c; font-weight: bold;' : '';
                         
+                        // Generar filas de productos para el detalle
+                        const productsHtml = i.productos && i.productos.length > 0 ? i.productos.map(p => `
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 8px;">${p.nombre}</td>
+                                <td style="text-align: right; padding: 8px;">${(p.stockTeorico || 0).toFixed(2)} ${p.unidad || 'ud'}</td>
+                                <td style="text-align: right; padding: 8px;">${(p.stockReal || 0).toFixed(2)} ${p.unidad || 'ud'}</td>
+                                <td style="text-align: right; padding: 8px; color: ${(p.diferencia || 0) >= 0 ? 'green' : 'red'}">${(p.diferencia || 0).toFixed(2)}</td>
+                                <td style="text-align: right; padding: 8px; color: ${(p.valorDiferencia || 0) >= 0 ? 'green' : 'red'}">${(p.valorDiferencia || 0).toFixed(2)} €</td>
+                            </tr>
+                        `).join('') : '<tr><td colspan="5" style="text-align:center; padding:10px;">No hay productos registrados en este inventario</td></tr>';
+
                         return `
                         <tr id="row-inventarios-${i.id}">
                             <td>${i.fecha}</td>
@@ -8385,8 +8435,31 @@ export class App {
                             <td>${numProductos}</td>
                             <td style="${colorStyle}">${valorTotal.toFixed(2)} €</td>
                             <td class="actions-cell">
-                                <button class="btn-icon" onclick="window.app.editItem('inventarios', ${i.id})" title="Editar">✏️</button>
                                 <button class="btn-icon delete" onclick="window.app.deleteItem('inventarios', ${i.id})" title="Eliminar">🗑️</button>
+                                <button id="btn-preview-inventario-${i.id}" class="btn-icon" onclick="window.app.toggleRow('preview-inventario-${i.id}', this)" title="Ver detalles">▶</button>
+                            </td>
+                        </tr>
+                        <tr id="preview-inventario-${i.id}" style="display:none; background-color: #f8f9fa;">
+                            <td colspan="5" style="padding: 20px;">
+                                <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+                                    <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                                        📦 DETALLE INVENTARIO
+                                    </h4>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
+                                        <thead>
+                                            <tr style="background-color: #f1f2f6; color: #555;">
+                                                <th style="text-align: left; padding: 10px; border-bottom: 2px solid #ddd;">Producto</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Teórico</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Real</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Dif.</th>
+                                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #ddd;">Valor Dif.</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${productsHtml}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </td>
                         </tr>
                         `;
