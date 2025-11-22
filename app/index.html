@@ -28,7 +28,10 @@
                 <button class="nav-item" data-view="inventario">📦 Control de Stock</button>
                 <button class="nav-item" data-view="pnl">💰 P&L</button>
                 <div style="flex-grow: 1;"></div>
-                <button class="nav-item" onclick="window.logout()" style="margin-top: 20px; color: #ff6b6b; border-top: 1px solid rgba(255,255,255,0.1);">🚪 Cerrar Sesión</button>
+                <button class="nav-item" onclick="window.logout()" style="margin-top: 20px; color: #ff6b6b; display: flex; align-items: center; gap: 10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    Cerrar Sesión
+                </button>
             </nav>
         </aside>
 
@@ -39,14 +42,9 @@
             </div>
 
             <div id="ocrView" class="view">
-                <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h2 style="color: #1f2d3d; font-size: 24px; font-weight: 700; margin-bottom: 8px;">📄 Escáner y Documentos</h2>
-                        <p style="color: #64748b; font-size: 14px; margin: 0;">Gestiona y digitaliza tus documentos.</p>
-                    </div>
-                    <button id="btnShowScanOptions" class="btn-primary" style="display: flex; align-items: center; gap: 8px;">
-                        <span>📷</span> Escanear Documento
-                    </button>
+                <div style="margin-bottom: 30px;">
+                    <h2 style="color: #1f2d3d; font-size: 24px; font-weight: 700; margin-bottom: 8px;">📄 Escáner y Documentos</h2>
+                    <p style="color: #64748b; font-size: 14px; margin: 0;">Gestiona y digitaliza tus documentos.</p>
                 </div>
 
                 <div id="scanOptionsCard" class="form-card hidden" style="border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px;">
@@ -128,21 +126,25 @@
                     </div>
                 </div>
 
-                <div class="table-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                <div class="table-controls" style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
                     <input type="hidden" id="documentFilter" value="all">
-                    <div id="documentFilterWrapper" class="custom-select-wrapper" style="width: 250px;">
+                    <div id="documentFilterWrapper" class="custom-select-wrapper" style="flex: 1;">
                         <div class="custom-select-trigger" onclick="window.app.toggleDocumentFilter(event)">
                             <span id="documentFilterText">Todos los documentos</span>
                             <span class="arrow">▼</span>
                         </div>
                         <div id="documentFilterOptions" class="custom-select-options hidden">
                             <div class="custom-option" onclick="window.app.setDocumentFilter('all', 'Todos los documentos')">Todos los documentos</div>
+                            <div class="custom-option" onclick="window.app.setDocumentFilter('recent', 'Últimos escaneados')">Últimos escaneados</div>
                             <div class="custom-option" onclick="window.app.setDocumentFilter('factura', 'Facturas')">Facturas</div>
                             <div class="custom-option" onclick="window.app.setDocumentFilter('ticket', 'Tickets')">Tickets</div>
                             <div class="custom-option" onclick="window.app.setDocumentFilter('albaran', 'Albaranes')">Albaranes</div>
                             <div class="custom-option" onclick="window.app.setDocumentFilter('cierre', 'Cierres')">Cierres</div>
                         </div>
                     </div>
+                    <button id="btnShowScanOptions" class="btn-primary" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                        <span>📷</span> Escanear Documento
+                    </button>
                 </div>
 
                 <div id="listaFacturas"></div>

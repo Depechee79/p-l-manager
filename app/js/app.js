@@ -6026,8 +6026,8 @@ export class App {
             `;
             
             return `
-            <div class="cierre-card-compacta">
-                <div class="cierre-header-compacta">
+            <div class="cierre-card-compacta" id="cierre-card-${c.id}">
+                <div class="cierre-header-compacta" onclick="window.app.toggleListAccordion('cierre-card-${c.id}', 'cierre-card-compacta')" style="cursor: pointer;">
                     <div class="cierre-titulo-compacta">
                         Cierre ${c.fecha} – ${c.turno}
                     </div>
@@ -6036,9 +6036,8 @@ export class App {
                     </div>
                     <div class="cierre-header-derecha">
                         <div class="cierre-badge-v2 ${badgeClass}">${badgeText}</div>
-                        <button class="btn-edit" onclick="window.app.abrirModalEditarCierre(${c.id})" title="Editar">✏️</button>
-                        <button class="btn-delete" onclick="window.app.deleteItem('cierres', ${c.id})" title="Eliminar">🗑️</button>
-                        <button class="btn-toggle-detalle" onclick="this.closest('.cierre-card-compacta').classList.toggle('detalle-visible')" title="Ver detalle">▼</button>
+                        <button class="btn-edit" onclick="event.stopPropagation(); window.app.abrirModalEditarCierre(${c.id})" title="Editar">✏️</button>
+                        <button class="btn-delete" onclick="event.stopPropagation(); window.app.deleteItem('cierres', ${c.id})" title="Eliminar">🗑️</button>
                     </div>
                 </div>
                 
@@ -8502,19 +8501,18 @@ export class App {
                         const fcClass = e.foodCost > 35 ? 'color: #e74c3c; font-weight: bold;' : e.foodCost > 25 ? 'color: #f39c12;' : 'color: #27ae60;';
                         
                         return `
-                        <tr id="row-escandallos-${e.id}">
+                        <tr id="row-escandallos-${e.id}" onclick="window.app.toggleTableAccordion('preview-escandallo-${e.id}', this)" style="cursor: pointer;">
                             <td>${e.nombre}${e.codigo ? ` <small class="text-muted">(${e.codigo})</small>` : ''}</td>
                             <td>${e.pvpConIva.toFixed(2)} €</td>
                             <td>${e.costeTotalNeto.toFixed(2)} €</td>
                             <td style="${fcClass}">${e.foodCost.toFixed(1)}%</td>
                             <td>${e.margenPorcentaje.toFixed(1)}%</td>
-                            <td class="actions-cell">
+                            <td class="actions-cell" onclick="event.stopPropagation()">
                                 <button class="btn-icon" onclick="window.app.editItem('escandallos', ${e.id})" title="Editar">✏️</button>
                                 <button class="btn-icon delete" onclick="window.app.deleteItem('escandallos', ${e.id})" title="Eliminar">🗑️</button>
-                                <button id="btn-preview-escandallo-${e.id}" class="btn-icon" onclick="window.app.toggleRow('preview-escandallo-${e.id}', this)" title="Ver detalles">▶</button>
                             </td>
                         </tr>
-                        <tr id="preview-escandallo-${e.id}" style="display:none; background-color: #f8f9fa;">
+                        <tr id="preview-escandallo-${e.id}" class="hidden accordion-content-row">
                             <td colspan="6" style="padding: 20px;">
                                 <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
                                     <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
@@ -8592,20 +8590,19 @@ export class App {
                         const badgeText = cuadra ? '✅ CUADRA' : `⚠ ${descuadreAbs.toFixed(2)} €`;
                         
                         return `
-                        <tr id="row-cierres-${c.id}">
+                        <tr id="row-cierres-${c.id}" onclick="window.app.toggleTableAccordion('preview-cierre-${c.id}', this)" style="cursor: pointer;">
                             <td>${this.formatDate(c.fecha)}</td>
                             <td>${c.turno}</td>
                             <td>${c.totalPos.toFixed(2)} €</td>
                             <td>${totalReal.toFixed(2)} €</td>
                             <td style="color: ${descuadreTotal >= 0 ? 'green' : 'red'}">${descuadreTotal.toFixed(2)} €</td>
                             <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-                            <td class="actions-cell">
+                            <td class="actions-cell" onclick="event.stopPropagation()">
                                 <button class="btn-icon" onclick="window.app.abrirModalEditarCierre(${c.id})" title="Editar">✏️</button>
                                 <button class="btn-icon delete" onclick="window.app.deleteItem('cierres', ${c.id})" title="Eliminar">🗑️</button>
-                                <button id="btn-preview-cierre-${c.id}" class="btn-icon" onclick="window.app.toggleRow('preview-cierre-${c.id}', this)" title="Ver detalles">▶</button>
                             </td>
                         </tr>
-                        <tr id="preview-cierre-${c.id}" style="display:none; background-color: #f8f9fa;">
+                        <tr id="preview-cierre-${c.id}" class="hidden accordion-content-row">
                             <td colspan="7" style="padding: 20px;">
                                 <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
                                     <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
@@ -8733,7 +8730,7 @@ export class App {
             const isScanned = (item) => item.ocrProcessed === true;
 
             // 1. Facturas
-            if (filter === 'all' || filter === 'factura' || filter === 'ticket') {
+            if (filter === 'all' || filter === 'recent' || filter === 'factura' || filter === 'ticket') {
                 let facts = this.db.getByPeriod('facturas', this.currentPeriod).filter(isScanned);
                 if (filter === 'ticket') {
                     facts = facts.filter(f => f.categoria && f.categoria.toLowerCase().includes('ticket'));
@@ -8742,13 +8739,13 @@ export class App {
             }
 
             // 2. Albaranes
-            if (filter === 'all' || filter === 'albaran') {
+            if (filter === 'all' || filter === 'recent' || filter === 'albaran') {
                 const albs = this.db.getByPeriod('albaranes', this.currentPeriod).filter(isScanned);
                 allDocs = [...allDocs, ...albs.map(a => ({...a, type: 'albaran', label: 'Albarán'}))];
             }
 
             // 3. Cierres
-            if (filter === 'all' || filter === 'cierre') {
+            if (filter === 'all' || filter === 'recent' || filter === 'cierre') {
                 const cierres = this.db.getByPeriod('cierres', this.currentPeriod).filter(isScanned);
                 allDocs = [...allDocs, ...cierres.map(c => ({...c, type: 'cierre', label: 'Cierre', proveedor: 'Cierre de Caja', total: c.totalReal}))];
             }
@@ -8756,33 +8753,161 @@ export class App {
             // Ordenar por fecha descendente
             allDocs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
+            // Si es filtro reciente, limitar a 10
+            if (filter === 'recent') {
+                allDocs = allDocs.slice(0, 10);
+            }
+
             const unifiedHtml = allDocs.length > 0 ? `
             <div class="table-responsive">
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Fecha</th>
+                            <th>Nº Doc</th>
                             <th>Tipo</th>
                             <th>Proveedor / Nombre</th>
-                            <th>Fecha</th>
-                            <th>Categoría / Info</th>
                             <th>Total</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${allDocs.map(doc => `
-                        <tr>
-                            <td>${doc.type === 'factura' ? '🧾' : doc.type === 'albaran' ? '📦' : doc.type === 'cierre' ? '💰' : '📄'}</td>
-                            <td>${doc.proveedor || 'Desconocido'}</td>
+                        ${allDocs.map(doc => {
+                            const uniqueId = `doc-${doc.type}-${doc.id}`;
+                            const docNumber = doc.numeroFactura || doc.numeroAlbaran || doc.turno || '-';
+                            
+                            // Contenido expandido para Cierres (copiado de renderCierres)
+                            let expandedContent = '';
+                            if (doc.type === 'cierre') {
+                                const c = doc;
+                                const efectivoPOS = c.desgloseEfectivo ? c.desgloseEfectivo.total : (c.efectivoContado || 0);
+                                const tarjetasPOS = c.tarjetas || 0;
+                                const efectivoReal = c.desgloseEfectivo ? c.desgloseEfectivo.total : (c.efectivoContado || 0); // Asumimos igual si no hay desglose guardado
+                                const tarjetasReal = c.tarjetasReal || c.tarjetas || 0;
+                                
+                                const deltaEfectivo = efectivoReal - efectivoPOS;
+                                const deltaTarjetas = tarjetasReal - tarjetasPOS;
+                                
+                                let otrosRows = '';
+                                if (c.otrosMetodos && c.otrosMetodos.length > 0) {
+                                    c.otrosMetodos.forEach(m => {
+                                        const posVal = m.valor || 0;
+                                        const realVal = m.valorReal || posVal;
+                                        const delta = realVal - posVal;
+                                        otrosRows += `
+                                        <tr>
+                                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${m.nombre}</td>
+                                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${posVal.toFixed(2)} €</td>
+                                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${realVal.toFixed(2)} €</td>
+                                            <td style="padding: 8px; border-bottom: 1px solid #eee; color: ${delta !== 0 ? (delta > 0 ? '#27ae60' : '#e74c3c') : '#7f8c8d'}">${delta >= 0 ? '+' : ''}${delta.toFixed(2)} €</td>
+                                        </tr>`;
+                                    });
+                                }
+
+                                expandedContent = `
+                                <div class="cierre-detalle-desplegable" style="padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div class="cierre-tabla-wrapper">
+                                        <table class="cierre-tabla-metodos" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                            <thead>
+                                                <tr style="background: #f1f3f5; font-weight: 600; text-align: left;">
+                                                    <th style="padding: 10px;">MÉTODO</th>
+                                                    <th style="padding: 10px;">POS DECLARADO</th>
+                                                    <th style="padding: 10px;">REAL CONTADO</th>
+                                                    <th style="padding: 10px;">DIFERENCIA</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">💶 Efectivo</td>
+                                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${efectivoPOS.toFixed(2)} €</td>
+                                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${efectivoReal.toFixed(2)} €</td>
+                                                    <td style="padding: 10px; border-bottom: 1px solid #eee; color: ${deltaEfectivo !== 0 ? (deltaEfectivo > 0 ? '#27ae60' : '#e74c3c') : '#7f8c8d'}">${deltaEfectivo >= 0 ? '+' : ''}${deltaEfectivo.toFixed(2)} €</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">💳 Tarjetas</td>
+                                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${tarjetasPOS.toFixed(2)} €</td>
+                                                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${tarjetasReal.toFixed(2)} €</td>
+                                                    <td style="padding: 10px; border-bottom: 1px solid #eee; color: ${deltaTarjetas !== 0 ? (deltaTarjetas > 0 ? '#27ae60' : '#e74c3c') : '#7f8c8d'}">${deltaTarjetas >= 0 ? '+' : ''}${deltaTarjetas.toFixed(2)} €</td>
+                                                </tr>
+                                                ${otrosRows}
+                                                <tr style="font-weight: 700; background: #e9ecef; border-top: 2px solid #dee2e6;">
+                                                    <td style="padding: 10px;">TOTAL</td>
+                                                    <td style="padding: 10px;">${c.totalPos.toFixed(2)} €</td>
+                                                    <td style="padding: 10px;">${c.totalReal.toFixed(2)} €</td>
+                                                    <td style="padding: 10px; color: ${c.descuadreTotal !== 0 ? (c.descuadreTotal > 0 ? '#27ae60' : '#e74c3c') : '#7f8c8d'}">${c.descuadreTotal >= 0 ? '+' : ''}${c.descuadreTotal.toFixed(2)} €</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div style="margin-top: 15px; text-align: center; color: #666;">
+                                        🎫 Tickets: <strong>${c.numTickets || 0}</strong> | 🎟 Ticket medio: <strong>${((c.totalReal || 0) / (c.numTickets || 1)).toFixed(2)} €</strong>
+                                    </div>
+                                </div>`;
+                            } else {
+                                // Contenido expandido para Facturas/Albaranes/Tickets
+                                expandedContent = `
+                                <div style="display: flex; gap: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div style="flex: 1;">
+                                        <h4 style="margin: 0 0 15px 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                                            ${doc.type === 'factura' ? '🧾 Detalle de Factura' : doc.type === 'albaran' ? '📦 Detalle de Albarán' : '📄 Detalle del Documento'}
+                                        </h4>
+                                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 14px;">
+                                            <div>
+                                                <span style="display: block; color: #7f8c8d; font-size: 12px;">Número Documento</span>
+                                                <strong style="color: #2c3e50;">${docNumber}</strong>
+                                            </div>
+                                            <div>
+                                                <span style="display: block; color: #7f8c8d; font-size: 12px;">Fecha Emisión</span>
+                                                <strong style="color: #2c3e50;">${this.formatDate(doc.fecha)}</strong>
+                                            </div>
+                                            <div>
+                                                <span style="display: block; color: #7f8c8d; font-size: 12px;">Proveedor</span>
+                                                <strong style="color: #2c3e50;">${doc.proveedor || 'N/A'}</strong>
+                                            </div>
+                                            <div>
+                                                <span style="display: block; color: #7f8c8d; font-size: 12px;">Categoría</span>
+                                                <strong style="color: #2c3e50;">${doc.categoria || 'General'}</strong>
+                                            </div>
+                                            ${doc.concepto ? `
+                                            <div style="grid-column: span 2;">
+                                                <span style="display: block; color: #7f8c8d; font-size: 12px;">Concepto / Notas</span>
+                                                <p style="margin: 0; color: #2c3e50;">${doc.concepto}</p>
+                                            </div>` : ''}
+                                            <div style="grid-column: span 2; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee;">
+                                                <span style="display: block; color: #7f8c8d; font-size: 12px;">Importe Total</span>
+                                                <strong style="color: #2c3e50; font-size: 18px;">${(doc.total || 0).toFixed(2)} €</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ${doc.imagen ? `
+                                    <div style="width: 200px; display: flex; flex-direction: column; gap: 10px;">
+                                        <span style="font-size: 12px; color: #7f8c8d; font-weight: 600;">VISTA PREVIA</span>
+                                        <div style="width: 100%; height: 200px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; background: #f8f9fa; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="window.open('${doc.imagen}', '_blank')">
+                                            <img src="${doc.imagen}" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="Documento">
+                                        </div>
+                                        <button class="btn-secondary btn-small" onclick="window.open('${doc.imagen}', '_blank')" style="width: 100%;">🔍 Ver original</button>
+                                    </div>` : ''}
+                                </div>`;
+                            }
+
+                            return `
+                        <tr onclick="window.app.toggleTableAccordion('${uniqueId}', this)" style="cursor: pointer;">
                             <td>${this.formatDate(doc.fecha)}</td>
+                            <td>${docNumber}</td>
                             <td>${doc.label}</td>
+                            <td>${doc.proveedor || 'Desconocido'}</td>
                             <td>${(doc.total || 0).toFixed(2)} €</td>
-                            <td class="actions-cell">
+                            <td class="actions-cell" onclick="event.stopPropagation()">
                                 <button class="btn-icon" onclick="window.app.editItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})" title="Editar">✏️</button>
                                 <button class="btn-icon delete" onclick="window.app.deleteItem('${doc.type === 'cierre' ? 'cierres' : doc.type === 'albaran' ? 'albaranes' : 'facturas'}', ${doc.id})" title="Eliminar">🗑️</button>
                             </td>
                         </tr>
-                        `).join('')}
+                        <tr id="${uniqueId}" class="hidden accordion-content-row" style="background-color: #f8f9fa;">
+                            <td colspan="6" style="padding: 15px;">
+                                ${expandedContent}
+                            </td>
+                        </tr>
+                        `}).join('')}
                     </tbody>
                 </table>
             </div>` : '<p class="empty-state">No hay documentos escaneados recientes</p>';
@@ -8929,18 +9054,17 @@ export class App {
                         `).join('') : '<tr><td colspan="5" style="text-align:center; padding:10px;">No hay productos registrados en este inventario</td></tr>';
 
                         return `
-                        <tr id="row-inventarios-${i.id}">
+                        <tr id="row-inventarios-${i.id}" onclick="window.app.toggleTableAccordion('preview-inventario-${i.id}', this)" style="cursor: pointer;">
                             <td>${this.formatDate(i.fecha)}</td>
                             <td>${i.familia}</td>
                             <td>${numProductos}</td>
                             <td style="${colorStyle}">${valorTotal.toFixed(2)} €</td>
-                            <td class="actions-cell">
+                            <td class="actions-cell" onclick="event.stopPropagation()">
                                 <button class="btn-icon" onclick="window.app.editItem('inventarios', ${i.id})" title="Editar">✏️</button>
                                 <button class="btn-icon delete" onclick="window.app.deleteItem('inventarios', ${i.id})" title="Eliminar">🗑️</button>
-                                <button id="btn-preview-inventario-${i.id}" class="btn-icon" onclick="window.app.toggleRow('preview-inventario-${i.id}', this)" title="Ver detalles">▶</button>
                             </td>
                         </tr>
-                        <tr id="preview-inventario-${i.id}" style="display:none; background-color: #f8f9fa;">
+                        <tr id="preview-inventario-${i.id}" class="hidden accordion-content-row">
                             <td colspan="5" style="padding: 20px;">
                                 <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
                                     <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">
@@ -9159,6 +9283,42 @@ export class App {
 
             row.style.display = isHidden ? 'table-row' : 'none';
             if (btn) btn.textContent = isHidden ? '▼' : '▶';
+        }
+    }
+
+    // --- ACCORDION HELPERS ---
+    toggleTableAccordion(contentId, triggerRow) {
+        // 1. Close all other open rows in the same table
+        const table = triggerRow.closest('table');
+        if (table) {
+            const openRows = table.querySelectorAll('.accordion-content-row:not(.hidden)');
+            openRows.forEach(row => {
+                if (row.id !== contentId) {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        // 2. Toggle the target row
+        const content = document.getElementById(contentId);
+        if (content) {
+            content.classList.toggle('hidden');
+        }
+    }
+
+    toggleListAccordion(itemId, itemClass) {
+        // 1. Close all other items of the same class
+        const allItems = document.querySelectorAll('.' + itemClass);
+        allItems.forEach(item => {
+            if (item.id !== itemId) {
+                item.classList.remove('detalle-visible');
+            }
+        });
+
+        // 2. Toggle the target item
+        const target = document.getElementById(itemId);
+        if (target) {
+            target.classList.toggle('detalle-visible');
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿#  PROJECT BIBLE - Sistema P&L Hostelería Profesional
 
-**Versión:** 4.28.0 Reestructuración de Modales (Noviembre 2025)  
+**Versión:** 4.28.2 UX Accordion Tables (Noviembre 2025)  
 **Stack:** HTML5 + Vanilla JS ES6 + localStorage + Tesseract.js + PDF.js  
 **Industria:** Hostelería profesional (restaurantes, cafeterías)  
 **Estado:** ✅ APLICACIÓN FUNCIONAL - OCR INTELIGENTE COMPLETO + INVENTARIO PROFESIONAL + UX MEJORADA
@@ -8,6 +8,32 @@
 ---
 
 ## 📊 CHANGELOG
+
+### VERSIÓN 4.28.2 - UX ACCORDION TABLES & INTERACTION POLISH (Noviembre 22, 2025)
+
+**MEJORAS IMPLEMENTADAS:**
+
+**1. PATRÓN DE ACORDEÓN GLOBAL (UX)**
+- **Objetivo:** Limpiar la interfaz y mejorar la usabilidad en tablas con detalles expandibles.
+- **Cambio:** Se eliminó la columna de botones "▶" (triángulos) en todas las tablas principales.
+- **Comportamiento:** Ahora, **hacer clic en cualquier parte de la fila** expande/contrae los detalles.
+- **Lógica Acordeón:** Solo puede haber una fila expandida a la vez; al abrir una nueva, se cierran las demás automáticamente.
+- **Ámbito:** Aplicado a **Escanear Documentos (OCR)**, **Inventarios**, **Cierres de Caja** y **Escandallos**.
+
+**2. REDISEÑO TABLA ESCÁNER (OCR)**
+- **Columnas:** Reordenadas para mejor lectura: Fecha, Nº Doc, Tipo, Proveedor, Total, Acciones.
+- **Unificación:** La vista de escáner ahora muestra una lista unificada de Facturas, Albaranes y Cierres.
+- **Detalles:** Mejorada la vista expandida de los Cierres dentro del listado de documentos.
+
+**3. MEJORAS TÉCNICAS**
+- **Helpers:** Nuevas funciones `toggleTableAccordion` y `toggleListAccordion` en `App` class para centralizar la lógica de expansión.
+- **Eventos:** Gestión correcta de `event.stopPropagation()` en los botones de acción (Editar/Eliminar) para evitar que abran la fila al ser pulsados.
+- **Estilos:** Cursor tipo puntero (`cursor: pointer`) en filas interactivas para indicar funcionalidad.
+
+**ARCHIVOS MODIFICADOS:**
+- `app/js/app.js`: Actualización de `renderCompras`, `renderInventarios`, `renderCierres`, `renderEscandallos` y nuevos helpers.
+
+---
 
 ### VERSIÓN 4.28.1 - MEJORAS UX Y CORRECCIONES LÓGICAS (Noviembre 22, 2025)
 
