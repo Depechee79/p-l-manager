@@ -2049,6 +2049,185 @@ export class App {
         // TODO SIN IVA · ESTRUCTURA PROFESIONAL COMPLETA
         // ══════════════════════════════════════════════════════════════
 
+        // 0. INYECTAR ESTRUCTURA SI NO EXISTE
+        if (!document.getElementById('kpiIngresos')) {
+            const pnlView = document.getElementById('pnlView');
+            if (pnlView) {
+                pnlView.innerHTML = `
+                <div class="pnl-dashboard">
+                    <div class="pnl-header">
+                        <h2>Cuenta de Explotación</h2>
+                        <p>Resumen financiero del período</p>
+                    </div>
+
+                    <!-- KPIs -->
+                    <div class="pnl-kpis-grid">
+                        <div class="pnl-kpi-card">
+                            <div class="pnl-kpi-label">Ingresos</div>
+                            <div class="pnl-kpi-value" id="kpiIngresos">0€</div>
+                            <div class="pnl-kpi-compare" id="kpiIngresosCompare"></div>
+                        </div>
+                        <div class="pnl-kpi-card">
+                            <div class="pnl-kpi-label">Food Cost</div>
+                            <div class="pnl-kpi-value" id="kpiFoodCost">0%</div>
+                            <div class="pnl-kpi-compare" id="kpiFoodCostCompare"></div>
+                        </div>
+                        <div class="pnl-kpi-card">
+                            <div class="pnl-kpi-label">Margen Bruto</div>
+                            <div class="pnl-kpi-value" id="kpiMargen">0%</div>
+                            <div class="pnl-kpi-compare" id="kpiMargenCompare"></div>
+                        </div>
+                        <div class="pnl-kpi-card">
+                            <div class="pnl-kpi-label">EBITDA</div>
+                            <div class="pnl-kpi-value" id="kpiEBITDA">0%</div>
+                            <div class="pnl-kpi-compare" id="kpiEBITDACompare"></div>
+                        </div>
+                    </div>
+
+                    <!-- Alertas -->
+                    <div id="pnlAlertas" class="pnl-alertas-container" style="margin-bottom: 20px;"></div>
+
+                    <!-- Detalle -->
+                    <div class="pnl-cuenta-card">
+                        
+                        <!-- 1. INGRESOS -->
+                        <div class="pnl-section">
+                            <div class="pnl-section-title">1. INGRESOS OPERATIVOS</div>
+                            <div class="pnl-line">
+                                <span>Ventas Local</span>
+                                <span id="plVentasLocal">0.00€</span>
+                            </div>
+                            <div class="pnl-line">
+                                <span>Ventas Delivery</span>
+                                <span id="plVentasDelivery">0.00€</span>
+                            </div>
+                            <div class="pnl-line total" style="font-weight:bold; border-top:1px solid #eee;">
+                                <span>TOTAL INGRESOS</span>
+                                <span id="plTotalIngresos">0.00€</span>
+                            </div>
+                        </div>
+
+                        <!-- 2. COGS -->
+                        <div class="pnl-section">
+                            <div class="pnl-section-title">2. COSTE DE VENTAS (COGS)</div>
+                            <div class="pnl-line">
+                                <span>Inventario Inicial</span>
+                                <span id="plInvInicial">0.00€</span>
+                            </div>
+                            <div class="pnl-line">
+                                <span>+ Compras Netas</span>
+                                <span id="plComprasNetas">0.00€</span>
+                            </div>
+                            <div class="pnl-line">
+                                <span>- Inventario Final</span>
+                                <span id="plInvFinal">0.00€</span>
+                            </div>
+                            <div class="pnl-line total" style="font-weight:bold; border-top:1px solid #eee;">
+                                <span>COGS TOTAL</span>
+                                <span id="plCOGSTotal">0.00€</span>
+                            </div>
+                            <div class="pnl-line pnl-indent" style="font-style:italic; color:#7f8c8d;">
+                                <span>COGS Comida (Est. 60%)</span>
+                                <span id="plCOGSComida">0.00€</span>
+                            </div>
+                            <div class="pnl-line pnl-indent" style="font-style:italic; color:#7f8c8d;">
+                                <span>COGS Bebida (Est. 40%)</span>
+                                <span id="plCOGSBebida">0.00€</span>
+                            </div>
+                            <div class="pnl-line" style="color:#e67e22; font-weight:bold;">
+                                <span>Food Cost %</span>
+                                <span id="plFoodCostPct">0.0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 3. MARGEN BRUTO -->
+                        <div class="pnl-section">
+                            <div class="pnl-line total" style="font-size:1.1em; font-weight:bold; background:#f8f9fa;">
+                                <span>MARGEN BRUTO</span>
+                                <span id="plMargenBruto">0.00€</span>
+                            </div>
+                            <div class="pnl-line" style="text-align:right;">
+                                <span style="width:100%; text-align:right;" id="plMargenPct">0.0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 4. PERSONAL -->
+                        <div class="pnl-section">
+                            <div class="pnl-section-title">3. GASTOS DE PERSONAL</div>
+                            <div class="pnl-line">
+                                <span>Salarios</span>
+                                <span id="plSalarios">0.00€</span>
+                            </div>
+                            <div class="pnl-line">
+                                <span>Seguridad Social</span>
+                                <span id="plSeguridadSocial">0.00€</span>
+                            </div>
+                            <div class="pnl-line total" style="font-weight:bold;">
+                                <span>TOTAL PERSONAL</span>
+                                <span id="plTotalPersonal">0.00€</span>
+                            </div>
+                            <div class="pnl-line">
+                                <span>% sobre Ventas</span>
+                                <span id="plPersonalPct">0.0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 5. OPEX -->
+                        <div class="pnl-section">
+                            <div class="pnl-section-title">4. GASTOS OPERATIVOS (OPEX)</div>
+                            <div class="pnl-line"><span>Alquiler</span><span id="plAlquiler">0.00€</span></div>
+                            <div class="pnl-line"><span>Suministros</span><span id="plSuministros">0.00€</span></div>
+                            <div class="pnl-line"><span>Servicios</span><span id="plServicios">0.00€</span></div>
+                            <div class="pnl-line"><span>Marketing</span><span id="plMarketing">0.00€</span></div>
+                            <div class="pnl-line"><span>Comisiones Delivery</span><span id="plComisiones">0.00€</span></div>
+                            <div class="pnl-line"><span>Limpieza</span><span id="plLimpieza">0.00€</span></div>
+                            <div class="pnl-line"><span>Seguros</span><span id="plSeguros">0.00€</span></div>
+                            <div class="pnl-line"><span>Otros</span><span id="plOtrosOpex">0.00€</span></div>
+                            <div class="pnl-line total" style="font-weight:bold; border-top:1px solid #eee;">
+                                <span>TOTAL OPEX</span>
+                                <span id="plTotalOpex">0.00€</span>
+                            </div>
+                            <div class="pnl-line">
+                                <span>% sobre Ventas</span>
+                                <span id="plOpexPct">0.0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 6. EBITDA -->
+                        <div class="pnl-section">
+                            <div class="pnl-line total" style="font-size:1.1em; font-weight:bold; background:#e8f6f3; color:#27ae60;">
+                                <span>EBITDA (Rto. Operativo)</span>
+                                <span id="plEBITDA">0.00€</span>
+                            </div>
+                            <div class="pnl-line" style="text-align:right;">
+                                <span style="width:100%; text-align:right;" id="plEBITDAPct">0.0%</span>
+                            </div>
+                        </div>
+
+                        <!-- 7. FINANCIEROS -->
+                        <div class="pnl-section">
+                            <div class="pnl-section-title">5. FINANCIEROS Y AMORTIZACIONES</div>
+                            <div class="pnl-line"><span>Gastos Financieros</span><span id="plFinancieros">0.00€</span></div>
+                            <div class="pnl-line"><span>Amortizaciones</span><span id="plAmortizaciones">0.00€</span></div>
+                        </div>
+
+                        <!-- 8. BENEFICIO NETO -->
+                        <div class="pnl-section" style="border:none;">
+                            <div class="pnl-line total" style="font-size:1.2em; font-weight:bold; background:#2c3e50; color:white; padding:15px;">
+                                <span>BENEFICIO NETO (BAI)</span>
+                                <span id="plBeneficioNeto">0.00€</span>
+                            </div>
+                            <div class="pnl-line" style="text-align:right;">
+                                <span style="width:100%; text-align:right;" id="plMargenNetoPct">0.0%</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                `;
+            }
+        }
+
         const cierres = this.db.getByPeriod('cierres', this.currentPeriod);
         const delivery = this.db.getByPeriod('delivery', this.currentPeriod);
         const facturas = this.db.getByPeriod('facturas', this.currentPeriod);
