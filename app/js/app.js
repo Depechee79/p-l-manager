@@ -570,21 +570,38 @@ export class App {
                 newRow.style.background = '#f8f9fa';
                 newRow.innerHTML = `
                     <td colspan="4" style="padding: 15px; border-bottom: 1px solid #ddd;">
-                        <div style="display: flex; align-items: center; gap: 20px; justify-content: flex-start;">
-                            <div style="display: flex; flex-direction: column;">
-                                <span style="font-size: 0.85em; color: #666;">Stock Teórico</span>
-                                <strong style="font-size: 1.1em;">${(product.stockActualUnidades || 0).toFixed(2)} ${product.unidadBase}</strong>
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div style="display: flex; align-items: center; gap: 20px;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 0.85em; color: #666;">Stock Ult. Inventario</span>
+                                    <strong style="font-size: 1.1em;">${(product.stockActualUnidades || 0).toFixed(2)} ${product.unidadBase}</strong>
+                                </div>
                             </div>
                             
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <label style="font-weight: 600;">Cantidad Real:</label>
-                                <input type="number" id="inv-desktop-input-${productId}" class="form-control" 
-                                    style="width: 120px; padding: 8px; font-size: 1.1em; border: 2px solid #3498db; border-radius: 6px;" 
-                                    value="${currentCount !== undefined ? currentCount : ''}" step="any">
-                                <span style="color: #666;">${product.unidadBase}</span>
+                            <table class="table table-sm" style="width: 100%; background: white; border-radius: 4px; margin-bottom: 10px;">
+                                <thead>
+                                    <tr style="background: #eee; font-size: 0.9em;">
+                                        <th style="padding: 8px; width: 100px;">Cantidad</th>
+                                        <th style="padding: 8px;">Tipo Empaque</th>
+                                        <th style="padding: 8px; width: 120px;">Unidades x Empaque</th>
+                                        <th style="padding: 8px; width: 100px;">Total</th>
+                                        <th style="width: 40px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inv-calc-body-${productId}">
+                                </tbody>
+                            </table>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <button type="button" class="btn-secondary btn-sm" onclick="window.app.addInvCalcRow(${productId})">+ Añadir + Cantidad</button>
+                                <div style="font-size: 1.2em;">
+                                    <strong>Total Real: </strong>
+                                    <span id="inv-calc-total-${productId}" style="font-weight: bold; color: #2c3e50;">0</span>
+                                    <span style="font-size: 0.8em; color: #666;">${product.unidadBase}</span>
+                                </div>
                             </div>
 
-                            <div style="display: flex; gap: 10px; margin-left: auto;">
+                            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
                                 <button class="btn-secondary" onclick="window.app.closeInventarioCounter()">Cancelar</button>
                                 <button class="btn-primary" onclick="window.app.confirmInventarioCount(${productId}, 'desktop')">Confirmar</button>
                             </div>
@@ -593,12 +610,106 @@ export class App {
                 `;
                 targetRow.parentNode.insertBefore(newRow, targetRow.nextSibling);
                 
-                // Focus al input
-                setTimeout(() => {
-                    const input = document.getElementById(`inv-desktop-input-${productId}`);
-                    if (input) input.focus();
-                }, 50);
+                // Add initial rows
+                if (currentCount !== undefined && currentCount > 0) {
+                    this.addInvCalcRow(productId, 'Cant. Unit.', currentCount, 1);
+                } else {
+                    if (product.esEmpaquetado) {
+                        this.addInvCalcRow(productId, 'Caja', '', product.unidadesPorEmpaque || 1);
+                    }
+                    this.addInvCalcRow(productId, 'Cant. Unit.', '', 1);
+                }
             }
+        }
+    }
+
+    addInvCalcRow(productId, type = 'Cant. Unit.', qty = '', units = 1) {
+        const tbody = document.getElementById(`inv-calc-body-${productId}`);
+        if (!tbody) return;
+
+        const row = document.createElement('tr');
+        const options = ['Cant. Unit.', 'Caja', 'Rack', 'Pack', 'Malla'];
+        const optionsHtml = options.map(opt => 
+            `<option value="${opt}" ${type === opt ? 'selected' : ''}>${opt}</option>`
+        ).join('');
+
+        row.innerHTML = `
+            <td style="padding: 5px;">
+                <input type="number" class="form-control inv-calc-qty" value="${qty}" step="any" oninput="window.app.updateInvCalcRow(this)" placeholder="0">
+            </td>
+            <td style="padding: 5px;">
+                <select class="form-select inv-calc-type" onchange="window.app.updateInvCalcRow(this)" style="width: 100%;">
+                    ${optionsHtml}
+                </select>
+            </td>
+            <td style="padding: 5px;">
+                <input type="number" class="form-control inv-calc-units" value="${units}" step="any" oninput="window.app.updateInvCalcRow(this)" ${type === 'Cant. Unit.' ? 'readonly style="background-color: #eee;"' : ''}>
+            </td>
+            <td style="padding: 5px;">
+                <input type="text" class="form-control inv-calc-row-total" readonly value="0" style="background: #f8f9fa; font-weight: bold;">
+            </td>
+            <td style="padding: 5px; text-align: center;">
+                <button class="btn-danger btn-sm" onclick="window.app.removeInvCalcRow(this)" style="padding: 2px 6px;">×</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        
+        // Trigger update to calculate total
+        this.updateInvCalcRow(row.querySelector('.inv-calc-qty'));
+    }
+
+    removeInvCalcRow(btn) {
+        const row = btn.closest('tr');
+        const tbody = row.parentNode;
+        const tbodyId = tbody.id;
+        const productId = tbodyId.replace('inv-calc-body-', '');
+        
+        row.remove();
+        this.updateInvCalcTotal(productId);
+    }
+
+    updateInvCalcRow(element) {
+        const row = element.closest('tr');
+        const typeSelect = row.querySelector('.inv-calc-type');
+        const qtyInput = row.querySelector('.inv-calc-qty');
+        const unitsInput = row.querySelector('.inv-calc-units');
+        const totalInput = row.querySelector('.inv-calc-row-total');
+
+        if (element === typeSelect) {
+            if (typeSelect.value === 'Cant. Unit.') {
+                unitsInput.value = 1;
+                unitsInput.readOnly = true;
+                unitsInput.style.backgroundColor = '#eee';
+            } else {
+                unitsInput.readOnly = false;
+                unitsInput.style.backgroundColor = '';
+            }
+        }
+
+        const qty = parseFloat(qtyInput.value) || 0;
+        const units = parseFloat(unitsInput.value) || 0;
+        const total = qty * units;
+
+        totalInput.value = total.toFixed(2);
+
+        const tbody = row.parentNode;
+        const productId = tbody.id.replace('inv-calc-body-', '');
+        this.updateInvCalcTotal(productId);
+    }
+
+    updateInvCalcTotal(productId) {
+        const tbody = document.getElementById(`inv-calc-body-${productId}`);
+        if (!tbody) return;
+
+        let grandTotal = 0;
+        tbody.querySelectorAll('tr').forEach(row => {
+            const totalInput = row.querySelector('.inv-calc-row-total');
+            grandTotal += parseFloat(totalInput.value) || 0;
+        });
+
+        const totalSpan = document.getElementById(`inv-calc-total-${productId}`);
+        if (totalSpan) {
+            totalSpan.textContent = grandTotal.toFixed(2);
         }
     }
 
@@ -619,10 +730,14 @@ export class App {
         let product = this.inventarioState.currentProduct;
 
         if (mode === 'desktop' && productId) {
-            const input = document.getElementById(`inv-desktop-input-${productId}`);
-            val = parseFloat(input.value);
-            // Si venimos de desktop, el currentProduct puede no estar set si se abrió otro, 
-            // pero aquí pasamos el ID explícito, así que buscamos el producto
+            // Calculate total from the calculator
+            const totalSpan = document.getElementById(`inv-calc-total-${productId}`);
+            if (totalSpan) {
+                val = parseFloat(totalSpan.textContent);
+            } else {
+                val = 0;
+            }
+            
             product = this.db.productos.find(p => p.id === productId);
         } else {
             // Mobile
@@ -631,8 +746,7 @@ export class App {
         }
         
         if (isNaN(val)) {
-            this.showToast('⚠️ Introduce una cantidad válida', true);
-            return;
+            val = 0;
         }
 
         if (product) {
@@ -1179,7 +1293,7 @@ export class App {
         }
     }
 
-    render() {
+    render() { // Modified
         const titles = {
             'ocr': 'Escáner de Documentos',
             'cierres': '🧾 Cierres de Caja',
@@ -1233,7 +1347,7 @@ export class App {
                             break;
                         case 'inventario':
                             btnHtml = `
-                                <div style="display: flex; gap: 10px;">
+                                <div id="inventario-actions" style="display: flex; gap: 10px;">
                                     <button class="btn-primary" onclick="window.app.expandForm('inventario')">📝 Crear Inventario</button>
                                     <button class="btn-secondary" onclick="window.app.calcularCOGS()">🧮 Nuevo COGS</button>
                                 </div>
@@ -5737,89 +5851,7 @@ export class App {
         }
     }
 
-    render_OLD_5160() {
-        const titles = {
-            'ocr': 'Escáner de Documentos',
-            'cierres': '🧾 Cierres de Caja',
-            'compras': '📦 Compras',
-            'proveedores': '🏢 Proveedores',
-            'productos': '🥘 Productos',
-            'escandallos': '📋 Escandallos',
-            'inventario': '📦 Control de Stock',
-            'delivery': '🛵 Delivery',
-            'pnl': '💰 Cuenta de Explotación'
-        };
 
-        // 1. Gestión de Vistas
-        document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
-        const viewMap = {
-            'ocr': 'ocrView', 'cierres': 'cierresView', 'compras': 'comprasView',
-            'proveedores': 'proveedoresView', 'productos': 'productosView',
-            'escandallos': 'escandallosView', 'inventario': 'inventarioView',
-            'delivery': 'deliveryView', 'pnl': 'pnlView'
-        };
-        const currentViewId = viewMap[this.currentView];
-        if(document.getElementById(currentViewId)) document.getElementById(currentViewId).classList.remove('hidden');
-
-        // 2. Gestión de Cabecera y BOTONES DE ACCIÓN
-        const mainHeader = document.querySelector('.header');
-        if (this.currentView === 'ocr') {
-            if(mainHeader) mainHeader.style.display = 'none';
-        } else {
-            if(mainHeader) {
-                mainHeader.style.display = 'flex';
-                document.getElementById('viewTitle').textContent = titles[this.currentView];
-                
-                // INYECCIÓN DE BOTONES (Restauración)
-                const actionsDiv = document.getElementById('headerActions');
-                if (actionsDiv) {
-                    let btnHtml = '';
-                    switch(this.currentView) {
-                        case 'cierres':
-                            // Usa expandForm porque el formulario YA existe en el HTML
-                            btnHtml = `<button id="toggleCierreForm" class="btn-primary" onclick="window.app.expandForm('cierre')">+ Nuevo Cierre</button>`;
-                            break;
-                        case 'proveedores':
-                            // Usa toggleForm para mostrar/ocultar el div
-                            btnHtml = `<button id="toggleProveedorForm" class="btn-primary" onclick="window.app.toggleForm('proveedor')">+ Nuevo Proveedor</button>`;
-                            break;
-                        case 'productos':
-                            btnHtml = `<button id="toggleProductoForm" class="btn-primary" onclick="window.app.toggleForm('producto')">+ Nuevo Producto</button>`;
-                            break;
-                        case 'escandallos':
-                            btnHtml = `<button id="toggleEscandalloForm" class="btn-primary" onclick="window.app.expandForm('escandallo')">+ Nuevo Escandallo</button>`;
-                            break;
-                        case 'inventario':
-                            btnHtml = `
-                                <div style="display: flex; gap: 10px;">
-                                    <button class="btn-primary" onclick="window.app.expandForm('inventario')">📝 Crear Inventario</button>
-                                    <button class="btn-secondary" onclick="window.app.calcularCOGS()">🧮 Nuevo COGS</button>
-                                </div>
-                            `;
-                            break;
-                        case 'compras':
-                            // En compras solemos usar filtros, pero podemos poner botón de añadir manual
-                            btnHtml = `<button class="btn-secondary" onclick="window.app.currentView='ocr'; window.app.render()">📸 Ir a Escáner</button>`;
-                            break;
-                    }
-                    actionsDiv.innerHTML = btnHtml;
-                }
-            }
-        }
-
-        // 3. Renderizar Contenido
-        switch(this.currentView) {
-            case 'ocr': this.renderCompras(); break;
-            case 'cierres': this.renderCierres(); this.collapseForm('cierre'); break;
-            case 'compras': this.renderCompras(); break;
-            case 'proveedores': this.renderProveedores(); this.collapseForm('proveedor'); break;
-            case 'productos': this.renderProductos(); this.collapseForm('producto'); break;
-            case 'escandallos': this.renderEscandallos(); this.collapseForm('escandallo'); break;
-            case 'inventario': this.renderInventarios(); break;
-            case 'delivery': this.renderDelivery(); break;
-            case 'pnl': this.renderPnL(); break;
-        }
-    }
 
     abrirModalEditarCierre(id) {
         const cierre = this.db.cierres.find(c => c.id === id);

@@ -181,7 +181,8 @@ body {
 
 .form-group input,
 .form-group select,
-.form-group textarea {
+.form-group textarea,
+.form-control {
     width: 100%;
     padding: 11px 14px;
     height: 42px;
@@ -236,7 +237,8 @@ body {
 
 .form-group input:focus,
 .form-group select:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-control:focus {
     outline: none;
     border-color: #1171ef;
     box-shadow: 0 0 0 3px rgba(17, 113, 239, 0.1);

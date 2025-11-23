@@ -1,0 +1,197 @@
+/* =========================================
+   LAYOUT & NAVIGATION
+   ========================================= */
+
+/* --- DESKTOP (Default) --- */
+.container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--background);
+}
+
+.sidebar {
+    width: 260px;
+    background: var(--neutral-900);
+    color: var(--neutral-300);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--neutral-800);
+    z-index: 50;
+    transition: transform var(--transition-normal);
+}
+
+.sidebar-header {
+    padding: var(--space-6);
+    border-bottom: 1px solid var(--neutral-800);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header h2 {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    letter-spacing: -0.025em;
+}
+
+.nav-menu {
+    flex: 1;
+    padding: var(--space-4);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.nav-item {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    background: transparent;
+    border: none;
+    color: var(--neutral-400);
+    text-align: left;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.nav-item:hover {
+    background: var(--neutral-800);
+    color: white;
+}
+
+.nav-item.active {
+    background: var(--primary-600);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-8);
+    background: var(--background);
+    position: relative;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.header h1 {
+    font-size: var(--text-2xl);
+    color: var(--neutral-900);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+/* --- MOBILE (Bottom Navigation) --- */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: auto;
+        /* Auto height for bottom bar */
+        flex-direction: row;
+        border-right: none;
+        border-top: 1px solid var(--neutral-200);
+        background: white;
+        /* Light mode bottom bar */
+        padding: 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+        justify-content: space-around;
+        align-items: center;
+    }
+
+    .sidebar-header {
+        display: none;
+        /* Hide header in bottom bar */
+    }
+
+    .nav-menu {
+        flex-direction: row;
+        padding: 0;
+        gap: 0;
+        width: 100%;
+        justify-content: space-around;
+        overflow-x: auto;
+        /* Allow scroll if too many items */
+    }
+
+    .nav-item {
+        flex-direction: column;
+        padding: 8px 4px;
+        gap: 4px;
+        font-size: 10px;
+        color: var(--neutral-500);
+        border-radius: 0;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+        flex: 1;
+    }
+
+    .nav-item:hover {
+        background: transparent;
+        color: var(--primary-600);
+    }
+
+    .nav-item.active {
+        background: transparent;
+        color: var(--primary-600);
+        box-shadow: none;
+        position: relative;
+    }
+
+    /* Indicator line for active state on mobile */
+    .nav-item.active::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40%;
+        height: 3px;
+        background: var(--primary-600);
+        border-radius: 0 0 4px 4px;
+    }
+
+    .main-content {
+        padding: var(--space-4);
+        padding-bottom: 80px;
+        /* Space for bottom bar */
+    }
+
+    .header {
+        margin-bottom: var(--space-4);
+    }
+
+    .header h1 {
+        font-size: var(--text-xl);
+    }
+
+    /* Hide the "Logout" button on mobile bottom bar to save space, 
+       or move it to a profile section. For now, let's hide it 
+       and assume we might add a 'More' menu later if needed. 
+       Or just keep it if it fits. */
+    .nav-item[onclick*="logout"] {
+        display: none !important;
+    }
+}
