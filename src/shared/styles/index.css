@@ -1,0 +1,21 @@
+/**
+ * P&L Manager Shared Styles - Index
+ * 
+ * Archivo principal que importa todos los estilos del sistema de diseño.
+ * Este archivo debe importarse en main.tsx o App.tsx.
+ * 
+ * Orden de importación (importante):
+ * 1. reset.css - Normalización primero
+ * 2. tokens.css - Variables CSS
+ * 3. typography.css - Tipografía base
+ * 
+ * Nota: Los estilos de componentes (buttons, cards, etc.) permanecen
+ * en src/index.css hasta que se complete la migración completa.
+ * 
+ * @version 1.0.0
+ * @date 2025-12-30
+ */
+
+@import './reset.css';
+@import './tokens.css';
+@import './typography.css';

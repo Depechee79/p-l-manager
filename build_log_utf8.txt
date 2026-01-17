@@ -1,0 +1,97 @@
+﻿
+> p-l-manager@1.0.0 build
+> node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build
+
+src/components/Layout.test.tsx(140,52): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'AppUser'.
+src/components/Layout.test.tsx(154,52): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'AppUser'.
+src/components/Layout.test.tsx(171,29): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'AppUser'.
+src/context/AppContext.test.tsx(4,37): error TS2307: Cannot find module './AppContext' or its corresponding type declarations.
+src/context/AppContext.test.tsx(166,11): error TS6133: 'rerender' is declared but its value is never read.
+src/core/context/AppContext.test.tsx(166,11): error TS6133: 'rerender' is declared but its value is never read.
+src/core/services/CompanyService.ts(2,1): error TS6133: 'useMemo' is declared but its value is never read.
+src/core/services/CompanyService.ts(46,48): error TS2559: Type '{ companyId: string; }' has no properties in common with type 'Omit<BaseEntity, "id">'.
+src/core/services/DatabaseService.test.ts(3,24): error TS6196: 'Provider' is declared but never used.
+src/core/services/DatabaseService.test.ts(160,60): error TS2353: Object literal may only specify known properties, and 'nombre' does not exist in type 'Partial<BaseEntity>'.
+src/core/services/DatabaseService.test.ts(163,23): error TS2339: Property 'nombre' does not exist on type 'BaseEntity'.
+src/core/services/DatabaseService.test.ts(169,54): error TS2353: Object literal may only specify known properties, and 'nombre' does not exist in type 'Partial<BaseEntity>'.
+src/core/services/DatabaseService.test.ts(185,60): error TS2353: Object literal may only specify known properties, and 'nombre' does not exist in type 'Partial<BaseEntity>'.
+src/core/services/DataIntegrityService.ts(167,5): error TS6133: 'missingFields' is declared but its value is never read.
+src/core/utils/migration.ts(78,55): error TS2554: Expected 2 arguments, but got 1.
+src/core/utils/migration.ts(131,70): error TS2353: Object literal may only specify known properties, and 'restaurantId' does not exist in type 'Partial<BaseEntity>'.
+src/core/utils/migration.ts(145,58): error TS2551: Property 'getRestaurants' does not exist on type 'RestaurantService'. Did you mean 'getRestaurant'?
+src/core/utils/migration.ts(152,15): error TS2353: Object literal may only specify known properties, and 'companyId' does not exist in type 'Partial<BaseEntity>'.
+src/core/utils/migration.ts(200,35): error TS2551: Property 'deleteCompany' does not exist on type 'CompanyService'. Did you mean 'getCompany'?
+src/core/utils/migration.ts(203,56): error TS2551: Property 'getRestaurants' does not exist on type 'RestaurantService'. Did you mean 'getRestaurant'?
+src/core/utils/migration.ts(205,38): error TS2551: Property 'deleteRestaurant' does not exist on type 'RestaurantService'. Did you mean 'getRestaurant'?
+src/features/cierres/components/ClosingWizard.test.tsx(5,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/features/cierres/components/ClosingWizard.test.tsx(9,5): error TS2304: Cannot find name 'beforeEach'.
+src/features/cierres/components/ClosingWizard.test.tsx(13,5): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/features/cierres/components/ClosingWizard.test.tsx(16,9): error TS2304: Cannot find name 'expect'.
+src/features/cierres/components/ClosingWizard.test.tsx(17,9): error TS2304: Cannot find name 'expect'.
+src/features/cierres/components/ClosingWizard.test.tsx(18,9): error TS2304: Cannot find name 'expect'.
+src/features/cierres/components/ClosingWizard.test.tsx(19,9): error TS2304: Cannot find name 'expect'.
+src/features/cierres/components/ClosingWizard.test.tsx(22,5): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/features/cierres/components/ClosingWizard.test.tsx(26,9): error TS2304: Cannot find name 'expect'.
+src/features/cierres/components/ClosingWizard.test.tsx(33,13): error TS2304: Cannot find name 'expect'.
+src/features/cierres/components/ClosingWizard.test.tsx(37,5): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+src/features/dashboard/components/RestaurantRankingTable.tsx(82,21): error TS6133: 'setSortAsc' is declared but its value is never read.
+src/features/dashboard/hooks/useDashboardMetrics.ts(159,37): error TS2339: Property 'numeroFactura' does not exist on type 'Invoice'.
+src/features/inventarios/components/wizard/steps/CountingStep.tsx(74,11): error TS6133: 'subfamilies' is declared but its value is never read.
+src/features/inventarios/components/wizard/steps/InfoStep.tsx(2,16): error TS6133: 'MapPin' is declared but its value is never read.
+src/features/inventarios/components/wizard/steps/SummaryStep.tsx(98,57): error TS2322: Type '"large"' is not assignable to type 'ComponentSize | undefined'.
+src/features/inventarios/inventory.types.ts(1,1): error TS6192: All imports in import declaration are unused.
+src/features/inventarios/services/InventoryService.test.ts(243,13): error TS6133: 'updated' is declared but its value is never read.
+src/features/invoices/index.ts(2,1): error TS2308: Module './components' has already exported a member named 'InvoiceProduct'. Consider explicitly re-exporting to resolve the ambiguity.
+src/hooks/useInvoices.test.ts(147,47): error TS2339: Property 'numeroFactura' does not exist on type 'Invoice'.
+src/hooks/useInvoices.test.ts(158,9): error TS2353: Object literal may only specify known properties, and 'numeroFactura' does not exist in type 'Omit<Invoice, "id">'.
+src/hooks/useInvoices.test.ts(167,39): error TS2339: Property 'numeroFactura' does not exist on type 'Invoice'.
+src/hooks/useInvoices.test.ts(189,9): error TS2353: Object literal may only specify known properties, and 'numeroFactura' does not exist in type 'Omit<Invoice, "id">'.
+src/hooks/useInvoices.test.ts(197,39): error TS2339: Property 'numeroFactura' does not exist on type 'Invoice'.
+src/hooks/useProviders.test.ts(4,33): error TS2307: Cannot find module '../services/DatabaseService' or its corresponding type declarations.
+src/pages/InvoicesPage.test.tsx(20,29): error TS2307: Cannot find module '../hooks/useDatabase' or its corresponding type declarations.
+src/pages/InvoicesPage.test.tsx(29,7): error TS2353: Object literal may only specify known properties, and 'numeroFactura' does not exist in type 'Invoice'.
+src/pages/InvoicesPage.test.tsx(49,7): error TS2353: Object literal may only specify known properties, and 'numeroFactura' does not exist in type 'Invoice'.
+src/pages/OrdersPage.tsx(25,17): error TS2554: Expected 0 arguments, but got 1.
+src/pages/ProvidersPage.test.tsx(5,33): error TS2307: Cannot find module '../services/DatabaseService' or its corresponding type declarations.
+src/pages/ProvidersPage.test.tsx(16,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(21,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(26,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(31,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(48,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(69,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(82,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(94,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(124,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(140,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(161,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(183,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/ProvidersPage.test.tsx(192,27): error TS2322: Type '{ db: DatabaseService; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'db' does not exist on type 'IntrinsicAttributes'.
+src/pages/TransfersPage.tsx(3,3): error TS6133: 'Package' is declared but its value is never read.
+src/pages/TransfersPage.tsx(11,3): error TS6133: 'Filter' is declared but its value is never read.
+src/pages/TransfersPage.tsx(13,59): error TS6133: 'DatePicker' is declared but its value is never read.
+src/pages/TransfersPage.tsx(15,1): error TS6133: 'TransferService' is declared but its value is never read.
+src/pages/TransfersPage.tsx(456,27): error TS6133: 'isOrigen' is declared but its value is never read.
+src/services/FinanceService.test.ts(4,1): error TS6133: 'Cierre' is declared but its value is never read.
+src/services/FirebaseArchitecture.integration.test.ts(2,33): error TS2307: Cannot find module './DatabaseService' or its corresponding type declarations.
+src/services/FirebaseArchitecture.integration.test.ts(3,34): error TS2307: Cannot find module './FirestoreService' or its corresponding type declarations.
+src/services/FirebaseArchitecture.integration.test.ts(295,9): error TS2353: Object literal may only specify known properties, and 'numeroFactura' does not exist in type 'Omit<Invoice, "id">'.
+src/services/FirebaseArchitecture.integration.test.ts(636,32): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/services/FirebaseArchitecture.integration.test.ts(642,13): error TS6133: 'cloudResult' is declared but its value is never read.
+src/services/FirestoreService.connection.test.ts(9,34): error TS2307: Cannot find module '@/services/FirestoreService' or its corresponding type declarations.
+src/shared/components/layout/MobileSidebar.tsx(7,1): error TS6133: 'BrandHeader' is declared but its value is never read.
+src/shared/components/layout/MobileSidebar.tsx(11,27): error TS2307: Cannot find module '@/context' or its corresponding type declarations.
+src/test/E2E.complete.test.tsx(633,15): error TS6133: 'container' is declared but its value is never read.
+src/test/OCRFlow.test.tsx(36,7): error TS2353: Object literal may only specify known properties, and 'loading' does not exist in type '{ db: DatabaseService; }'.

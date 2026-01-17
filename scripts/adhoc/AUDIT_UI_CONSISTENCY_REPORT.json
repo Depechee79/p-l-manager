@@ -1,0 +1,222 @@
+{
+  "timestamp": "2025-11-24T17:20:11.556Z",
+  "issues": [],
+  "warnings": [
+    {
+      "category": "Component Reuse",
+      "severity": "MEDIUM",
+      "file": "CierresPage.tsx",
+      "issue": "Uso de select nativo sin componente Select",
+      "count": 3
+    },
+    {
+      "category": "Component Reuse",
+      "severity": "MEDIUM",
+      "file": "InvoicesPage.tsx",
+      "issue": "Uso de select nativo sin componente Select",
+      "count": 3
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "MEDIUM",
+      "file": "CierresPage.tsx",
+      "issue": "Colores hardcodeados en lugar de CSS variables",
+      "count": 15
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "LOW",
+      "file": "CierresPage.tsx",
+      "issue": "Muchos valores de spacing hardcodeados",
+      "count": 70
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "MEDIUM",
+      "file": "DeliveryPage.tsx",
+      "issue": "Colores hardcodeados en lugar de CSS variables",
+      "count": 11
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "LOW",
+      "file": "DeliveryPage.tsx",
+      "issue": "Muchos valores de spacing hardcodeados",
+      "count": 8
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "LOW",
+      "file": "DiagnosticsPage.tsx",
+      "issue": "Muchos valores de spacing hardcodeados",
+      "count": 12
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "MEDIUM",
+      "file": "InvoicesPage.tsx",
+      "issue": "Colores hardcodeados en lugar de CSS variables",
+      "count": 16
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "LOW",
+      "file": "InvoicesPage.tsx",
+      "issue": "Muchos valores de spacing hardcodeados",
+      "count": 22
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "MEDIUM",
+      "file": "OCRPage.tsx",
+      "issue": "Colores hardcodeados en lugar de CSS variables",
+      "count": 73
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "LOW",
+      "file": "OCRPage.tsx",
+      "issue": "Muchos valores de spacing hardcodeados",
+      "count": 27
+    },
+    {
+      "category": "UI Patterns",
+      "severity": "MEDIUM",
+      "file": "ProvidersPage.tsx",
+      "issue": "Colores hardcodeados en lugar de CSS variables",
+      "count": 4
+    },
+    {
+      "category": "Feedback",
+      "severity": "MEDIUM",
+      "file": "DeliveryPage.tsx",
+      "issue": "Formulario sin sistema de notificaciones (Toast)"
+    },
+    {
+      "category": "Feedback",
+      "severity": "MEDIUM",
+      "file": "InvoicesPage.tsx",
+      "issue": "Formulario sin sistema de notificaciones (Toast)"
+    }
+  ],
+  "passed": [
+    {
+      "category": "Component Reuse",
+      "file": "CierresPage.test.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "CierresPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "DashboardPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "DeliveryPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "DiagnosticsPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "EscandallosPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "InventariosPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "InventoryPage.test.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "InventoryPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "InvoicesPage.test.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "InvoicesPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "OCRPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "PnLPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "ProvidersPage.test.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "ProvidersPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Component Reuse",
+      "file": "UsersPage.tsx",
+      "check": "No inputs nativos de fecha/hora encontrados"
+    },
+    {
+      "category": "Typography",
+      "check": "Variable --font-size-xs definida"
+    },
+    {
+      "category": "Typography",
+      "check": "Variable --font-size-sm definida"
+    },
+    {
+      "category": "Typography",
+      "check": "Variable --font-size-base definida"
+    },
+    {
+      "category": "Typography",
+      "check": "Variable --font-size-md definida"
+    },
+    {
+      "category": "Typography",
+      "check": "Variable --font-size-lg definida"
+    },
+    {
+      "category": "Typography",
+      "check": "Variable --font-size-xl definida"
+    },
+    {
+      "category": "Typography",
+      "check": "Variable --font-heading definida"
+    },
+    {
+      "category": "Typography",
+      "check": "Variable --font-body definida"
+    }
+  ],
+  "summary": {
+    "totalChecks": 88,
+    "passed": 24,
+    "failed": 0,
+    "warnings": 14
+  }
+}

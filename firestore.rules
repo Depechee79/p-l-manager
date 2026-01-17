@@ -1,0 +1,235 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // FUNCIONES AUXILIARES
+    // ============================================================
+
+    // Verifica si el usuario esta autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Obtiene los datos del usuario actual desde la coleccion 'usuarios'
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    // Verifica si el usuario es administrador
+    function isAdmin() {
+      return isAuthenticated() && getUserData().rolId == 'admin';
+    }
+
+    // Verifica si el usuario tiene acceso al restaurante especificado
+    function hasRestaurantAccess(restaurantId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        restaurantId in getUserData().restaurantIds ||
+        getUserData().restaurantId == restaurantId
+      );
+    }
+
+    // Verifica si el documento pertenece al restaurante del usuario
+    // NOTA: Permite acceso si restaurantId es null (datos antiguos sin migrar)
+    function ownsDocument(restaurantId) {
+      return restaurantId == null || hasRestaurantAccess(restaurantId);
+    }
+
+    // Valida que el documento tenga los campos requeridos
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ============================================================
+    // COLECCIONES DE CONFIGURACION
+    // ============================================================
+
+    // Companias
+    match /companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Restaurantes
+    match /restaurants/{restaurantId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Usuarios
+    match /usuarios/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow delete: if isAdmin();
+    }
+
+    // Roles
+    match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ============================================================
+    // COLECCIONES DE OPERACIONES (Filtradas por restaurante)
+    // ============================================================
+
+    // Cierres de caja
+    match /cierres/{cierreId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if hasRestaurantAccess(request.resource.data.restaurantId)
+                    && hasRequiredFields(['fecha', 'turno', 'totalReal', 'restaurantId']);
+      allow update: if ownsDocument(resource.data.restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // Facturas
+    match /facturas/{facturaId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if hasRestaurantAccess(request.resource.data.restaurantId)
+                    && hasRequiredFields(['numeroFactura', 'proveedorId', 'total', 'restaurantId']);
+      allow update: if ownsDocument(resource.data.restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // Albaranes
+    match /albaranes/{albaranId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if ownsDocument(resource.data.restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // Inventarios
+    match /inventarios/{inventarioId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if hasRestaurantAccess(request.resource.data.restaurantId)
+                    && hasRequiredFields(['fecha', 'restaurantId']);
+      allow update: if ownsDocument(resource.data.restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // Delivery
+    match /delivery/{deliveryId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if ownsDocument(resource.data.restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // Mermas
+    match /mermas/{mermaId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if ownsDocument(resource.data.restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // Pedidos (Orders)
+    match /orders/{orderId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if ownsDocument(resource.data.restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // Transferencias
+    match /transfers/{transferId} {
+      allow read: if hasRestaurantAccess(resource.data.origenId)
+                  || hasRestaurantAccess(resource.data.destinoId);
+      allow create: if hasRestaurantAccess(request.resource.data.origenId);
+      allow update: if hasRestaurantAccess(resource.data.origenId)
+                    || hasRestaurantAccess(resource.data.destinoId);
+      allow delete: if isAdmin();
+    }
+
+    // Gastos Fijos
+    match /gastosFijos/{gastoId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if hasRestaurantAccess(request.resource.data.restaurantId)
+                    && hasRequiredFields(['tipo', 'descripcion', 'importeMensual', 'restaurantId']);
+      allow update: if ownsDocument(resource.data.restaurantId);
+      allow delete: if isAdmin();
+    }
+
+    // Ajustes P&L
+    match /pnl_adjustments/{adjId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow create: if isAdmin() && hasRequiredFields(['period', 'amount', 'category', 'restaurantId']);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // COLECCIONES COMPARTIDAS (Productos, Proveedores, Recetas)
+    // ============================================================
+
+    // Proveedores
+    match /proveedores/{proveedorId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Productos
+    match /productos/{productoId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Escandallos (Recetas)
+    match /escandallos/{escandalloId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // COLECCIONES DE RRHH
+    // ============================================================
+
+    // Trabajadores
+    match /workers/{workerId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Fichajes
+    match /fichajes/{fichajeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Ausencias
+    match /absences/{absenceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Solicitudes de vacaciones
+    match /vacation_requests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Nominas
+    match /nominas/{nominaId} {
+      allow read: if ownsDocument(resource.data.restaurantId);
+      allow write: if isAdmin();
+    }
+  }
+}

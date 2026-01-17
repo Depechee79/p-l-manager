@@ -1,0 +1,202 @@
+/**
+ * P&L Manager - Design Tokens CSS
+ * 
+ * Variables CSS del sistema de diseño.
+ * Sincronizado con src/shared/tokens/*.ts
+ * 
+ * @version 1.0.0
+ * @date 2025-12-30
+ */
+
+:root {
+    /* ==========================================================================
+     COLORS - BACKGROUNDS
+     ========================================================================== */
+
+    --background: #f3f4f6;
+    /* Cool Gray 100 */
+    --surface: #ffffff;
+    /* White */
+    --surface-muted: #f9fafb;
+    /* Cool Gray 50 */
+
+    /* ==========================================================================
+     COLORS - TEXT
+     ========================================================================== */
+
+    --text-main: #111827;
+    /* Gray 900 */
+    --text-secondary: #6b7280;
+    /* Gray 500 */
+    --text-light: #9ca3af;
+    /* Gray 400 */
+
+    /* ==========================================================================
+     COLORS - BORDERS
+     ========================================================================== */
+
+    --border: #e5e7eb;
+    /* Gray 200 */
+    --border-focus: #d1d5db;
+    /* Gray 300 */
+
+    /* ==========================================================================
+     COLORS - PRIMARY (Brand)
+     ========================================================================== */
+
+    --primary: #111827;
+    /* Gray 900 */
+    --primary-hover: #374151;
+    /* Gray 700 */
+    --primary-light: #f3f4f6;
+    /* Gray 100 */
+
+    /* ==========================================================================
+     COLORS - ACCENT (CTA)
+     ========================================================================== */
+
+    --accent: #e11d48;
+    /* Rose 600 */
+    --accent-hover: #be123c;
+    /* Rose 700 */
+
+    /* ==========================================================================
+     COLORS - SEMANTIC
+     ========================================================================== */
+
+    --success: #10b981;
+    /* Emerald 500 */
+    --success-bg: #ecfdf5;
+    --success-border: #d1fae5;
+
+    --warning: #f59e0b;
+    /* Amber 500 */
+    --warning-bg: #fffbeb;
+    --warning-border: #fef3c7;
+
+    --danger: #ef4444;
+    /* Red 500 */
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+    --danger-border-hover: #fca5a5;
+
+    --info: #3b82f6;
+    /* Blue 500 */
+    --info-bg: #eff6ff;
+    --info-border: #dbeafe;
+
+    --purple: #8b5cf6;
+    /* Violet 500 */
+    --purple-bg: #f5f3ff;
+    --purple-border: #ede9fe;
+
+    /* ==========================================================================
+     SHADOWS
+     ========================================================================== */
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-accent: 0 4px 12px rgba(225, 29, 72, 0.3);
+    --shadow-accent-intense: 0 10px 25px -5px rgba(225, 29, 72, 0.4);
+
+    /* ==========================================================================
+     BORDER RADIUS
+     ========================================================================== */
+
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 50%;
+
+    /* ==========================================================================
+     SPACING
+     ========================================================================== */
+
+    --spacing-2xs: 4px;
+    --spacing-xs: 6px;
+    --spacing-1: 8px;
+    --spacing-sm: 12px;
+    --spacing-2: 16px;
+    --spacing-md: 20px;
+    --spacing-3: 24px;
+    --spacing-lg: 32px;
+    --spacing-xl: 48px;
+    --spacing-2xl: 64px;
+
+    /* ==========================================================================
+     TYPOGRAPHY - SIZES
+     ========================================================================== */
+
+    --font-size-2xs: 10px;
+    --font-size-xs: 11px;
+    --font-size-sm: 12px;
+    --font-size-13: 13px;
+    --font-size-base: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 28px;
+    --font-size-4xl: 32px;
+
+    /* ==========================================================================
+     TYPOGRAPHY - FAMILIES
+     ========================================================================== */
+
+    --font-heading: 'Public Sans', sans-serif;
+    --font-body: 'Public Sans', sans-serif;
+
+    /* ==========================================================================
+     COMPONENT HEIGHTS
+     ========================================================================== */
+
+    --height-input: 44px;
+    --height-button-sm: 32px;
+    --height-mobile-header: 60px;
+
+    /* ==========================================================================
+     Z-INDEX SCALE
+     ========================================================================== */
+
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-fixed: 300;
+    --z-modal-backdrop: 400;
+    --z-modal: 500;
+    --z-popover: 600;
+    --z-tooltip: 700;
+    --z-toast: 800;
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVE OVERRIDES
+   Mobile-first: 44px touch targets enforced on mobile
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    :root {
+        /* Enforce 44px touch targets for mobile (Apple HIG) */
+        --height-input: 44px;
+        --height-button-sm: 36px;
+
+        /* Reduce spacing for mobile */
+        --spacing-lg: 20px;
+        --spacing-xl: 32px;
+        --spacing-2xl: 48px;
+
+        /* Typography: H1 max 24px for mobile */
+        --font-size-h1-max: 24px;
+        --font-size-xl: 24px;
+        --font-size-2xl: 28px;
+        --font-size-3xl: 32px;
+
+        /* Mobile radius adjustments */
+        --radius: 8px;
+        --radius-lg: 12px;
+    }
+}

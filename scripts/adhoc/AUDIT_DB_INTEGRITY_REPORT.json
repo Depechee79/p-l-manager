@@ -1,0 +1,241 @@
+{
+  "timestamp": "2025-11-24T17:18:06.572Z",
+  "issues": [],
+  "warnings": [],
+  "passed": [
+    {
+      "category": "Model Consistency",
+      "check": "Colección cierres encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección facturas encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección albaranes encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección proveedores encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección productos encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección escandallos encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección inventarios encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección delivery encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección usuarios encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Colección roles encontrada"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo Product definido"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo Provider definido"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo Invoice definido"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo InventoryItem definido"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo Escandallo definido"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo Cierre definido"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo DeliveryRecord definido"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo AppUser definido"
+    },
+    {
+      "category": "Model Consistency",
+      "check": "Tipo Role definido"
+    },
+    {
+      "category": "Foreign Keys",
+      "check": "Relación Product.proveedorId -> Provider.id verificada"
+    },
+    {
+      "category": "Foreign Keys",
+      "check": "Relación Invoice.proveedorId -> Provider.id verificada"
+    },
+    {
+      "category": "Foreign Keys",
+      "check": "Relación InvoiceProduct.productoId -> Product.id verificada"
+    },
+    {
+      "category": "Foreign Keys",
+      "check": "Relación InventoryProductCount.productoId -> Product.id verificada"
+    },
+    {
+      "category": "Foreign Keys",
+      "check": "Relación Escandallo.ingredientes[].productoId -> Product.id verificada"
+    },
+    {
+      "category": "Foreign Keys",
+      "check": "Relación AppUser.rolId -> Role.id verificada"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo nombre en Product es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo proveedorId en Product es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo unidadBase en Product es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo precioCompra en Product es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo nombre en Provider es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo cif en Provider es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo contacto en Provider es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo numeroFactura en Invoice es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo proveedorId en Invoice es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo fecha en Invoice es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo total en Invoice es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo fecha en Cierre es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo turno en Cierre es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo nombre en Escandallo es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo ingredientes en Escandallo es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo nombre en AppUser es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo rolId en AppUser es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo activo en AppUser es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo nombre en Role es requerido"
+    },
+    {
+      "category": "Critical Fields",
+      "check": "Campo permisos en Role es requerido"
+    }
+  ],
+  "summary": {
+    "totalChecks": 55,
+    "passed": 45,
+    "failed": 0,
+    "warnings": 0
+  },
+  "relationships": {
+    "valid": [
+      {
+        "from": "Product",
+        "field": "proveedorId",
+        "to": "Provider",
+        "required": true,
+        "description": "Product.proveedorId -> Provider.id"
+      },
+      {
+        "from": "Invoice",
+        "field": "proveedorId",
+        "to": "Provider",
+        "required": true,
+        "description": "Invoice.proveedorId -> Provider.id"
+      },
+      {
+        "from": "InvoiceProduct",
+        "field": "productoId",
+        "to": "Product",
+        "required": false,
+        "description": "InvoiceProduct.productoId -> Product.id"
+      },
+      {
+        "from": "InventoryProductCount",
+        "field": "productoId",
+        "to": "Product",
+        "required": true,
+        "description": "InventoryProductCount.productoId -> Product.id"
+      },
+      {
+        "from": "EscandaloIngrediente",
+        "field": "productoId",
+        "to": "Product",
+        "required": true,
+        "description": "Escandallo.ingredientes[].productoId -> Product.id"
+      },
+      {
+        "from": "AppUser",
+        "field": "rolId",
+        "to": "Role",
+        "required": true,
+        "description": "AppUser.rolId -> Role.id"
+      }
+    ],
+    "invalid": [],
+    "orphaned": []
+  }
+}

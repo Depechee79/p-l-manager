@@ -9,38 +9,63 @@ Sistema completo de gestión de pérdidas y ganancias para restaurantes y cafete
 - **Escandallos**: Cálculo de costes de platos con ingredientes y márgenes
 - **P&L Completo**: Cuenta de explotación profesional con KPIs
 - **Diseño Moderno**: Sistema UX/UI con paleta corporativa y tipografía Inter
-- **100% Offline**: Funciona sin conexión, datos en localStorage
+- **🔥 Firebase Sync**: Sincronización automática con Firestore
+- **📱 Offline First**: Funciona sin conexión, sincroniza cuando hay internet
 
 ## 🚀 Tecnologías
 
-- HTML5 + Vanilla JavaScript ES6
-- Tesseract.js (OCR)
-- PDF.js (lectura de PDFs)
-- localStorage (persistencia)
-- CSS moderno con sistema de diseño cohesivo
-- Tipografía Google Fonts (Inter)
+- **Frontend**: React 19 + TypeScript 5.9
+- **Build**: Vite 7.2 
+- **Testing**: Vitest 4.0 + React Testing Library (319 tests ✅)
+- **Database**: Firebase Firestore (cloud sync)
+- **Routing**: React Router DOM 7
+- **State**: Context API + Custom Hooks
+- **OCR**: Tesseract.js + PDF.js
+- **Storage**: localStorage + Firestore
 
 ## 📦 Instalación
 
 1. Clona el repositorio:
 ```bash
-git clone https://github.com/TU_USUARIO/pnl-manager.git
-cd pnl-manager
+git clone https://github.com/Depechee79/p-l-manager.git
+cd p-l-manager
 ```
 
-2. Abre `app/index.html` en tu navegador
-   - O usa un servidor local: `python -m http.server 8000`
+2. Instala dependencias:
+```bash
+npm install
+```
+
+3. Configura Firebase (opcional, para sincronización en la nube):
+```bash
+cp .env.example .env
+# Edita .env con tus credenciales de Firebase
+```
+   Ver [FIREBASE_SETUP.md](FIREBASE_SETUP.md) para instrucciones detalladas
+
+4. Ejecuta el proyecto:
+```bash
+npm run dev          # Desarrollo
+npm run build        # Producción
+npm test             # Tests (319 tests)
+```
 
 ## 📂 Estructura
 
 ```
 P&L/
-├── app/
-│   ├── index.html      # Interfaz principal
-│   ├── app.js          # Lógica completa (2545 líneas)
-│   └── styles.css      # Estilos (1400+ líneas)
-├── PROJECT_BIBLE.md    # Documentación técnica completa
-├── modernize_ui.dm     # Plan de diseño UX
+├── src/
+│   ├── components/      # Componentes React (66 tests)
+│   ├── pages/           # Páginas principales (61 tests)
+│   ├── hooks/           # Custom hooks (50 tests)
+│   ├── services/        # Servicios de negocio (88 tests)
+│   ├── context/         # Estado global (9 tests)
+│   ├── utils/           # Utilidades (37 tests)
+│   ├── types/           # Tipos TypeScript
+│   ├── config/          # Configuración Firebase
+│   └── App.tsx          # Aplicación principal (8 tests)
+├── .env.example         # Plantilla variables entorno
+├── FIREBASE_SETUP.md    # Guía configuración Firebase
 └── README.md
 ```
 
