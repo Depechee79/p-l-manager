@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { useDatabase } from '@hooks';
 import { PnLService } from '../../../services/pnl-service';
 import { useRestaurantContext } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { formatDate, formatCurrency } from '@utils';
-import type { Cierre, Invoice, Product } from '@types';
+import type { Cierre, Invoice, Product, DeliveryRecord, Escandallo, PnLManualEntry, Nomina, GastoFijo, InventoryItem } from '@types';
 
 export type DashboardPeriod = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
@@ -42,10 +43,12 @@ export const useDashboardMetrics = () => {
     const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('month');
     const [viewMode, setViewMode] = useState<'single' | 'consolidated'>('single');
 
-    let restaurantContext: any = null;
+    let restaurantContext: ReturnType<typeof useRestaurantContext> | null = null;
     try {
         restaurantContext = useRestaurantContext();
-    } catch (e) { }
+    } catch (error: unknown) {
+        logger.warn('useDashboardMetrics: RestaurantContext not available', error instanceof Error ? error.message : String(error));
+    }
 
     const hasMultipleRestaurants = restaurantContext && restaurantContext.restaurants.length > 1;
 
@@ -121,14 +124,14 @@ export const useDashboardMetrics = () => {
             { month: currentDate.getMonth(), year: currentDate.getFullYear() },
             filteredData.cierres,
             filteredData.facturas,
-            (db.delivery || []) as any[],
-            (db.pnl_adjustments || []) as any[],
+            (db.delivery || []) as DeliveryRecord[],
+            (db.pnl_adjustments || []) as PnLManualEntry[],
             restaurantContext?.currentRestaurant?.id,
-            (db.nominas || []) as any[],
-            (db.gastosFijos || []) as any[]
+            (db.nominas || []) as Nomina[],
+            (db.gastosFijos || []) as GastoFijo[]
         );
 
-        const escandallos = (db.escandallos || []) as any[];
+        const escandallos = (db.escandallos || []) as Escandallo[];
         const costeTeorico = escandallos.reduce((sum, e) => sum + (e.costeTotalNeto || 0), 0);
         const costeReal = filteredData.facturas.reduce((sum, f) => sum + (f.total || 0), 0);
         const diferenciaCoste = costeReal - costeTeorico;
@@ -215,7 +218,7 @@ export const useDashboardMetrics = () => {
             }
         }
 
-        const inventarios = (db.inventarios as any[] || []);
+        const inventarios = (db.inventarios as InventoryItem[] || []);
         if (inventarios.length > 0) {
             const ultimoInventario = inventarios
                 .map((inv) => ({ ...inv, fecha: new Date(inv.fecha || inv.createdAt || '') }))

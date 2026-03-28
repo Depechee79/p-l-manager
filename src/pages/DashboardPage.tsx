@@ -1,15 +1,16 @@
 /**
  * DashboardPage - Multi-Restaurant Dashboard
- * 
- * Shows consolidated KPIs with restaurant ranking when multiple
- * restaurants are available.
- * 
+ *
+ * Session 007: Updated with V2 design system
+ * - Removed StickyPageHeader (route shown in topbar breadcrumb)
+ * - Using PageLayoutV2 for sticky filters
+ *
  * @audit AUDIT-02 - Added restaurant ranking and selector
  * @audit OPS-02 - Replaced Math.random() with real data from cierres
  */
 import React, { useMemo } from 'react';
-import { Select, PageHeader } from '@/components';
-import { BarChart3 } from 'lucide-react';
+import { PageContainer, PageLayoutV2, ActionHeaderV2, FilterCardV2, FilterInputV2, FilterSelect, type TabV2 } from '@shared/components';
+import { logger } from '@core/services/LoggerService';
 import {
   useDashboardMetrics,
   KPIGrid,
@@ -20,8 +21,16 @@ import {
 } from '@/features/dashboard';
 import type { RestaurantKPI } from '@/features/dashboard';
 import { useRestaurantContext, useDatabase } from '@core';
-import { Button } from '@/shared/components';
+import { useUserPermissions } from '@shared/hooks/useUserPermissions';
 import type { Cierre, Invoice } from '@/types';
+
+const PERIOD_TABS: TabV2[] = [
+  { id: 'day', label: 'Día' },
+  { id: 'week', label: 'Semana' },
+  { id: 'month', label: 'Mes' },
+  { id: 'quarter', label: 'Trimestre' },
+  { id: 'year', label: 'Año' },
+];
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -36,6 +45,10 @@ export const DashboardPage: React.FC = () => {
   } = useDashboardMetrics();
 
   const { db } = useDatabase();
+  const { hasPermission } = useUserPermissions();
+
+  // Permission check for multi-restaurant features
+  const canViewRestaurants = hasPermission('restaurantes.view');
 
   // AUDIT-FIX: Load data on demand (R-14)
   React.useEffect(() => {
@@ -52,8 +65,8 @@ export const DashboardPage: React.FC = () => {
   let restaurantContext: ReturnType<typeof useRestaurantContext> | null = null;
   try {
     restaurantContext = useRestaurantContext();
-  } catch (e) {
-    // Not in a RestaurantProvider
+  } catch (error: unknown) {
+    logger.warn('DashboardPage: RestaurantContext not available', error instanceof Error ? error.message : String(error));
   }
 
   const restaurants = restaurantContext?.restaurants || [];
@@ -122,94 +135,79 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const periodLabels: Record<string, string> = {
-    day: 'Día',
-    week: 'Semana',
-    month: 'Mes',
-    quarter: 'Trimestre',
-    year: 'Año',
-  };
+  // Restaurant options for filter
+  const restaurantOptions = useMemo(() => {
+    const options = [{ value: 'all', label: 'Todos los Restaurantes' }];
+    restaurants.forEach(r => {
+      options.push({ value: String(r.id), label: r.nombre || String(r.id) });
+    });
+    return options;
+  }, [restaurants]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)', padding: 'var(--spacing-md)' }}>
-      {/* Header with PageHeader component (R-13) */}
-      <PageHeader
-        title={`Dashboard ${viewMode === 'consolidated' && hasMultipleRestaurants ? '(Consolidado)' : ''}`}
-        description={
-          viewMode === 'consolidated' && hasMultipleRestaurants
-            ? 'Vista consolidada de todos los restaurantes'
-            : currentRestaurant?.nombre || 'Resumen de tu negocio'
-        }
-        icon={<BarChart3 size={28} />}
-        action={
-          <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Restaurant Selector - NEW for AUDIT-02 */}
+    <PageContainer>
+      <PageLayoutV2
+        header={
+          <>
+            {/* Period Tabs */}
+            <ActionHeaderV2
+              tabs={PERIOD_TABS}
+              activeTab={selectedPeriod}
+              onTabChange={(id) => setSelectedPeriod(id as typeof selectedPeriod)}
+            />
+
+            {/* Restaurant Filter (only if multiple) */}
             {hasMultipleRestaurants && (
-              <Select
-                label="Restaurante"
-                value={viewMode === 'consolidated' ? 'all' : String(currentRestaurant?.id || '')}
-                onChange={(value: string) => {
-                  if (value === 'all') {
-                    setViewMode('consolidated');
-                  } else {
-                    setViewMode('single');
-                    handleSwitchRestaurant(value);
-                  }
-                }}
-                options={[
-                  { value: 'all', label: '📊 Todos los Restaurantes' },
-                  ...restaurants.map(r => ({
-                    value: String(r.id),
-                    label: r.nombre || String(r.id),
-                  })),
-                ]}
-                style={{ minWidth: '200px' }}
-              />
+              <FilterCardV2 columns={1}>
+                <FilterInputV2 label="Restaurante">
+                  <FilterSelect
+                    value={viewMode === 'consolidated' ? 'all' : String(currentRestaurant?.id || '')}
+                    onChange={(value) => {
+                      if (value === 'all') {
+                        setViewMode('consolidated');
+                      } else {
+                        setViewMode('single');
+                        handleSwitchRestaurant(value);
+                      }
+                    }}
+                    options={restaurantOptions}
+                  />
+                </FilterInputV2>
+              </FilterCardV2>
             )}
-          </div>
+          </>
         }
-      />
+      >
+        {/* KPI Cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
+          <KPIGrid kpis={kpis} period={selectedPeriod} />
 
-      {/* Period Selector */}
-      <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
-        {(['day', 'week', 'month', 'quarter', 'year'] as const).map((period) => (
-          <Button
-            key={period}
-            onClick={() => setSelectedPeriod(period)}
-            variant={selectedPeriod === period ? 'primary' : 'secondary'}
-          >
-            {periodLabels[period]}
-          </Button>
-        ))}
-      </div>
+          {/* Restaurant Ranking - Only visible to users with restaurantes.view permission */}
+          {canViewRestaurants && restaurantKPIs.length > 0 && (
+            <RestaurantRankingTable
+              restaurants={restaurantKPIs}
+              onSelectRestaurant={(id) => {
+                handleSwitchRestaurant(id);
+                setViewMode('single');
+              }}
+              selectedRestaurantId={currentRestaurant?.id ? String(currentRestaurant.id) : null}
+            />
+          )}
 
-      {/* KPI Cards */}
-      <KPIGrid kpis={kpis} period={selectedPeriod} />
+          {/* Middle Section: Quick Actions & Recent Activity */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 'var(--spacing-lg)',
+          }}>
+            <QuickActions />
+            <RecentActivity activities={recentActivity} />
+          </div>
 
-      {/* Restaurant Ranking - Always visible with demo data if no restaurants */}
-      {restaurantKPIs.length > 0 && (
-        <RestaurantRankingTable
-          restaurants={restaurantKPIs}
-          onSelectRestaurant={(id) => {
-            handleSwitchRestaurant(id);
-            setViewMode('single');
-          }}
-          selectedRestaurantId={currentRestaurant?.id ? String(currentRestaurant.id) : null}
-        />
-      )}
-
-      {/* Middle Section: Quick Actions & Recent Activity */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: 'var(--spacing-lg)',
-      }}>
-        <QuickActions />
-        <RecentActivity activities={recentActivity} />
-      </div>
-
-      {/* Alerts Section */}
-      <AlertsPanel alerts={alerts} />
-    </div>
+          {/* Alerts Section */}
+          <AlertsPanel alerts={alerts} />
+        </div>
+      </PageLayoutV2>
+    </PageContainer>
   );
 };

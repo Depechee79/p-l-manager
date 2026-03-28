@@ -239,5 +239,3 @@ export const RestaurantRankingTable: React.FC<RestaurantRankingTableProps> = ({
         </Card>
     );
 };
-
-export default RestaurantRankingTable;
