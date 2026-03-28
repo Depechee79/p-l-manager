@@ -11,18 +11,30 @@ React 19 + TypeScript 5.9 + Vite 7.2 + Firebase (pylhospitality) + Tailwind CSS 
 ## Arquitectura
 Single app (puerto 3004). Feature-based: src/core (infra), src/shared (design system), src/features (modulos), src/pages (composicion).
 
-## Estado
-- 5 sesiones completadas
-- 51 tests
-- Build OK
-- Gobernanza completa implantada (sesion #005)
+## Estado (28 marzo 2026)
+- 6 sesiones completadas
+- Plan TURMIX completo (14 fases, todo el codigo pasado por contratos)
+- tsc: 0 errores
+- Tests: 430 (273 passing, 156 failing preexistentes)
+- 0 `any`, 0 `console.log`, 0 `export default`, 0 catch sin tipo en produccion
 - 8 modulos existentes + 4 previstos
+- 15 commits en sesion #006 (sin push)
 
 ## Gobernanza
 - CLAUDE.md: constitucion del proyecto
 - .claude/rules/: 5 reglas (suprema + 4 dominio)
 - docs/contracts/: 12 contratos especializados
 - .claude/skills/: 6 skills (scanner, inspector, verificar, sesion, firebase-guide, design-system)
+
+## Decisiones tecnicas vigentes
+- DatabaseService usa CollectionTypeMap (tipado seguro desde sesion #006)
+- LoggerService usa `unknown[]` (cero `any`)
+- Helpers centralizados para casts: getField(), toRecord(), getRecord(), getDbStore()
+- useOptionalRestaurantContext() para providers opcionales (Rules of Hooks)
+- ShellUser tipo en layout (acepta User de AppContext y AppUser de Firestore)
+
+## Decisiones de producto pendientes
+Ver `docs/DECISIONES_PRODUCTO_PENDIENTES.md` — 4 decisiones que requieren input de Aitor.
 
 ## Clave
 - Aitor es director de restaurante, NO programador
