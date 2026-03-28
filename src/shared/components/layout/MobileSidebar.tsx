@@ -5,13 +5,13 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { OVERLAY_BACKDROP } from '@shared/tokens/colors';
-import type { AppUser } from '@types';
+import type { ShellUser } from './AppShellV2';
 import { NavLink } from './NavLink';
 import { UserSection } from './UserSection';
 import { navigation } from './navConfig';
 
 export interface MobileSidebarProps {
-    user?: AppUser | null;
+    user?: ShellUser | null;
     onLogout?: () => void;
     onClose: () => void;
 }
@@ -110,7 +110,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                 </nav>
 
                 {/* User Section */}
-                {user && <UserSection user={{ name: user.nombre }} onLogout={onLogout} />}
+                {user && <UserSection user={{ name: user.nombre ?? user.name ?? '' }} onLogout={onLogout} />}
             </aside>
         </>
     );

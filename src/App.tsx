@@ -1,14 +1,20 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useApp, RestaurantProvider, AppProvider, DatabaseProvider, runMigrationIfNeeded } from '@core';
-import { Layout, ProtectedRoute } from '@components';
-import { DashboardPage, ProvidersPage, InventariosPage, CierresPage, OCRPage, PnLPage, EscandallosPage, PersonalPage, TransfersPage, MermasPage, OrdersPage, MenuEngineeringPage, RestaurantConfigPage, RolesAdminPage, GastosFijosPage, NominasPage } from '@pages';
+import { ProtectedRoute } from '@components';
+import { AppShellV2 } from '@shared/components/layout';
+import { DashboardPage, AlmacenPage, CierresPage, OCRPage, PnLPage, EscandallosPage, PersonalPage, RestaurantConfigPage, LoginPage, SignUpPage, InvitationSignUpPage } from '@pages';
 import { useDatabase } from '@hooks';
 import { ToastProvider } from '@utils';
 
+/**
+ * AppShellV2 is now used for ALL routes (Canon Stitch design)
+ * Session 006: Expanded from /almacen and /docs to all routes
+ */
+
 // App content with routing
 const AppContent: React.FC = () => {
-  const { user, logout } = useApp();
+  const { user, logout, isAuthenticated } = useApp();
   const { db } = useDatabase();
 
   // Run migration on mount if needed
@@ -23,17 +29,31 @@ const AppContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [db]);
 
+  // Show auth pages if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/crear-negocio" element={<SignUpPage />} />
+          <Route path="/registro" element={<InvitationSignUpPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
   return (
     <BrowserRouter>
-      <Layout user={user as any} onLogout={logout}>
+      <AppShellV2 user={user} onLogout={logout}>
         <Routes>
+          {/* Main routes - Session 004 reorganization */}
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/ocr" element={<OCRPage />} />
-          <Route path="/proveedores" element={<ProvidersPage />} />
-          <Route path="/inventario" element={<Navigate to="/inventarios" replace />} />
-          <Route path="/inventarios" element={<InventariosPage />} />
+          <Route path="/docs" element={<OCRPage />} />
           <Route path="/cierres" element={<CierresPage />} />
           <Route path="/escandallos" element={<EscandallosPage />} />
+          <Route path="/almacen" element={<AlmacenPage />} />
+          <Route path="/equipo" element={<PersonalPage />} />
           {/* Protected routes - require specific permissions */}
           <Route
             path="/pnl"
@@ -45,28 +65,6 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
-            path="/gastos-fijos"
-            element={
-              <ProtectedRoute
-                element={<GastosFijosPage />}
-                requiredPermissions={['pnl.view']}
-              />
-            }
-          />
-          <Route
-            path="/nominas"
-            element={
-              <ProtectedRoute
-                element={<NominasPage />}
-                requiredPermissions={['usuarios.edit']}
-              />
-            }
-          />
-          <Route path="/equipo" element={<PersonalPage />} />
-          <Route path="/mermas" element={<MermasPage />} />
-          <Route path="/pedidos" element={<OrdersPage />} />
-          <Route path="/ingenieria-menu" element={<MenuEngineeringPage />} />
-          <Route
             path="/configuracion"
             element={
               <ProtectedRoute
@@ -75,21 +73,23 @@ const AppContent: React.FC = () => {
               />
             }
           />
-          <Route
-            path="/roles"
-            element={
-              <ProtectedRoute
-                element={<RolesAdminPage />}
-                requiredPermissions={['usuarios.edit']}
-              />
-            }
-          />
-          <Route path="/transferencias" element={<TransfersPage />} />
+          {/* Redirects for old/consolidated routes */}
+          <Route path="/ocr" element={<Navigate to="/docs" replace />} />
+          <Route path="/proveedores" element={<Navigate to="/almacen?tab=proveedores" replace />} />
+          <Route path="/transferencias" element={<Navigate to="/almacen?tab=traspasos" replace />} />
+          <Route path="/gastos-fijos" element={<Navigate to="/pnl?tab=gastos-fijos" replace />} />
+          <Route path="/inventario" element={<Navigate to="/almacen" replace />} />
+          <Route path="/inventarios" element={<Navigate to="/almacen" replace />} />
+          <Route path="/mermas" element={<Navigate to="/almacen?tab=mermas" replace />} />
+          <Route path="/pedidos" element={<Navigate to="/almacen?tab=pedidos" replace />} />
+          <Route path="/nominas" element={<Navigate to="/equipo" replace />} />
+          <Route path="/roles" element={<Navigate to="/configuracion?tab=roles" replace />} />
+          <Route path="/ingenieria-menu" element={<Navigate to="/escandallos?tab=analisis" replace />} />
           <Route path="/personal" element={<Navigate to="/equipo" replace />} />
           <Route path="/usuarios" element={<Navigate to="/equipo" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Layout>
+      </AppShellV2>
     </BrowserRouter>
   );
 };

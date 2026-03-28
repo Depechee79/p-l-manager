@@ -66,7 +66,7 @@ export const useUserPermissions = (): UseUserPermissionsResult => {
     const role = useMemo(() => {
         if (!user) return undefined;
         // Use rolId (Firestore field name)
-        return getRoleById(user.rolId);
+        return getRoleById(user.roleId);
     }, [user]);
 
     const permissions = useMemo(() => {

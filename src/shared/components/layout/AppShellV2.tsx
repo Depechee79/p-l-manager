@@ -19,11 +19,17 @@ import { SidebarNavV2 } from './SidebarNavV2';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileSidebar } from './MobileSidebar';
 import { useIsDesktop } from '@shared/hooks';
-import type { AppUser } from '@types';
+export interface ShellUser {
+  name?: string;
+  nombre?: string;
+  email?: string;
+  roleId?: string | number;
+  rolId?: string | number;
+}
 
 export interface AppShellV2Props {
   children: ReactNode;
-  user?: AppUser | null;
+  user?: ShellUser | null;
   onLogout?: () => void;
 }
 

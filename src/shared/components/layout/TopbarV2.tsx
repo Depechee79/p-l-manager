@@ -17,10 +17,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, HelpCircle, ChevronRight, ChevronDown, Sparkles, User, LogOut, ExternalLink } from 'lucide-react';
 import { getRouteMeta } from '@shared/config/routeMeta';
 import { ACCENT_SHADOW } from '@shared/tokens/colors';
-import type { AppUser } from '@types';
+import type { ShellUser } from './AppShellV2';
 
 export interface TopbarV2Props {
-  user?: AppUser | null;
+  user?: ShellUser | null;
   onLogout?: () => void;
 }
 
