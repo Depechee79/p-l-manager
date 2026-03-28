@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, StepIndicator } from '@/shared/components';
-import { Button } from '@/shared/components';
+import { useState, useEffect, type FC } from 'react';
+import { Card, StepIndicator, Button } from '@/shared/components';
 import { X } from 'lucide-react';
 import type { Cierre } from '@types';
 import { ClosingFormData, INITIAL_FORM_STATE } from './wizard/types';
@@ -11,11 +10,11 @@ import { SummaryStep } from './wizard/steps/SummaryStep';
 
 interface ClosingWizardProps {
     initialData?: Cierre | null;
-    onSave: (data: any) => Promise<void>;
+    onSave: (data: Omit<Cierre, 'id'>) => Promise<void>;
     onCancel: () => void;
 }
 
-export const ClosingWizard: React.FC<ClosingWizardProps> = ({
+export const ClosingWizard: FC<ClosingWizardProps> = ({
     initialData,
     onSave,
     onCancel

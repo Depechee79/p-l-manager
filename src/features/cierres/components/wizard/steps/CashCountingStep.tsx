@@ -8,7 +8,7 @@
  * 
  * @audit AUDIT-03 - Optimized for less scrolling
  */
-import React, { useState } from 'react';
+import { useState, type FC } from 'react';
 import { Card, Input, Button } from '@/shared/components';
 import { ArrowRight, ArrowLeft, Banknote, ChevronDown, ChevronUp, Coins } from 'lucide-react';
 import { ClosingFormData } from '../types';
@@ -35,7 +35,7 @@ interface CollapsibleSectionProps {
     children: React.ReactNode;
 }
 
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
+const CollapsibleSection: FC<CollapsibleSectionProps> = ({
     title,
     icon,
     isOpen,
@@ -100,7 +100,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export const CashCountingStep: React.FC<CashCountingStepProps> = ({
+export const CashCountingStep: FC<CashCountingStepProps> = ({
     formData,
     setFormData,
     onNext,
@@ -301,7 +301,7 @@ export const CashCountingStep: React.FC<CashCountingStepProps> = ({
                 padding: 'var(--spacing-md)',
                 backgroundColor: 'var(--surface)',
                 borderTop: '1px solid var(--border)',
-                boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+                boxShadow: 'var(--shadow-md)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',

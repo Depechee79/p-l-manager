@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { Card, DatePicker, Select, Button } from '@/shared/components';
 import { ArrowRight } from 'lucide-react';
 import { ClosingFormData } from '../types';
@@ -9,7 +9,7 @@ interface ConfigurationStepProps {
     onNext: () => void;
 }
 
-export const ConfigurationStep: React.FC<ConfigurationStepProps> = ({
+export const ConfigurationStep: FC<ConfigurationStepProps> = ({
     formData,
     setFormData,
     onNext
@@ -37,7 +37,7 @@ export const ConfigurationStep: React.FC<ConfigurationStepProps> = ({
                 <Select
                     label="Turno *"
                     value={formData.turno}
-                    onChange={(value) => setFormData({ ...formData, turno: value as any })}
+                    onChange={(value) => setFormData({ ...formData, turno: value as ClosingFormData['turno'] })}
                     required
                     options={[
                         { value: 'dia_completo', label: 'Día completo' },

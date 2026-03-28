@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { Card, Input, Button, Select } from '@/shared/components';
 import { ArrowRight, ArrowLeft, CreditCard, Coins, Bike, Plus, X } from 'lucide-react';
 import { ClosingFormData } from '../types';
@@ -11,7 +11,7 @@ interface MethodsStepProps {
     onBack: () => void;
 }
 
-export const MethodsStep: React.FC<MethodsStepProps> = ({
+export const MethodsStep: FC<MethodsStepProps> = ({
     formData,
     setFormData,
     onNext,
@@ -26,7 +26,7 @@ export const MethodsStep: React.FC<MethodsStepProps> = ({
         });
     };
 
-    const updateDatafono = (index: number, field: keyof Datafono, value: any) => {
+    const updateDatafono = (index: number, field: keyof Datafono, value: string | number) => {
         const newDatafonos = [...formData.datafonos];
         newDatafonos[index] = { ...newDatafonos[index], [field]: value };
         const total = newDatafonos.reduce((acc, curr) => acc + curr.importe, 0);
@@ -47,7 +47,7 @@ export const MethodsStep: React.FC<MethodsStepProps> = ({
         });
     };
 
-    const updateOtroMedio = (index: number, field: keyof OtroMedio, value: any) => {
+    const updateOtroMedio = (index: number, field: keyof OtroMedio, value: string | number) => {
         const newOtros = [...formData.otrosMedios];
         newOtros[index] = { ...newOtros[index], [field]: value };
         const total = newOtros.reduce((acc, curr) => acc + curr.importe, 0);
@@ -68,7 +68,7 @@ export const MethodsStep: React.FC<MethodsStepProps> = ({
         });
     };
 
-    const updateDelivery = (index: number, field: string, value: any) => {
+    const updateDelivery = (index: number, field: string, value: string | number) => {
         const newDelivery = [...formData.deliveryBreakdown];
         newDelivery[index] = { ...newDelivery[index], [field]: value };
         const total = newDelivery.reduce((acc, curr) => acc + curr.importe, 0);
@@ -80,7 +80,6 @@ export const MethodsStep: React.FC<MethodsStepProps> = ({
         const total = newDelivery.reduce((acc, curr) => acc + curr.importe, 0);
         setFormData({ ...formData, deliveryBreakdown: newDelivery, totalDelivery: total });
     };
-
 
     return (
         <Card style={{ padding: 'var(--spacing-xl)' }}>

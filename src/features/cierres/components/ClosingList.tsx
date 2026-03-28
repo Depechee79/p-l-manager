@@ -1,40 +1,51 @@
-import React from 'react';
+/**
+ * ClosingList - Cash Closings List Component
+ *
+ * Session 007: Updated with V2 design system
+ * - FilterCardV2 for period filter
+ * - DataCardV2 for table and empty state
+ */
+import type { FC, MouseEvent } from 'react';
 import {
-    Plus,
-    Pencil,
-    Trash2,
-    CheckCircle,
-    AlertTriangle,
-    Banknote,
-    CreditCard,
-    Coins,
-    Share2,
+  Pencil,
+  Trash2,
+  CheckCircle,
+  AlertTriangle,
+  Banknote,
+  CreditCard,
+  Coins,
+  Share2,
+  Wallet,
 } from 'lucide-react';
-import { Button, Card, Table } from '@shared/components';
+import {
+  Button,
+  Table,
+  FilterCardV2,
+  FilterInputV2,
+  DataCardV2,
+} from '@shared/components';
 import { formatCurrency, formatDate } from '@utils/formatters';
 import type { Cierre } from '@types';
 
 interface ClosingListProps {
-    closings: Cierre[];
-    loading: boolean;
-    filterPeriod: string;
-    onFilterChange: (period: string) => void;
-    onNewClosing: () => void;
-    onEditClosing: (cierre: Cierre) => void;
-    onDeleteClosing: (cierre: Cierre) => void;
+  closings: Cierre[];
+  loading: boolean;
+  filterPeriod: string;
+  onFilterChange: (period: string) => void;
+  onEditClosing: (cierre: Cierre) => void;
+  onDeleteClosing: (cierre: Cierre) => void;
 }
 
-export const ClosingList: React.FC<ClosingListProps> = ({
-    closings,
-    loading,
-    filterPeriod,
-    onFilterChange,
-    onNewClosing,
-    onEditClosing,
-    onDeleteClosing,
+export const ClosingList: FC<ClosingListProps> = ({
+  closings,
+  loading,
+  filterPeriod,
+  onFilterChange,
+  onEditClosing,
+  onDeleteClosing,
 }) => {
-    const handleShare = (cierre: Cierre) => {
-        const text = `📊 Resumen Cierre - ${formatDate(cierre.fecha)} (${cierre.turno.toUpperCase()})
+  const handleShare = (cierre: Cierre) => {
+    const text = `📊 Resumen Cierre - ${formatDate(cierre.fecha)} (${cierre.turno.toUpperCase()})
 💰 Total Real: ${formatCurrency(cierre.totalReal)}
 💳 Tarjetas: ${formatCurrency(cierre.totalDatafonos)}
 💵 Efectivo: ${formatCurrency(cierre.efectivoContado)}
@@ -42,182 +53,177 @@ export const ClosingList: React.FC<ClosingListProps> = ({
 ${cierre.notasDescuadre ? `📝 Notas: ${cierre.notasDescuadre}` : ''}
 Sent from P&L Manager`;
 
-        const encodedText = encodeURIComponent(text);
+    const encodedText = encodeURIComponent(text);
 
-        // Simple share strategy
-        const menu = [
-            { label: 'WhatsApp', url: `https://wa.me/?text=${encodedText}` },
-            { label: 'Email', url: `mailto:?subject=Resumen Cierre ${cierre.fecha}&body=${encodedText}` }
-        ];
+    if (confirm(`¿Compartir resumen de ${cierre.fecha} por WhatsApp?`)) {
+      window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+    }
+  };
 
-        // For now, let's just use WhatsApp as primary or open a prompt
-        if (confirm(`¿Compartir resumen de ${cierre.fecha} por WhatsApp?`)) {
-            window.open(menu[0].url, '_blank');
-        }
-    };
-    return (
-        <>
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 'var(--spacing-lg)',
-                flexWrap: 'wrap',
-                gap: 'var(--spacing-md)'
-            }}>
-                <div style={{ flex: '1', minWidth: '200px', maxWidth: '250px' }}>
-                    <input
-                        type="month"
-                        value={filterPeriod}
-                        onChange={(e) => onFilterChange(e.target.value)}
-                        style={{
-                            padding: '0 16px',
-                            border: '1px solid var(--border)',
-                            borderRadius: 'var(--radius)',
-                            fontSize: 'var(--font-size-base)',
-                            width: '100%',
-                            backgroundColor: 'var(--surface-muted)',
-                            height: '40px',
-                            boxSizing: 'border-box',
-                        }}
-                    />
+  // Initialize with current month if empty
+  const effectiveFilterPeriod = filterPeriod || new Date().toISOString().substring(0, 7);
+
+  // Calculate KPIs
+  const totalReal = closings.reduce((sum, c) => sum + (c.totalReal || 0), 0);
+  const closingsCuadran = closings.filter(c => Math.abs(c.descuadreTotal) <= 0.05).length;
+
+  return (
+    <div className="flex flex-col gap-md">
+      {/* Period Filter */}
+      <FilterCardV2 columns={2}>
+        <FilterInputV2 label="Periodo">
+          <input
+            type="month"
+            value={effectiveFilterPeriod}
+            onChange={(e) => onFilterChange(e.target.value)}
+            className="w-full h-[var(--app-filter-input-h)] px-3 bg-surface-muted border-none rounded-[var(--app-interactive-radius)] text-[var(--app-filter-input-size)] text-text-main outline-none"
+          />
+        </FilterInputV2>
+        <div />
+      </FilterCardV2>
+
+      {/* Data Card */}
+      {loading ? (
+        <DataCardV2
+          isEmpty
+          emptyTitle="Cargando cierres..."
+          emptyDescription="Por favor espera mientras se cargan los datos."
+          emptyIcon={<Wallet size={32} color="var(--text-light)" strokeWidth={1.5} />}
+        />
+      ) : closings.length === 0 ? (
+        <DataCardV2
+          isEmpty
+          emptyTitle="No hay cierres registrados"
+          emptyDescription="Crea un nuevo cierre para comenzar a registrar la caja."
+          emptyIcon={<Wallet size={32} color="var(--text-light)" strokeWidth={1.5} />}
+        />
+      ) : (
+        <DataCardV2
+          kpis={[
+            { label: 'Cierres', value: closings.length },
+            { label: 'Total Periodo', value: formatCurrency(totalReal) },
+            {
+              label: 'Cuadran',
+              value: `${closingsCuadran}/${closings.length}`,
+              variant: closingsCuadran === closings.length ? 'success' : 'warning',
+            },
+          ]}
+          noPadding
+        >
+          <Table
+            data={closings}
+            columns={[
+              {
+                key: 'fecha',
+                header: 'Fecha',
+                render: (_value: Cierre[keyof Cierre], cierre: Cierre) => formatDate(cierre.fecha),
+                sortable: true,
+              },
+              {
+                key: 'turno',
+                header: 'Turno',
+                render: (_value: Cierre[keyof Cierre], cierre: Cierre) =>
+                  cierre.turno.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                sortable: true,
+              },
+              {
+                key: 'totalReal',
+                header: 'Total Real',
+                render: (_value: Cierre[keyof Cierre], cierre: Cierre) => formatCurrency(cierre.totalReal),
+                sortable: true,
+              },
+              {
+                key: 'descuadreTotal',
+                header: 'Estado',
+                render: (_value: Cierre[keyof Cierre], cierre: Cierre) => {
+                  const cuadra = Math.abs(cierre.descuadreTotal) <= 0.05;
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-xs px-2 py-0.5 rounded-full text-xs font-semibold ${cuadra ? 'bg-[var(--success-light)] text-success' : 'bg-[var(--danger-light)] text-danger'}`}
+                    >
+                      {cuadra ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+                      {cuadra ? 'CUADRA' : `${formatCurrency(Math.abs(cierre.descuadreTotal))}`}
+                    </span>
+                  );
+                },
+                sortable: true,
+              },
+            ]}
+            hoverable
+            striped
+            expandedRowRender={(cierre: Cierre) => (
+              <div className="p-lg">
+                <div className="flex justify-end gap-sm mb-lg">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e: MouseEvent) => {
+                      e.stopPropagation();
+                      onEditClosing(cierre);
+                    }}
+                  >
+                    <Pencil size={14} /> Editar
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e: MouseEvent) => {
+                      e.stopPropagation();
+                      handleShare(cierre);
+                    }}
+                  >
+                    <Share2 size={14} /> Compartir
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={(e: MouseEvent) => {
+                      e.stopPropagation();
+                      onDeleteClosing(cierre);
+                    }}
+                  >
+                    <Trash2 size={14} /> Eliminar
+                  </Button>
                 </div>
-                <Button onClick={onNewClosing} variant="primary">
-                    <Plus size={16} /> Nuevo Cierre
-                </Button>
-            </div>
-
-            {loading ? (
-                <Card>
-                    <div style={{ textAlign: 'center', padding: 'var(--spacing-2xl)', color: 'var(--text-secondary)' }}>
-                        Cargando cierres...
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-md">
+                  <div>
+                    <div className="text-text-secondary text-xs mb-xs flex items-center gap-xs uppercase">
+                      <Banknote size={14} /> Efectivo
                     </div>
-                </Card>
-            ) : closings.length === 0 ? (
-                <Card>
-                    <div style={{ textAlign: 'center', padding: 'var(--spacing-2xl)', color: 'var(--text-secondary)' }}>
-                        No hay cierres registrados
+                    <div className="font-semibold text-text-main text-lg">
+                      {formatCurrency(cierre.efectivoContado)}
                     </div>
-                </Card>
-            ) : (
-                <Table
-                    data={closings}
-                    columns={[
-                        {
-                            key: 'fecha',
-                            header: 'Fecha',
-                            render: (_: any, cierre: Cierre) => formatDate(cierre.fecha),
-                            sortable: true
-                        },
-                        {
-                            key: 'turno',
-                            header: 'Turno',
-                            render: (_: any, cierre: Cierre) => cierre.turno.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-                            sortable: true
-                        },
-                        {
-                            key: 'totalReal',
-                            header: 'Total Real',
-                            render: (_: any, cierre: Cierre) => formatCurrency(cierre.totalReal),
-                            sortable: true
-                        },
-                        {
-                            key: 'descuadreTotal',
-                            header: 'Estado',
-                            render: (_: any, cierre: Cierre) => {
-                                const cuadra = Math.abs(cierre.descuadreTotal) <= 0.05;
-                                return (
-                                    <span
-                                        className={`badge ${cuadra ? 'badge-success' : 'badge-danger'}`}
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 'var(--spacing-xs)'
-                                        }}
-                                    >
-                                        {cuadra ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
-                                        {cuadra ? 'CUADRA' : `${formatCurrency(Math.abs(cierre.descuadreTotal))}`}
-                                    </span>
-                                );
-                            },
-                            sortable: true
-                        }
-                    ]}
-                    onRowClick={(cierre: Cierre) => onEditClosing(cierre)}
-                    hoverable
-                    striped
-                    expandedRowRender={(cierre: Cierre) => (
-                        <div style={{ padding: 'var(--spacing-lg)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-lg)' }}>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={(e: React.MouseEvent) => {
-                                        e.stopPropagation();
-                                        onEditClosing(cierre);
-                                    }}
-                                >
-                                    <Pencil size={14} /> Editar
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={(e: React.MouseEvent) => {
-                                        e.stopPropagation();
-                                        handleShare(cierre);
-                                    }}
-                                >
-                                    <Share2 size={14} /> Compartir
-                                </Button>
-                                <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={(e: React.MouseEvent) => {
-                                        e.stopPropagation();
-                                        onDeleteClosing(cierre);
-                                    }}
-                                >
-                                    <Trash2 size={14} /> Eliminar
-                                </Button>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--spacing-md)' }}>
-                                <div>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-xs)', marginBottom: 'var(--spacing-xs)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', textTransform: 'uppercase' }}>
-                                        <Banknote size={14} /> Efectivo
-                                    </div>
-                                    <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: 'var(--font-size-lg)' }}>
-                                        {formatCurrency(cierre.efectivoContado)}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-xs)', marginBottom: 'var(--spacing-xs)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', textTransform: 'uppercase' }}>
-                                        <CreditCard size={14} /> Tarjetas
-                                    </div>
-                                    <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: 'var(--font-size-lg)' }}>
-                                        {formatCurrency(cierre.totalDatafonos)}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-xs)', marginBottom: 'var(--spacing-xs)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', textTransform: 'uppercase' }}>
-                                        <Coins size={14} /> Otros
-                                    </div>
-                                    <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: 'var(--font-size-lg)' }}>
-                                        {formatCurrency(cierre.totalOtrosMedios)}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-xs)', marginBottom: 'var(--spacing-xs)', textTransform: 'uppercase' }}>
-                                        Total POS
-                                    </div>
-                                    <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: 'var(--font-size-lg)' }}>
-                                        {formatCurrency(cierre.totalPos)}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                />
+                  </div>
+                  <div>
+                    <div className="text-text-secondary text-xs mb-xs flex items-center gap-xs uppercase">
+                      <CreditCard size={14} /> Tarjetas
+                    </div>
+                    <div className="font-semibold text-text-main text-lg">
+                      {formatCurrency(cierre.totalDatafonos)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-text-secondary text-xs mb-xs flex items-center gap-xs uppercase">
+                      <Coins size={14} /> Otros
+                    </div>
+                    <div className="font-semibold text-text-main text-lg">
+                      {formatCurrency(cierre.totalOtrosMedios)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-text-secondary text-xs mb-xs uppercase">
+                      Total POS
+                    </div>
+                    <div className="font-semibold text-text-main text-lg">
+                      {formatCurrency(cierre.totalPos)}
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
-        </>
-    );
+          />
+        </DataCardV2>
+      )}
+    </div>
+  );
 };

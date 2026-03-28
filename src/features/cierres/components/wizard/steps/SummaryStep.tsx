@@ -1,8 +1,15 @@
-import React from 'react';
+import type { FC } from 'react';
 import { Card, Input, Button, Table } from '@/shared/components';
 import { ArrowLeft, Save, CheckCircle, AlertTriangle } from 'lucide-react';
 import { ClosingFormData } from '../types';
 import { formatCurrency } from '@/utils/formatters';
+
+interface ComparisonRow {
+    concept: string;
+    real: number;
+    pos: number;
+    isTotal?: boolean;
+}
 
 interface SummaryStepProps {
     formData: ClosingFormData;
@@ -11,7 +18,7 @@ interface SummaryStepProps {
     onSave: () => void;
 }
 
-export const SummaryStep: React.FC<SummaryStepProps> = ({
+export const SummaryStep: FC<SummaryStepProps> = ({
     formData,
     setFormData,
     onBack,
@@ -86,13 +93,13 @@ export const SummaryStep: React.FC<SummaryStepProps> = ({
                         { concept: 'TOTAL', real: totalReal, pos: totalPos, isTotal: true }
                     ]}
                     columns={[
-                        { key: 'concept', header: 'Concepto', render: (_, r: any) => <span style={{ fontWeight: r.isTotal ? 'bold' : 'normal' }}>{r.concept}</span> },
-                        { key: 'real', header: 'Real', render: (_, r: any) => <span style={{ fontWeight: r.isTotal ? 'bold' : 'normal' }}>{formatCurrency(r.real)}</span> },
-                        { key: 'pos', header: 'POS', render: (_, r: any) => <span style={{ fontWeight: r.isTotal ? 'bold' : 'normal' }}>{formatCurrency(r.pos)}</span> },
+                        { key: 'concept', header: 'Concepto', render: (_v: ComparisonRow[keyof ComparisonRow], r: ComparisonRow) => <span style={{ fontWeight: r.isTotal ? 'bold' : 'normal' }}>{r.concept}</span> },
+                        { key: 'real', header: 'Real', render: (_v: ComparisonRow[keyof ComparisonRow], r: ComparisonRow) => <span style={{ fontWeight: r.isTotal ? 'bold' : 'normal' }}>{formatCurrency(r.real)}</span> },
+                        { key: 'pos', header: 'POS', render: (_v: ComparisonRow[keyof ComparisonRow], r: ComparisonRow) => <span style={{ fontWeight: r.isTotal ? 'bold' : 'normal' }}>{formatCurrency(r.pos)}</span> },
                         {
                             key: 'diff',
                             header: 'Dif.',
-                            render: (_, r: any) => {
+                            render: (_v: ComparisonRow[keyof ComparisonRow], r: ComparisonRow) => {
                                 const diff = r.real - r.pos;
                                 const color = Math.abs(diff) <= 0.05 ? 'var(--success)' : 'var(--danger)';
                                 return <span style={{ color, fontWeight: 'bold' }}>{formatCurrency(diff)}</span>
