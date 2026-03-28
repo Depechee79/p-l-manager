@@ -1,13 +1,36 @@
+/**
+ * DocsPage (formerly OCRPage) - Unified Document Management
+ *
+ * Session 004: Renamed to Docs, unified view for all document types
+ * Types: facturas, albaranes, tickets, recibos, cierres, nominas
+ */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useToast } from '../utils/toast';
 import type { OCRDocumentType, ExtractedData } from '../types/ocr.types';
 import { useDatabase } from '../hooks';
 import { formatDate, formatCurrency } from '../utils/formatters';
+import { PageContainer } from '@shared/components';
+import { logger } from '@core/services/LoggerService';
 
 // Import extracted components
-import { OCRDocumentList, OCRDocumentDetail, OCRWizard } from '../features/ocr';
+import { OCRDocumentList, OCRDocumentDetail, OCRWizard, type OCRListItem } from '../features/ocr';
 
 type ViewMode = 'list' | 'detail' | 'wizard';
+
+/** Internal doc representation for the unified list */
+interface OCRPageDocument {
+  id: string | number;
+  type: string;
+  displayDate?: string;
+  displayName?: string;
+  displayAmount?: number;
+  createdAt?: string;
+  archivoData?: string;
+  proveedor?: string;
+  numeroFactura?: string;
+  numero?: string;
+  [key: string]: unknown;
+}
 
 export const OCRPage: React.FC = () => {
   const { db } = useDatabase();
@@ -15,13 +38,13 @@ export const OCRPage: React.FC = () => {
 
   // Navigation State
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<OCRPageDocument | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
   // List State
   const [listFilter, setListFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [recentDocs, setRecentDocs] = useState<any[]>([]);
+  const [recentDocs, setRecentDocs] = useState<OCRPageDocument[]>([]);
 
   // Wizard State - For initial values when editing or starting
   const [wizardStep, setWizardStep] = useState<number>(1);
@@ -36,38 +59,48 @@ export const OCRPage: React.FC = () => {
       try {
         await db.syncFromCloud();
         loadDocuments();
-      } catch (err) {
-        console.error("Auto-sync failed", err);
+      } catch (error: unknown) {
+        logger.error("Auto-sync failed", error instanceof Error ? error.message : String(error));
       }
     };
     initData();
   }, [db]);
 
   const loadDocuments = () => {
-    const docs: any[] = [];
-    const mapDoc = (doc: any, type: string) => ({
-      ...doc,
-      type,
-      displayDate: doc.fecha || doc.fechaFactura || doc.fechaAlbaran,
-      displayAmount: doc.total || doc.totalFactura || doc.totalAlbaran || doc.totalReal,
-      displayName: doc.proveedor || doc.proveedorNombre || (type === 'Cierre' ? doc.turno : 'Desconocido')
-    });
+    const docs: OCRPageDocument[] = [];
 
-    // Only load documents that are synced from Firebase
+    const mapDoc = <T extends { id: string | number }>(doc: T, type: string): OCRPageDocument => {
+      const d = doc as T & Record<string, unknown>;
+      return {
+        ...d,
+        id: doc.id,
+        type,
+        displayDate: (d.fecha || d.fechaFactura || d.fechaAlbaran || d.periodo) as string | undefined,
+        displayAmount: (d.total || d.totalFactura || d.totalAlbaran || d.totalReal || d.importeBruto) as number | undefined,
+        displayName: (d.proveedor || d.proveedorNombre ||
+          (type === 'Cierre' ? d.turno : null) ||
+          (type === 'Nomina' ? d.empleadoNombre : null) ||
+          'Desconocido') as string,
+      };
+    };
+
+    // Helper to check if doc is synced
+    const isSynced = <T extends { id: string | number; _synced?: boolean }>(d: T) =>
+      d._synced === true || (d.id && typeof d.id === 'string' && d.id.length > 10);
+
+    // Load all document types
     if (db.facturas) {
-      db.facturas
-        .filter(d => d._synced === true || (d.id && typeof d.id === 'string' && d.id.length > 10))
-        .forEach(d => docs.push(mapDoc(d, 'Factura')));
+      db.facturas.filter(isSynced).forEach(d => docs.push(mapDoc(d, 'Factura')));
     }
     if (db.albaranes) {
-      db.albaranes
-        .filter(d => d._synced === true || (d.id && typeof d.id === 'string' && d.id.length > 10))
-        .forEach(d => docs.push(mapDoc(d, 'Albarán')));
+      db.albaranes.filter(isSynced).forEach(d => docs.push(mapDoc(d, 'Albarán')));
     }
     if (db.cierres) {
-      db.cierres
-        .filter(d => d._synced === true || (d.id && typeof d.id === 'string' && d.id.length > 10))
-        .forEach(d => docs.push(mapDoc(d, 'Cierre')));
+      db.cierres.filter(isSynced).forEach(d => docs.push(mapDoc(d, 'Cierre')));
+    }
+    // Session 004: Include nominas in unified docs view
+    if (db.nominas) {
+      (db.nominas as Array<{ id: string | number; _synced?: boolean }>).filter(isSynced).forEach(d => docs.push(mapDoc(d, 'Nomina')));
     }
 
     docs.sort((a, b) => {
@@ -77,7 +110,9 @@ export const OCRPage: React.FC = () => {
       }
       // Fallback to createdAt if available
       if (a.createdAt && b.createdAt) {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        const timeA = new Date(a.createdAt as string | number).getTime();
+        const timeB = new Date(b.createdAt as string | number).getTime();
+        return timeB - timeA;
       }
       // Fallback to string comparison of ID
       return String(b.id).localeCompare(String(a.id));
@@ -110,12 +145,21 @@ export const OCRPage: React.FC = () => {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         docs = docs.filter(doc => {
-          const docDate = new Date(doc.displayDate || doc.createdAt || '');
+          const dateStr = String(doc.displayDate || doc.createdAt || '');
+          const docDate = new Date(dateStr);
           return docDate >= weekAgo;
         });
       } else {
+        // Match filter to document type
+        const filterMap: Record<string, string> = {
+          'facturas': 'factura',
+          'albaranes': 'albarán',
+          'cierres': 'cierre',
+          'nominas': 'nomina',
+        };
+        const targetType = filterMap[listFilter] || listFilter.replace('s', '');
         docs = docs.filter(doc =>
-          doc.type.toLowerCase().includes(listFilter.replace('s', '').toLowerCase())
+          doc.type.toLowerCase().includes(targetType.toLowerCase())
         );
       }
     }
@@ -139,21 +183,22 @@ export const OCRPage: React.FC = () => {
     }
 
     return docs;
-  }, [recentDocs, listFilter, searchQuery]);
+  }, [recentDocs, listFilter, searchQuery]) as OCRPageDocument[];
 
   const renderList = () => {
-    const handleDeleteDocument = (doc: any) => {
+    const handleDeleteDocument = (doc: { id: string | number, type: string }) => {
       if (window.confirm('¿Eliminar este documento?')) {
         try {
           const collection = doc.type === 'Factura' ? 'facturas' : doc.type === 'Albarán' ? 'albaranes' : 'cierres';
-          db.delete(collection as any, doc.id);
+          db.delete(collection as 'facturas' | 'albaranes' | 'cierres', doc.id);
           loadDocuments();
           showToast({
             type: 'success',
             title: 'Documento eliminado',
             message: 'El documento ha sido eliminado correctamente',
           });
-        } catch (err) {
+        } catch (error: unknown) {
+          logger.error('Error al eliminar documento', error instanceof Error ? error.message : String(error));
           showToast({
             type: 'error',
             title: 'Error',
@@ -165,14 +210,14 @@ export const OCRPage: React.FC = () => {
 
     return (
       <OCRDocumentList
-        documents={filteredDocs}
+        documents={filteredDocs as OCRListItem[]}
         searchQuery={searchQuery}
         filter={listFilter}
         onSearchChange={setSearchQuery}
         onFilterChange={setListFilter}
         onNewDocument={startWizard}
         onViewDocument={(doc) => {
-          setSelectedDoc(doc);
+          setSelectedDoc(doc as OCRPageDocument);
           setViewMode('detail');
         }}
         onDeleteDocument={handleDeleteDocument}
@@ -194,7 +239,7 @@ export const OCRPage: React.FC = () => {
     const handleDelete = async (id: string | number, type: string) => {
       const collection = type.toLowerCase() === 'factura' ? 'facturas' :
         type.toLowerCase() === 'albarán' ? 'albaranes' : 'cierres';
-      db.delete(collection as any, id);
+      db.delete(collection as 'facturas' | 'albaranes' | 'cierres', id);
       setViewMode('list');
       setSelectedDoc(null);
       loadDocuments();
@@ -221,7 +266,7 @@ export const OCRPage: React.FC = () => {
           setViewMode('list');
         }}
         initialData={formData}
-        initialStep={wizardStep as any}
+        initialStep={wizardStep as 1 | 2 | 3 | 4 | 5}
         initialPreviewUrl={previewUrl || undefined}
         initialType={scanType}
       />
@@ -229,11 +274,11 @@ export const OCRPage: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--background)' }}>
+    <PageContainer>
       {viewMode === 'list' && renderList()}
       {viewMode === 'detail' && renderDetail()}
       {viewMode === 'wizard' && renderWizard()}
-    </div>
+    </PageContainer>
   );
 };
 

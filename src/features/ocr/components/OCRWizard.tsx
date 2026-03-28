@@ -31,6 +31,7 @@ import { compressImage, fileToBase64 } from '@utils/imageUtils';
 import { OCRService } from '@services/ocr-service';
 import { useDatabase } from '@hooks';
 import { useToast } from '@utils/toast';
+import { logger } from '@core/services/LoggerService';
 import type { OCRDocumentType, ExtractedData } from '../../../types/ocr.types';
 import type { Provider } from '../../../types';
 import { InvoiceLayout } from './InvoiceLayout';
@@ -82,7 +83,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
     const [validationStatus, setValidationStatus] = useState<{
         newProvider?: boolean;
         duplicateInvoice?: boolean;
-        existingProvider?: any;
+        existingProvider?: Provider;
         duplicateId?: string | number;
     } | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -108,8 +109,8 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                 base64 = await fileToBase64(selectedFile);
             }
             setCompressedFile(base64);
-        } catch (err) {
-            console.error("Error compressing file", err);
+        } catch (error: unknown) {
+            logger.error("Error compressing file", error instanceof Error ? error.message : String(error));
         }
     };
 
@@ -138,7 +139,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                 if (!dateStr) return '';
                 const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
                 if (match) {
-                    const [_, d, m, y] = match;
+                    const [, d, m, y] = match;
                     return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
                 }
                 return dateStr;
@@ -150,8 +151,10 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                 fechaVencimiento: convertDate(data.fechaVencimiento)
             });
             setStep(4);
-        } catch (err) {
-            setError('Error al analizar: ' + (err as Error).message);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logger.error('Error al analizar documento', message);
+            setError('Error al analizar: ' + message);
             setStep(2);
         }
     };
@@ -166,8 +169,8 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
 
     const validateData = () => {
         const providerName = formData.proveedor?.toLowerCase().trim();
-        const existingProvider = (db.proveedores as any[]).find((p: any) =>
-            (typeof p.nombre === 'string' && p.nombre.toLowerCase().includes(providerName || '___')) ||
+        const existingProvider = (db.proveedores as Provider[]).find((p: Provider) =>
+            (p.nombre.toLowerCase().includes(providerName || '___')) ||
             (formData.cif && typeof p.cif === 'string' && p.cif === formData.cif)
         );
 
@@ -225,7 +228,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                 providerId = validationStatus.existingProvider.id;
             }
 
-            const newItem = {
+            const newItem: Record<string, unknown> = {
                 tipo: scanType,
                 numeroFactura: formData.numero || 'S/N',
                 proveedor: formData.proveedor || 'Desconocido',
@@ -236,8 +239,8 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                 confianza: 90,
                 metodoPago: formData.formaPago || 'Efectivo',
                 notas: `Importado OCR. Base: ${formData.baseImponible}`,
-                archivo: file?.name || (initialData as any)?.archivo || 'Sin nombre',
-                archivoData: finalFileData || (initialPreviewUrl as any),
+                archivo: file?.name || 'Sin nombre',
+                archivoData: finalFileData || initialPreviewUrl,
                 categoria: formData.categoria,
                 baseImponible: formData.baseImponible,
                 iva: formData.iva,
@@ -253,12 +256,12 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                 conceptos: formData.conceptos || []
             };
 
+            const collectionTyped = collectionName as 'facturas' | 'albaranes' | 'cierres';
+
             if (validationStatus?.duplicateInvoice && validationStatus.duplicateId) {
-                // @ts-ignore
-                await db.update(collectionName, validationStatus.duplicateId, newItem, { silent: true });
+                await db.update(collectionTyped, String(validationStatus.duplicateId), newItem, { silent: true });
             } else {
-                // @ts-ignore
-                await db.add(collectionName, newItem, { silent: true });
+                await db.add(collectionTyped, newItem, { silent: true });
             }
 
             onSaveSuccess();
@@ -267,8 +270,10 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                 title: 'Documento guardado',
                 message: `El ${scanType} ha sido guardado correctamente`,
             });
-        } catch (err) {
-            const errorMsg = 'Error al guardar: ' + (err as Error).message;
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            logger.error('Error al guardar documento', message);
+            const errorMsg = 'Error al guardar: ' + message;
             setError(errorMsg);
             showToast({
                 type: 'error',
@@ -304,7 +309,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                         borderRadius: 'var(--radius-lg)',
                         boxShadow: 'var(--shadow-lg)'
                     }}>
-                        <h4 style={{ color: 'white', marginTop: 0, marginBottom: '12px', fontSize: '14px' }}>Vista Previa</h4>
+                        <h4 style={{ color: 'var(--surface)', marginTop: 0, marginBottom: '12px', fontSize: '14px' }}>Vista Previa</h4>
                         <div style={{ height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: '8px' }}>
                             {previewUrl.startsWith('data:application/pdf') ? (
                                 <iframe src={previewUrl} style={{ width: '100%', height: '100%', border: 'none' }} title="PDF Preview" />
@@ -321,7 +326,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                     backgroundColor: 'var(--surface)',
                     borderRadius: '12px',
                     padding: '32px',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                    boxShadow: 'var(--shadow)',
                     overflowY: 'auto',
                     display: 'flex',
                     flexDirection: 'column',
@@ -412,7 +417,12 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                                     onDrop={(e) => {
                                         e.preventDefault();
                                         const droppedFile = e.dataTransfer.files[0];
-                                        if (droppedFile) handleFileSelect({ target: { files: [droppedFile] } } as any);
+                                        if (droppedFile) {
+                                            const eventMock = {
+                                                target: { files: [droppedFile] }
+                                            } as unknown as React.ChangeEvent<HTMLInputElement>;
+                                            handleFileSelect(eventMock);
+                                        }
                                     }}
                                 >
                                     <input type="file" accept="image/*,.pdf" onChange={handleFileSelect} style={{ display: 'none' }} id="file-upload" />

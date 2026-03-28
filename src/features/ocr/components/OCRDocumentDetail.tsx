@@ -31,7 +31,19 @@ export interface OCRDocument {
     type: string;
     archivo?: string;
     archivoData?: string;
-    [key: string]: any;
+    numeroFactura?: string;
+    numero?: string;
+    fecha?: string;
+    displayDate?: string;
+    total?: number;
+    displayAmount?: number;
+    direccion?: string;
+    conceptos?: ExtractedData['conceptos'];
+    telefono?: string;
+    email?: string;
+    formaPago?: string;
+    condicionesPago?: string;
+    tipoIva?: number;
 }
 
 export interface OCRDocumentDetailProps {
@@ -138,8 +150,8 @@ export const OCRDocumentDetail: React.FC<OCRDocumentDetailProps> = ({
                                 <img src={document.archivoData} alt="Documento" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                             )
                         ) : (
-                            <div style={{ textAlign: 'center', color: 'white' }}>
-                                <div style={{ marginBottom: 'var(--spacing-md)', color: 'white' }}><FileText size={48} /></div>
+                            <div style={{ textAlign: 'center', color: 'var(--surface)' }}>
+                                <div style={{ marginBottom: 'var(--spacing-md)', color: 'var(--surface)' }}><FileText size={48} /></div>
                                 <p>Vista previa no disponible</p>
                                 <p style={{ fontSize: 'var(--font-size-sm)', opacity: 0.7 }}>{document.archivo || 'Sin archivo adjunto'}</p>
                             </div>
