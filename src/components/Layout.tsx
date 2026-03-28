@@ -17,8 +17,9 @@ import {
   MobileSidebar,
   MobileBottomNav
 } from '../shared/components/layout';
-import { useIsMobile } from '../shared/hooks';
+import { useResponsive } from '../shared/hooks';
 import type { AppUser as User } from '@types';
+import type { ShellUser } from '../shared/components/layout/AppShellV2';
 
 export interface LayoutProps {
   children: ReactNode;
@@ -28,7 +29,7 @@ export interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const isMobile = useIsMobile();
+  const { isMobile } = useResponsive();
 
   // Restaurant context (optional - only if provider is available)
   let restaurantContext: ReturnType<typeof useRestaurantContext> | null = null;
@@ -59,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       {/* Mobile Sidebar Overlay */}
       {isMobile && isMobileMenuOpen && (
         <MobileSidebar
-          user={user as any}
+          user={user as ShellUser | null | undefined}
           onLogout={onLogout}
           onClose={() => setIsMobileMenuOpen(false)}
         />
@@ -70,24 +71,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
         style={{
           flex: 1,
           overflowY: 'auto',
+          height: '100%',
           padding: isMobile
-            ? 'var(--height-mobile-header) var(--spacing-md) 100px'
-            : 'var(--spacing-lg) var(--spacing-xl)',
+            ? 'var(--height-mobile-header) var(--spacing-sm) 100px'
+            : 'var(--spacing-sm) var(--spacing-md)',
           backgroundColor: 'var(--background)',
-          minHeight: '100vh',
           position: 'relative',
-          paddingBottom: isMobile ? '100px' : 'var(--spacing-lg)',
+          paddingBottom: isMobile ? '100px' : 'var(--spacing-sm)',
         }}
       >
-        <div
-          style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-            width: '100%',
-          }}
-        >
-          {children}
-        </div>
+        {children}
       </main>
 
       {/* Mobile Bottom Navigation */}

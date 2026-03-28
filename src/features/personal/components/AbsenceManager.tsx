@@ -3,12 +3,14 @@ import { Card, Button, Input, Select, Modal, Badge } from '@components';
 import { Calendar, Plus, Clock } from 'lucide-react';
 import type { Absence, VacationRequest } from '@types';
 
+type CombinedListItem = (VacationRequest | Absence) & { category: string; color: string };
+
 interface AbsenceManagerProps {
     requests: VacationRequest[];
     absences: Absence[];
     onApprove: (id: string, type: 'vacation' | 'absence') => void;
     onReject: (id: string, type: 'vacation' | 'absence', reason: string) => void;
-    onCreateRequest: (data: any) => void;
+    onCreateRequest: (data: { type: string; startDate: string; endDate: string; notes: string }) => void;
 }
 
 export const AbsenceManager: React.FC<AbsenceManagerProps> = ({ requests, absences, onApprove, onReject, onCreateRequest }) => {
@@ -38,8 +40,8 @@ export const AbsenceManager: React.FC<AbsenceManagerProps> = ({ requests, absenc
         ...requests.map(r => ({ ...r, category: 'Solicitud Vacaciones', color: 'primary' })),
         ...absences.map(a => ({ ...a, category: 'Baja / Ausencia', color: 'warning' }))
     ].sort((a, b) => {
-        const dateA = 'requestDate' in a ? (a as any).requestDate : (a as any).startDate;
-        const dateB = 'requestDate' in b ? (b as any).requestDate : (b as any).startDate;
+        const dateA = 'requestDate' in a ? a.requestDate : a.startDate;
+        const dateB = 'requestDate' in b ? b.requestDate : b.startDate;
         return new Date(dateB).getTime() - new Date(dateA).getTime();
     });
 
@@ -81,7 +83,7 @@ export const AbsenceManager: React.FC<AbsenceManagerProps> = ({ requests, absenc
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                    {combinedList.map((item: any) => (
+                    {combinedList.map((item: CombinedListItem) => (
                         <div key={item.id} style={{
                             display: 'flex',
                             justifyContent: 'space-between',
@@ -101,7 +103,7 @@ export const AbsenceManager: React.FC<AbsenceManagerProps> = ({ requests, absenc
                                 </div>
                                 <div>
                                     <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                                        {item.category === 'Solicitud Vacaciones' ? 'Vacaciones' : item.type}
+                                        {item.category === 'Solicitud Vacaciones' ? 'Vacaciones' : ('type' in item ? item.type : '')}
                                         <Badge variant={item.status === 'pendiente' ? 'warning' : (item.status === 'aprobado' ? 'success' : 'danger')}>
                                             {item.status}
                                         </Badge>
@@ -114,10 +116,10 @@ export const AbsenceManager: React.FC<AbsenceManagerProps> = ({ requests, absenc
 
                             {item.status === 'pendiente' && (
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <Button variant="secondary" size="sm" onClick={() => onReject(item.id, item.category.includes('Vacaciones') ? 'vacation' : 'absence', 'Rechazado por director')}>
+                                    <Button variant="secondary" size="sm" onClick={() => onReject(String(item.id), item.category.includes('Vacaciones') ? 'vacation' : 'absence', 'Rechazado por director')}>
                                         Rechazar
                                     </Button>
-                                    <Button variant="primary" size="sm" onClick={() => onApprove(item.id, item.category.includes('Vacaciones') ? 'vacation' : 'absence')}>
+                                    <Button variant="primary" size="sm" onClick={() => onApprove(String(item.id), item.category.includes('Vacaciones') ? 'vacation' : 'absence')}>
                                         Aprobar
                                     </Button>
                                 </div>
@@ -132,7 +134,7 @@ export const AbsenceManager: React.FC<AbsenceManagerProps> = ({ requests, absenc
                     <Select
                         label="Tipo de Ausencia"
                         value={newRequest.type}
-                        onChange={(val: any) => setNewRequest({ ...newRequest, type: val })}
+                        onChange={(val: string) => setNewRequest({ ...newRequest, type: val })}
                         options={[
                             { value: 'vacaciones', label: 'Vacaciones' },
                             { value: 'baja_medica', label: 'Baja Médica' },

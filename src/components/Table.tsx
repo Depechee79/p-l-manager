@@ -5,7 +5,7 @@ export interface TableColumn<T> {
   key: string;
   header: string;
   sortable?: boolean;
-  render?: (value: any, row: T) => ReactNode;
+  render?: (value: T[keyof T], row: T) => ReactNode;
 }
 
 export interface TableProps<T> {
@@ -20,7 +20,7 @@ export interface TableProps<T> {
   expandedRowRender?: (row: T) => ReactNode; // New prop for accordion content
 }
 
-export const Table = <T extends Record<string, any>>({
+export const Table = <T extends Record<string, unknown>>({
   columns,
   data,
   onRowClick,
@@ -77,25 +77,25 @@ export const Table = <T extends Record<string, any>>({
   const sortedData = [...data].sort((a, b) => {
     if (!sortConfig) return 0;
     
-    let aValue: any = a[sortConfig.key];
-    let bValue: any = b[sortConfig.key];
+    let aValue: unknown = a[sortConfig.key];
+    let bValue: unknown = b[sortConfig.key];
 
     // Handle null/undefined
     if (aValue == null) aValue = '';
     if (bValue == null) bValue = '';
 
     // Try to parse as number
-    const aNum = typeof aValue === 'string' ? parseFloat(aValue) : aValue;
-    const bNum = typeof bValue === 'string' ? parseFloat(bValue) : bValue;
-    
+    const aNum = typeof aValue === 'string' ? parseFloat(aValue) : (typeof aValue === 'number' ? aValue : NaN);
+    const bNum = typeof bValue === 'string' ? parseFloat(bValue) : (typeof bValue === 'number' ? bValue : NaN);
+
     if (!isNaN(aNum) && !isNaN(bNum) && typeof aValue !== 'boolean') {
       // Numeric comparison
       return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
     }
 
     // Try to parse as date
-    const aDate = new Date(aValue);
-    const bDate = new Date(bValue);
+    const aDate = new Date(String(aValue));
+    const bDate = new Date(String(bValue));
     if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
       return sortConfig.direction === 'asc' 
         ? aDate.getTime() - bDate.getTime() 
@@ -114,59 +114,44 @@ export const Table = <T extends Record<string, any>>({
   const displayData = onSort ? data : sortedData;
 
   if (loading) {
-    return <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>Cargando datos...</div>;
+    return <div className="p-6 text-center text-text-secondary">Cargando datos...</div>;
   }
 
   if (data.length === 0) {
-    return <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>{emptyText}</div>;
+    return <div className="p-6 text-center text-text-secondary">{emptyText}</div>;
   }
 
   const tableClasses = [
-    'table',
-    hoverable ? 'table-hover' : '',
-    striped ? 'table-striped' : ''
+    'w-full border-collapse text-left text-sm',
+    hoverable ? '[&_tbody_tr]:hover:bg-surface-muted' : '',
+    striped ? '[&_tbody_tr:nth-child(even)]:bg-[var(--surface-muted)]' : ''
   ].filter(Boolean).join(' ');
 
   return (
-    <div className="table-container">
+    <div className="w-full relative rounded-[var(--radius)] overflow-x-auto bg-surface border border-border">
       <table className={tableClasses}>
         <thead>
-          <tr>
+          <tr className="border-b border-border bg-surface text-text-secondary uppercase text-[10px] tracking-wider font-semibold">
             {columns.map((column) => (
               <th
                 key={column.key}
                 onClick={() => handleHeaderClick(column)}
-                style={{ 
-                  cursor: column.sortable ? 'pointer' : 'default',
-                  userSelect: 'none',
-                }}
+                className={`p-3 ${column.sortable ? 'cursor-pointer select-none' : 'cursor-default'}`}
               >
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 'var(--spacing-xs)',
-                  justifyContent: 'space-between',
-                }}>
+                <div className="flex items-center justify-between gap-1">
                   <span>{column.header}</span>
                   {column.sortable && (
-                    <div style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: sortConfig?.key === column.key ? 1 : 0.3,
-                      transition: 'opacity var(--transition-base)',
-                    }}>
+                    <div className={`flex flex-col items-center justify-center transition-opacity duration-200 ${sortConfig?.key === column.key ? 'opacity-100' : 'opacity-30'}`}>
                       {sortConfig?.key === column.key ? (
                         sortConfig.direction === 'asc' ? (
-                          <ChevronUp size={14} color="var(--accent)" />
+                          <ChevronUp size={14} className="text-accent" />
                         ) : (
-                          <ChevronDown size={14} color="var(--accent)" />
+                          <ChevronDown size={14} className="text-accent" />
                         )
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', marginTop: '-2px', marginBottom: '-2px' }}>
-                          <ChevronUp size={10} style={{ opacity: 0.3, marginBottom: '-4px' }} />
-                          <ChevronDown size={10} style={{ opacity: 0.3 }} />
+                        <div className="flex flex-col -mt-[2px] -mb-[2px]">
+                          <ChevronUp size={10} className="opacity-30 -mb-1" />
+                          <ChevronDown size={10} className="opacity-30" />
                         </div>
                       )}
                     </div>
@@ -174,50 +159,42 @@ export const Table = <T extends Record<string, any>>({
                 </div>
               </th>
             ))}
-            {/* Add extra column for expand icon if expandable */}
-            {expandedRowRender && <th style={{ width: '50px', textAlign: 'center' }}></th>}
+            {expandedRowRender && <th className="w-[50px] text-center"></th>}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-border">
           {displayData.map((row, index) => {
-            const rowId = row.id || index;
+            const rawId = row.id;
+            const rowId: string | number = (typeof rawId === 'string' || typeof rawId === 'number') ? rawId : index;
             const isExpanded = expandedRows.has(rowId);
-            
+
             return (
               <React.Fragment key={rowId}>
                 <tr
                   onClick={(e) => handleRowClick(row, rowId, e)}
-                  className={isExpanded ? 'table-row-expanded' : ''}
-                  style={{ 
-                    cursor: (onRowClick || expandedRowRender) ? 'pointer' : 'default',
-                  }}
+                  className={`transition-colors duration-200 ${isExpanded ? 'bg-surface-muted/50' : ''} ${(onRowClick || expandedRowRender) ? 'cursor-pointer' : 'cursor-default'}`}
                 >
                   {columns.map((column) => (
-                    <td key={`${rowId}-${column.key}`}>
-                      {column.render ? column.render(row[column.key], row) : row[column.key]}
+                    <td key={`${rowId}-${column.key}`} className="p-3 text-text-main font-medium">
+                      {column.render ? column.render(row[column.key] as T[keyof T], row) : String(row[column.key] ?? '')}
                     </td>
                   ))}
                   {expandedRowRender && (
-                    <td 
-                      className="table-expand-icon"
-                      style={{ 
-                        textAlign: 'center', 
-                        color: 'var(--accent)',
-                        cursor: 'pointer',
-                      }}
+                    <td
+                      className="text-center text-accent cursor-pointer p-3"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleRow(rowId);
                       }}
                     >
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      {isExpanded ? <ChevronUp size={18} className="mx-auto" /> : <ChevronDown size={18} className="mx-auto" />}
                     </td>
                   )}
                 </tr>
                 {isExpanded && expandedRowRender && (
-                  <tr className="table-row-details">
-                    <td colSpan={columns.length}>
-                      <div className="details-content">
+                  <tr className="bg-surface-muted/30 border-b border-border">
+                    <td colSpan={columns.length + 1} className="p-0">
+                      <div className="p-4">
                         {expandedRowRender(row)}
                       </div>
                     </td>

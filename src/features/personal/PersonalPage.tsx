@@ -520,7 +520,7 @@ export const PersonalPage: React.FC = () => {
                                     daysCount: data.startDate && data.endDate
                                         ? Math.ceil((new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
                                         : 0
-                                });
+                                } as Record<string, unknown>);
                                 showToast({ type: 'success', title: 'Solicitud creada', message: 'Pendiente de aprobación' });
                             } catch (error: unknown) {
                                 logger.error('Error creating absence request', error);

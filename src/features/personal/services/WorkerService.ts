@@ -1,6 +1,15 @@
 import type { Worker } from '@types';
 import { DatabaseService } from '@services/DatabaseService';
 
+export interface WorkerActivity {
+    id: string;
+    workerId: string;
+    restaurantId?: string;
+    type: string;
+    date: string;
+    description: string;
+}
+
 export class WorkerService {
     constructor(private db: DatabaseService) { }
 
@@ -81,7 +90,7 @@ export class WorkerService {
     /**
      * Get worker activity (placeholder for future implementation)
      */
-    getWorkerActivity(_workerId: string, _restaurantId?: string): any[] {
+    getWorkerActivity(_workerId: string, _restaurantId?: string): WorkerActivity[] {
         // TODO: Implement activity tracking
         return [];
     }

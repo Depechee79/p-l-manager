@@ -13,6 +13,7 @@ import { useDatabase } from '@core';
 import { useToast } from '../utils/toast';
 import { formatCurrency } from '../utils/formatters';
 import type { Escandallo, Cierre } from '@types';
+import { logger } from '../core/services/LoggerService';
 
 interface MenuItemAnalysis {
   id: string | number;
@@ -41,7 +42,7 @@ export const MenuEngineeringPage: React.FC = () => {
           db.ensureLoaded('cierres')
         ]);
       } catch (error) {
-        console.error("Error loading MenuEngineeringPage data:", error);
+        logger.error("Error loading MenuEngineeringPage data:", error);
       }
     };
     loadData();
@@ -61,8 +62,8 @@ export const MenuEngineeringPage: React.FC = () => {
 
   const menuAnalysis = useMemo(() => {
     const relevantEscandallos = escandallos.filter(e => {
-      const fecha = (e as any).fecha;
-      if (fecha) {
+      const fecha = 'fecha' in e ? (e as Record<string, unknown>).fecha : undefined;
+      if (typeof fecha === 'string') {
         return fecha >= startDate && fecha <= endDate;
       }
       return true;
@@ -238,7 +239,7 @@ export const MenuEngineeringPage: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}>
         {(['star', 'puzzle', 'plow_horse', 'dog'] as const).map(cat => (
-          <Card key={cat} style={{ border: `2px solid ${getCategoryColor(cat)}`, backgroundColor: `${getCategoryColor(cat)}-lighter` as any }}>
+          <Card key={cat} style={{ border: `2px solid ${getCategoryColor(cat)}`, backgroundColor: 'var(--surface-muted)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-xs)' }}>{getCategoryLabel(cat)}s</div>

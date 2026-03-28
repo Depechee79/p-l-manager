@@ -92,7 +92,13 @@ export const InvoiceLayout: React.FC<InvoiceLayoutProps> = ({
         if (onChange) onChange(e);
     };
 
-    const Field = ({ label, name, type = "text", fullWidth = false, style = {} }: any) => {
+    const Field = ({ label, name, type = "text", fullWidth = false, style = {} }: {
+        label: string;
+        name: string;
+        type?: string;
+        fullWidth?: boolean;
+        style?: React.CSSProperties;
+    }) => {
         if (name === 'conceptos') return null;
         let value = data[name as keyof ExtractedData];
         // Never pass array to Input value
