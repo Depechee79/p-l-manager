@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Select, Table, Card, FormSection, Badge } from '@shared/components';
 import { useDatabase, useRestaurant } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useToast } from '../utils/toast';
 import { formatCurrency } from '../utils/formatters';
 import type { Nomina, NominaStatus, Worker } from '../types';
@@ -49,10 +50,14 @@ export const NominasPage: React.FC = () => {
     // AUDIT-FIX: Ensure data is loaded (R-14)
     React.useEffect(() => {
         const loadData = async () => {
-            await Promise.all([
-                db.ensureLoaded('workers'),
-                db.ensureLoaded('nominas')
-            ]);
+            try {
+                await Promise.all([
+                    db.ensureLoaded('workers'),
+                    db.ensureLoaded('nominas')
+                ]);
+            } catch (error: unknown) {
+                logger.error('Error loading NominasPage data', error);
+            }
         };
         loadData();
     }, [db]);
@@ -91,8 +96,8 @@ export const NominasPage: React.FC = () => {
     });
 
     // Get data from database
-    const nominas = ((db as any).nominas || []) as Nomina[];
-    const workers = (db.workers || []) as Worker[];
+    const nominas = db.nominas as Nomina[];
+    const workers = db.workers as Worker[];
 
     // Filter by restaurant, period and search
     const filteredNominas = useMemo(() => {
@@ -228,14 +233,15 @@ export const NominasPage: React.FC = () => {
 
         try {
             if (editingNomina) {
-                db.update('nominas' as any, editingNomina.id, nominaData as any);
+                db.update<Nomina>('nominas', editingNomina.id, nominaData);
                 showToast({ type: 'success', title: 'Nómina actualizada', message: 'Los cambios se han guardado' });
             } else {
-                db.add('nominas' as any, nominaData as any);
+                db.add<Nomina>('nominas', nominaData);
                 showToast({ type: 'success', title: 'Nómina creada', message: 'La nómina se ha registrado correctamente' });
             }
             setViewMode('list');
-        } catch (error) {
+        } catch (error: unknown) {
+            logger.error('Error saving nomina', error);
             showToast({ type: 'error', title: 'Error', message: 'No se pudo guardar la nómina' });
         }
     };
@@ -244,9 +250,10 @@ export const NominasPage: React.FC = () => {
     const handleDelete = (nomina: Nomina) => {
         if (confirm(`¿Eliminar nómina de ${nomina.workerNombre}?`)) {
             try {
-                db.delete('nominas' as any, nomina.id);
+                db.delete('nominas', nomina.id);
                 showToast({ type: 'success', title: 'Eliminada', message: 'La nómina ha sido eliminada' });
-            } catch (error) {
+            } catch (error: unknown) {
+                logger.error('Error deleting nomina', error);
                 showToast({ type: 'error', title: 'Error', message: 'No se pudo eliminar' });
             }
         }
@@ -255,12 +262,13 @@ export const NominasPage: React.FC = () => {
     // Mark as paid
     const handleMarkPaid = (nomina: Nomina) => {
         try {
-            db.update('nominas' as any, nomina.id, {
+            db.update<Nomina>('nominas', nomina.id, {
                 status: 'pagada',
                 fechaPago: new Date().toISOString().split('T')[0]
-            } as any);
+            });
             showToast({ type: 'success', title: 'Marcada como pagada', message: `Nómina de ${nomina.workerNombre}` });
-        } catch (error) {
+        } catch (error: unknown) {
+            logger.error('Error marking nomina as paid', error);
             showToast({ type: 'error', title: 'Error', message: 'No se pudo actualizar' });
         }
     };
@@ -353,7 +361,7 @@ export const NominasPage: React.FC = () => {
                                 No hay nóminas para {MESES[filterMes - 1]} {filterAnio}
                             </div>
                         ) : (
-                            <Table<any>
+                            <Table<Record<string, React.ReactNode>>
                                 columns={[
                                     { key: 'trabajador', header: 'Trabajador' },
                                     { key: 'bruto', header: 'Bruto' },
@@ -584,5 +592,3 @@ export const NominasPage: React.FC = () => {
         </div>
     );
 };
-
-export default NominasPage;

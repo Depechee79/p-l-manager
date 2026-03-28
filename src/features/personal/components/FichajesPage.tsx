@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Play, Square } from 'lucide-react';
 import { Button, Card, Table } from '@shared/components';
 import { useRestaurantContext, useDatabase } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useToast } from '@utils/toast';
 import type { TimeEntry } from '@types';
 
@@ -24,17 +25,16 @@ export const FichajesPage: React.FC = () => {
                     db.ensureLoaded('fichajes'),
                     db.ensureLoaded('workers')
                 ]);
-            } catch (error) {
-                console.error("Error loading FichajesPage data:", error);
+            } catch (error: unknown) {
+                logger.error('Error loading FichajesPage data', error);
             }
         };
         loadData();
     }, [db]);
 
     // Derived state from DB
-    // Derived state from DB
     useEffect(() => {
-        const entries = ((db.fichajes as unknown as TimeEntry[]) || []).filter((f: TimeEntry) =>
+        const entries = (db.fichajes as TimeEntry[]).filter((f: TimeEntry) =>
             f.restaurantId === String(currentRestaurant?.id) &&
             f.date === new Date().toISOString().split('T')[0]
         );
@@ -62,8 +62,8 @@ export const FichajesPage: React.FC = () => {
                         accuracy: position.coords.accuracy
                     });
                 },
-                (error) => {
-                    console.warn('Geolocation error:', error);
+                (geoError) => {
+                    logger.warn('Geolocation error', geoError);
                     showToast({ title: 'Aviso', message: 'No se pudo obtener la ubicación. Fichaje registrado sin geo.', type: 'warning' });
                     createEntry();
                 },
@@ -96,8 +96,8 @@ export const FichajesPage: React.FC = () => {
                 message: location ? 'Has iniciado jornada 📍' : 'Has iniciado jornada',
                 type: 'success'
             });
-        } catch (error) {
-            console.error(error);
+        } catch (error: unknown) {
+            logger.error('Error creating time entry', error);
             setIsLoadingLocation(false);
             showToast({ title: 'Error', message: 'No se pudo registrar la entrada', type: 'error' });
         }
@@ -108,16 +108,16 @@ export const FichajesPage: React.FC = () => {
             // Find active entry to close
             const activeEntry = todayEntries.find(e => !e.exitTime);
             if (activeEntry) {
-                await db.update('fichajes', activeEntry.id, {
+                await db.update<TimeEntry>('fichajes', activeEntry.id, {
                     exitTime: new Date().toISOString(),
-                    status: 'validado' // Auto-validate for now, or keep 'activo' until supervisor checks
-                } as any);
+                    status: 'validado'
+                });
                 showToast({ title: 'Salida registrada', message: 'Has finalizado tu jornada', type: 'info' });
             } else {
                 showToast({ title: 'Error', message: 'No tienes una jornada activa', type: 'warning' });
             }
-        } catch (error) {
-            console.error(error);
+        } catch (error: unknown) {
+            logger.error('Error clocking out', error);
             showToast({ title: 'Error', message: 'No se pudo registrar la salida', type: 'error' });
         }
     };

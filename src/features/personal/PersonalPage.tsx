@@ -1,3 +1,11 @@
+/**
+ * PersonalPage - Team Management
+ *
+ * Session 007: Updated with V2 design system
+ * - Removed StickyPageHeader (title shown in topbar breadcrumb)
+ * - Using PageLayoutV2 for sticky tabs/filters
+ * - ActionHeaderV2 with tabs
+ */
 import React, { useState, useMemo } from 'react';
 import {
     Plus,
@@ -13,18 +21,33 @@ import {
     Calendar,
     Clock,
     AlertOctagon,
-    Palmtree
+    Palmtree,
+    Receipt
 } from 'lucide-react';
-import { Button, Input, Select, Table, Card, FormSection } from '@components';
+import { Button, Input, Select, Table, Card, FormSection, PageContainer, PageLayoutV2, ActionHeaderV2, ButtonV2, FilterCardV2, FilterInputV2, FilterTextInput, type TabV2 } from '@shared/components';
 import { useWorkers } from './hooks/useWorkers';
 import { HorariosPage } from './components/HorariosPage';
 import { FichajesPage } from './components/FichajesPage';
 import { IncidenceLog } from './components/IncidenceLog';
 import { AbsenceManager } from './components/AbsenceManager';
+import { NominasTab } from './components/NominasTab';
 import { useUsers } from '@/features/users';
 import { useRestaurantContext, useDatabase } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useToast } from '@utils/toast';
-import type { Worker } from '@types';
+import type { Worker, AppUser, TimeEntry, VacationRequest, Absence } from '@types';
+
+type TabId = 'staff' | 'schedule' | 'time' | 'incidences' | 'vacations' | 'nominas';
+
+// V2 tabs with icons (16px for V2)
+const PERSONAL_TABS: TabV2[] = [
+    { id: 'staff', label: 'Plantilla', icon: <Users size={16} /> },
+    { id: 'schedule', label: 'Horarios', icon: <Calendar size={16} /> },
+    { id: 'time', label: 'Fichajes', icon: <Clock size={16} /> },
+    { id: 'incidences', label: 'Incidencias', icon: <AlertOctagon size={16} /> },
+    { id: 'vacations', label: 'Vacaciones', icon: <Palmtree size={16} /> },
+    { id: 'nominas', label: 'Nóminas', icon: <Receipt size={16} /> },
+];
 
 export const PersonalPage: React.FC = () => {
     const { showToast } = useToast();
@@ -35,7 +58,7 @@ export const PersonalPage: React.FC = () => {
     const { workers, createWorker } = useWorkers(companyId);
     const { roles, users, createUser, updateUser, deleteUser } = useUsers(db);
 
-    const [activeTab, setActiveTab] = useState<'staff' | 'schedule' | 'time' | 'incidences' | 'vacations'>('staff');
+    const [activeTab, setActiveTab] = useState<TabId>('staff');
     const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
     const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -90,8 +113,8 @@ export const PersonalPage: React.FC = () => {
                     db.ensureLoaded('absences'),
                     db.ensureLoaded('vacation_requests')
                 ]);
-            } catch (error) {
-                console.error("Error loading PersonalPage data:", error);
+            } catch (error: unknown) {
+                logger.error('Error loading PersonalPage data', error);
             }
         };
         loadData();
@@ -158,7 +181,7 @@ export const PersonalPage: React.FC = () => {
 
             if (formData.hasAccess && formData.email) {
                 const existingUser = users.find(u => u.email === formData.email);
-                const userData: any = {
+                const userData: Omit<AppUser, 'id'> = {
                     nombre: `${formData.nombre} ${formData.apellidos}`,
                     email: formData.email,
                     rolId: formData.rolId || roles[0]?.id || 'viewer',
@@ -178,375 +201,337 @@ export const PersonalPage: React.FC = () => {
             }
 
             setViewMode('list');
-        } catch (err) {
+        } catch (error: unknown) {
+            logger.error('Error saving worker', error);
             showToast({ type: 'error', title: 'Error', message: 'No se pudo guardar los cambios' });
         }
     };
 
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)', padding: 'var(--spacing-lg)' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: 'var(--font-size-3xl)', fontWeight: '700', color: 'var(--text-main)' }}>
-                        Gestión Humana
-                    </h1>
-                    <p style={{ margin: 'var(--spacing-xs) 0 0', color: 'var(--text-secondary)', fontSize: 'var(--font-size-base)' }}>
-                        Control centralizado de equipo y accesos
-                    </p>
-                </div>
-                {activeTab === 'staff' && viewMode === 'list' && (
-                    <Button variant="primary" onClick={handleOpenForm}>
-                        <Plus size={16} /> Añadir Persona
-                    </Button>
-                )}
-            </div>
+    // Form mode - separate view without sticky header
+    if (activeTab === 'staff' && viewMode === 'form') {
+        return (
+            <PageContainer>
+                <Card>
+                    <div style={{ marginBottom: 'var(--spacing-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
+                            <UserCheck size={20} />
+                            {editingWorker ? 'Editar Perfil' : 'Nuevo Perfil'}
+                        </h2>
+                        <Button variant="secondary" onClick={() => setViewMode('list')}>
+                            <X size={16} /> Cancelar
+                        </Button>
+                    </div>
 
-            {/* Premium Tabs */}
-            <div style={{
-                display: 'flex',
-                gap: '8px',
-                borderBottom: '1px solid var(--border)',
-                paddingBottom: '0',
-                overflowX: 'auto'
-            }}>
-                {[
-                    { id: 'staff', label: 'Plantilla', icon: Users },
-                    { id: 'schedule', label: 'Horarios', icon: Calendar },
-                    { id: 'time', label: 'Fichajes', icon: Clock },
-                    { id: 'incidences', label: 'Incidencias', icon: AlertOctagon },
-                    { id: 'vacations', label: 'Vacaciones/Bajas', icon: Palmtree },
-                ].map(tab => {
-                    const isActive = activeTab === tab.id;
-                    const Icon = tab.icon;
-                    return (
-                        <button
-                            key={tab.id}
-                            onClick={() => { setActiveTab(tab.id as any); setViewMode('list'); }}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '12px 20px',
-                                background: 'transparent',
-                                border: 'none',
-                                borderBottom: isActive ? '2px solid var(--primary)' : '2px solid transparent',
-                                color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                                fontWeight: isActive ? 600 : 500,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                marginBottom: '-1px'
-                            }}
-                        >
-                            <Icon size={18} />
-                            {tab.label}
-                        </button>
-                    );
-                })}
-            </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--spacing-lg)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                            <FormSection title="Datos Operativos">
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)' }}>
+                                    <Input label="Nombre *" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} fullWidth required />
+                                    <Input label="Apellidos *" value={formData.apellidos} onChange={(e) => setFormData({ ...formData, apellidos: e.target.value })} fullWidth required />
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-md)' }}>
+                                    <Input label="DNI" value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} fullWidth />
+                                    <Input label="Teléfono" value={formData.telefono} onChange={(e) => setFormData({ ...formData, telefono: e.target.value })} fullWidth />
+                                </div>
+                                <div style={{ marginTop: 'var(--spacing-md)' }}>
+                                    <Select
+                                        label="Puesto *"
+                                        value={formData.puesto}
+                                        onChange={(val) => setFormData({ ...formData, puesto: val as Worker['puesto'] })}
+                                        fullWidth
+                                        options={[
+                                            { value: 'camarero', label: 'Camarero' },
+                                            { value: 'cocinero', label: 'Cocinero' },
+                                            { value: 'barman', label: 'Barman' },
+                                            { value: 'gerente', label: 'Gerente' },
+                                        ]}
+                                    />
+                                </div>
+                            </FormSection>
 
-            {activeTab === 'staff' && (
-                <>
-                    {viewMode === 'form' ? (
-                        <Card>
-                            <div style={{ marginBottom: 'var(--spacing-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
-                                    <UserCheck size={20} />
-                                    {editingWorker ? 'Editar Perfil' : 'Nuevo Perfil'}
-                                </h2>
-                                <Button variant="secondary" onClick={() => setViewMode('list')}>
-                                    <X size={16} /> Cancelar
-                                </Button>
-                            </div>
+                            <FormSection title="Asignación de Centros">
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
+                                    {restaurantContext.restaurants.map(r => (
+                                        <label key={r.id} style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 'var(--spacing-sm)',
+                                            padding: 'var(--spacing-sm) var(--spacing-md)',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: 'var(--radius)',
+                                            backgroundColor: formData.restaurantes.includes(r.id.toString()) ? 'var(--primary-lighter)' : 'transparent',
+                                            borderColor: formData.restaurantes.includes(r.id.toString()) ? 'var(--primary-light)' : 'var(--border)',
+                                            cursor: 'pointer'
+                                        }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.restaurantes.includes(r.id.toString())}
+                                                onChange={(e) => {
+                                                    const res = e.target.checked
+                                                        ? [...formData.restaurantes, r.id.toString()]
+                                                        : formData.restaurantes.filter(id => id !== r.id.toString());
+                                                    setFormData({ ...formData, restaurantes: res });
+                                                }}
+                                            />
+                                            <span style={{ fontSize: 'var(--font-size-sm)' }}>{r.nombre}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </FormSection>
+                        </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--spacing-lg)' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                                    <FormSection title="Datos Operativos">
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)' }}>
-                                            <Input label="Nombre *" value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} fullWidth required />
-                                            <Input label="Apellidos *" value={formData.apellidos} onChange={(e) => setFormData({ ...formData, apellidos: e.target.value })} fullWidth required />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                            <FormSection title="Acceso al Sistema">
+                                <Card style={{ backgroundColor: 'var(--surface-muted)', border: '1px dashed var(--border)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-md)' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: '600' }}>Habilitar acceso de usuario</div>
+                                            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>Permite al trabajador entrar en la aplicación</div>
                                         </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-md)' }}>
-                                            <Input label="DNI" value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} fullWidth />
-                                            <Input label="Teléfono" value={formData.telefono} onChange={(e) => setFormData({ ...formData, telefono: e.target.value })} fullWidth />
-                                        </div>
-                                        <div style={{ marginTop: 'var(--spacing-md)' }}>
-                                            <Select
-                                                label="Puesto *"
-                                                value={formData.puesto}
-                                                onChange={(val) => setFormData({ ...formData, puesto: val as any })}
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.hasAccess}
+                                            onChange={(e) => setFormData({ ...formData, hasAccess: e.target.checked })}
+                                            style={{ width: '20px', height: '20px' }}
+                                        />
+                                    </div>
+
+                                    {formData.hasAccess && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                                            <Input
+                                                label="Email de acceso *"
+                                                type="email"
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                                 fullWidth
-                                                options={[
-                                                    { value: 'camarero', label: 'Camarero' },
-                                                    { value: 'cocinero', label: 'Cocinero' },
-                                                    { value: 'barman', label: 'Barman' },
-                                                    { value: 'gerente', label: 'Gerente' },
-                                                ]}
+                                                icon={<Mail size={16} />}
+                                            />
+                                            <Select
+                                                label="Rol en el sistema *"
+                                                value={formData.rolId?.toString() || ''}
+                                                onChange={(val) => setFormData({ ...formData, rolId: val })}
+                                                fullWidth
+                                                options={roles.map(rol => ({ value: rol.id.toString(), label: rol.nombre }))}
                                             />
                                         </div>
-                                    </FormSection>
+                                    )}
+                                </Card>
+                            </FormSection>
 
-                                    <FormSection title="Asignación de Centros">
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
-                                            {restaurantContext.restaurants.map(r => (
-                                                <label key={r.id} style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 'var(--spacing-sm)',
-                                                    padding: 'var(--spacing-sm) var(--spacing-md)',
-                                                    border: '1px solid var(--border)',
-                                                    borderRadius: 'var(--radius)',
-                                                    backgroundColor: formData.restaurantes.includes(r.id.toString()) ? 'var(--primary-lighter)' : 'transparent',
-                                                    borderColor: formData.restaurantes.includes(r.id.toString()) ? 'var(--primary-light)' : 'var(--border)',
-                                                    cursor: 'pointer'
-                                                }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={formData.restaurantes.includes(r.id.toString())}
-                                                        onChange={(e) => {
-                                                            const res = e.target.checked
-                                                                ? [...formData.restaurantes, r.id.toString()]
-                                                                : formData.restaurantes.filter(id => id !== r.id.toString());
-                                                            setFormData({ ...formData, restaurantes: res });
-                                                        }}
-                                                    />
-                                                    <span style={{ fontSize: 'var(--font-size-sm)' }}>{r.nombre}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </FormSection>
+                            <FormSection title="Estado Contratación/Ficha">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
+                                        <input
+                                            type="radio"
+                                            checked={formData.activo}
+                                            onChange={() => setFormData({ ...formData, activo: true })}
+                                        />
+                                        <span>Activo</span>
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
+                                        <input
+                                            type="radio"
+                                            checked={!formData.activo}
+                                            onChange={() => setFormData({ ...formData, activo: false })}
+                                        />
+                                        <span>Inactivo / Baja</span>
+                                    </label>
                                 </div>
+                            </FormSection>
+                        </div>
+                    </div>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                                    <FormSection title="Acceso al Sistema">
-                                        <Card style={{ backgroundColor: 'var(--surface-muted)', border: '1px dashed var(--border)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-md)' }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontWeight: '600' }}>Habilitar acceso de usuario</div>
-                                                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>Permite al trabajador entrar en la aplicación</div>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.hasAccess}
-                                                    onChange={(e) => setFormData({ ...formData, hasAccess: e.target.checked })}
-                                                    style={{ width: '20px', height: '20px' }}
-                                                />
-                                            </div>
+                    <div style={{ display: 'flex', gap: 'var(--spacing-md)', justifyContent: 'flex-end', marginTop: 'var(--spacing-xl)', borderTop: '1px solid var(--border)', paddingTop: 'var(--spacing-lg)' }}>
+                        <Button variant="secondary" onClick={() => setViewMode('list')}>Cancelar</Button>
+                        <Button variant="primary" onClick={handleSave} style={{ minWidth: '150px' }}>
+                            <Save size={18} /> Guardar Persona
+                        </Button>
+                    </div>
+                </Card>
+            </PageContainer>
+        );
+    }
 
-                                            {formData.hasAccess && (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                                                    <Input
-                                                        label="Email de acceso *"
-                                                        type="email"
-                                                        value={formData.email}
-                                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                        fullWidth
-                                                        icon={<Mail size={16} />}
-                                                    />
-                                                    <Select
-                                                        label="Rol en el sistema *"
-                                                        value={formData.rolId?.toString() || ''}
-                                                        onChange={(val) => setFormData({ ...formData, rolId: val })}
-                                                        fullWidth
-                                                        options={roles.map(rol => ({ value: rol.id.toString(), label: rol.nombre }))}
-                                                    />
-                                                </div>
-                                            )}
-                                        </Card>
-                                    </FormSection>
-
-                                    <FormSection title="Estado Contratación/Ficha">
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
-                                                <input
-                                                    type="radio"
-                                                    checked={formData.activo}
-                                                    onChange={() => setFormData({ ...formData, activo: true })}
-                                                />
-                                                <span>Activo</span>
-                                            </label>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
-                                                <input
-                                                    type="radio"
-                                                    checked={!formData.activo}
-                                                    onChange={() => setFormData({ ...formData, activo: false })}
-                                                />
-                                                <span>Inactivo / Baja</span>
-                                            </label>
-                                        </div>
-                                    </FormSection>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: 'var(--spacing-md)', justifyContent: 'flex-end', marginTop: 'var(--spacing-xl)', borderTop: '1px solid var(--border)', paddingTop: 'var(--spacing-lg)' }}>
-                                <Button variant="secondary" onClick={() => setViewMode('list')}>Cancelar</Button>
-                                <Button variant="primary" onClick={handleSave} style={{ minWidth: '150px' }}>
-                                    <Save size={18} /> Guardar Persona
-                                </Button>
-                            </div>
-                        </Card>
-                    ) : (
-                        <>
-                            <Card style={{ marginBottom: 'var(--spacing-md)' }}>
-                                <Input
-                                    placeholder="Buscar por nombre, cargo o email..."
+    return (
+        <PageContainer>
+            <PageLayoutV2
+                header={
+                    <ActionHeaderV2
+                        tabs={PERSONAL_TABS}
+                        activeTab={activeTab}
+                        onTabChange={(id: string) => { setActiveTab(id as TabId); setViewMode('list'); }}
+                        actions={activeTab === 'staff' ? (
+                            <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={handleOpenForm}>
+                                Añadir Persona
+                            </ButtonV2>
+                        ) : undefined}
+                    />
+                }
+            >
+                {activeTab === 'staff' && (
+                    <>
+                        <FilterCardV2 columns={1}>
+                            <FilterInputV2 label="Buscar">
+                                <FilterTextInput
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    icon={<Search size={18} />}
-                                    iconPosition="left"
-                                    fullWidth
+                                    onChange={setSearchQuery}
+                                    placeholder="Buscar por nombre, cargo o email..."
+                                    icon={<Search size={14} />}
                                 />
-                            </Card>
+                            </FilterInputV2>
+                        </FilterCardV2>
 
-                            <Card style={{ padding: 0, overflow: 'hidden' }}>
-                                <Table
-                                    data={filteredWorkers}
-                                    columns={[
-                                        {
-                                            key: 'persona',
-                                            header: 'Persona',
-                                            render: (_, w) => (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-                                                    <div style={{
-                                                        width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--primary-lighter)',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)',
-                                                        fontWeight: 'bold', fontSize: 'var(--font-size-sm)'
-                                                    }}>
-                                                        {w.nombre.charAt(0)}{w.apellidos.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{w.nombre} {w.apellidos}</div>
-                                                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>{w.puesto.toUpperCase()}</div>
-                                                    </div>
-                                                </div>
-                                            ),
-                                            sortable: true,
-                                        },
-                                        {
-                                            key: 'acceso',
-                                            header: 'Acceso App',
-                                            render: (_, w) => {
-                                                const user = users.find(u => u.email === w.email);
-                                                return user ? (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontSize: 'var(--font-size-sm)' }}>
-                                                        <Shield size={14} /> {roles.find(r => r.id === user.rolId)?.nombre || 'Usuario'}
-                                                    </div>
-                                                ) : (
-                                                    <span style={{ color: 'var(--text-light)', fontSize: 'var(--font-size-xs)' }}>Sin acceso</span>
-                                                );
-                                            }
-                                        },
-                                        {
-                                            key: 'centros',
-                                            header: 'Centros',
-                                            render: (_, w) => (
-                                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                                    {(w.restaurantes || []).map(id => {
-                                                        const r = restaurantContext.restaurants.find(res => res.id.toString() === id);
-                                                        return r ? (
-                                                            <span key={id} style={{
-                                                                padding: '2px 8px', borderRadius: '10px', backgroundColor: 'var(--secondary-lighter)',
-                                                                fontSize: 'var(--font-size-xs)', fontWeight: '500'
-                                                            }}>
-                                                                {r.nombre}
-                                                            </span>
-                                                        ) : null;
-                                                    })}
-                                                </div>
-                                            )
-                                        },
-                                        {
-                                            key: 'estado',
-                                            header: 'Estado',
-                                            render: (_, w) => (
-                                                <span style={{
-                                                    color: w.activo ? 'var(--success)' : 'var(--text-light)',
-                                                    fontSize: '12px', fontWeight: 'bold'
+                        <Card style={{ padding: 0, overflow: 'hidden', marginTop: 'var(--spacing-md)' }}>
+                            <Table
+                                data={filteredWorkers}
+                                columns={[
+                                    {
+                                        key: 'persona',
+                                        header: 'Persona',
+                                        render: (_, w) => (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                                                <div style={{
+                                                    width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--primary-lighter)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)',
+                                                    fontWeight: 'bold', fontSize: 'var(--font-size-sm)'
                                                 }}>
-                                                    {w.activo ? 'ACTIVO' : 'BAJA'}
-                                                </span>
-                                            )
-                                        },
-                                        {
-                                            key: 'acciones',
-                                            header: 'Acciones',
-                                            render: (_, w) => (
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <Button variant="secondary" size="sm" onClick={() => handleEdit(w)}><Edit size={14} /></Button>
-                                                    <Button variant="danger" size="sm" onClick={() => {
-                                                        if (confirm('¿Eliminar ficha de personal?')) {
-                                                            // Logic 
-                                                        }
-                                                    }}><Trash2 size={14} /></Button>
+                                                    {w.nombre.charAt(0)}{w.apellidos.charAt(0)}
                                                 </div>
-                                            )
+                                                <div>
+                                                    <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{w.nombre} {w.apellidos}</div>
+                                                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>{w.puesto.toUpperCase()}</div>
+                                                </div>
+                                            </div>
+                                        ),
+                                        sortable: true,
+                                    },
+                                    {
+                                        key: 'acceso',
+                                        header: 'Acceso App',
+                                        render: (_, w) => {
+                                            const user = users.find(u => u.email === w.email);
+                                            return user ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontSize: 'var(--font-size-sm)' }}>
+                                                    <Shield size={14} /> {roles.find(r => r.id === user.rolId)?.nombre || 'Usuario'}
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-light)', fontSize: 'var(--font-size-xs)' }}>Sin acceso</span>
+                                            );
                                         }
-                                    ]}
-                                    onRowClick={handleEdit}
-                                    hoverable
-                                />
-                            </Card>
-                        </>
-                    )}
-                </>
-            )}
+                                    },
+                                    {
+                                        key: 'centros',
+                                        header: 'Centros',
+                                        render: (_, w) => (
+                                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                {(w.restaurantes || []).map(id => {
+                                                    const r = restaurantContext.restaurants.find(res => res.id.toString() === id);
+                                                    return r ? (
+                                                        <span key={id} style={{
+                                                            padding: '2px 8px', borderRadius: '10px', backgroundColor: 'var(--secondary-lighter)',
+                                                            fontSize: 'var(--font-size-xs)', fontWeight: '500'
+                                                        }}>
+                                                            {r.nombre}
+                                                        </span>
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                        )
+                                    },
+                                    {
+                                        key: 'estado',
+                                        header: 'Estado',
+                                        render: (_, w) => (
+                                            <span style={{
+                                                color: w.activo ? 'var(--success)' : 'var(--text-light)',
+                                                fontSize: '12px', fontWeight: 'bold'
+                                            }}>
+                                                {w.activo ? 'ACTIVO' : 'BAJA'}
+                                            </span>
+                                        )
+                                    },
+                                    {
+                                        key: 'acciones',
+                                        header: 'Acciones',
+                                        render: (_, w) => (
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <Button variant="secondary" size="sm" onClick={() => handleEdit(w)}><Edit size={14} /></Button>
+                                                <Button variant="danger" size="sm" onClick={() => {
+                                                    if (confirm('¿Eliminar ficha de personal?')) {
+                                                        // Logic
+                                                    }
+                                                }}><Trash2 size={14} /></Button>
+                                            </div>
+                                        )
+                                    }
+                                ]}
+                                onRowClick={handleEdit}
+                                hoverable
+                            />
+                        </Card>
+                    </>
+                )}
 
-            {activeTab === 'schedule' && <HorariosPage />}
-            {activeTab === 'time' && <FichajesPage />}
-            {activeTab === 'incidences' && (
-                <IncidenceLog
-                    entries={(db.fichajes || []) as any[]}
-                    shifts={[]}
-                    onResolveIncidence={() => showToast({ type: 'success', title: 'Incidencia resuelta', message: 'Estado actualizado correctamente' })}
-                />
-            )}
-            {activeTab === 'vacations' && (
-                <AbsenceManager
-                    requests={(db.vacation_requests || []) as any[]}
-                    absences={(db.absences || []) as any[]}
-                    onApprove={async (id, type) => {
-                        try {
-                            const collection = type === 'vacation' ? 'vacation_requests' : 'absences';
-                            const updateData: any = { status: 'aprobado', approvedBy: restaurantContext.currentRestaurant?.id?.toString() };
-                            await db.update(collection, id, updateData); // Assuming approvedBy is user/rest
-                            showToast({ type: 'success', title: 'Solicitud aprobada', message: 'Se ha notificado al empleado' });
-                        } catch (e) {
-                            showToast({ type: 'error', title: 'Error', message: 'No se pudo aprobar' });
-                        }
-                    }}
-                    onReject={async (id, type, reason) => {
-                        try {
-                            const collection = type === 'vacation' ? 'vacation_requests' : 'absences';
-                            const updateData: any = { status: 'rechazado', rejectionReason: reason };
-                            await db.update(collection, id, updateData);
-                            showToast({ type: 'info', title: 'Solicitud rechazada', message: 'Se ha notificado al empleado' });
-                        } catch (e) {
-                            showToast({ type: 'error', title: 'Error', message: 'No se pudo rechazar' });
-                        }
-                    }}
-                    onCreateRequest={async (data) => {
-                        try {
-                            const collection = data.type === 'vacaciones' ? 'vacation_requests' : 'absences';
-                            // Quick fix: if no worker selected, use first available or placeholder. 
-                            // Ideally Prompt for worker, but for now we follow existing UI.
-                            const workerId = workers[0]?.id || 'unknown';
+                {activeTab === 'schedule' && <HorariosPage />}
+                {activeTab === 'time' && <FichajesPage />}
+                {activeTab === 'incidences' && (
+                    <IncidenceLog
+                        entries={db.fichajes as TimeEntry[]}
+                        shifts={[]}
+                        onResolveIncidence={() => showToast({ type: 'success', title: 'Incidencia resuelta', message: 'Estado actualizado correctamente' })}
+                    />
+                )}
+                {activeTab === 'vacations' && (
+                    <AbsenceManager
+                        requests={db.vacation_requests as VacationRequest[]}
+                        absences={db.absences as Absence[]}
+                        onApprove={async (id, type) => {
+                            try {
+                                const collection = type === 'vacation' ? 'vacation_requests' : 'absences';
+                                const updateData: Partial<VacationRequest & Absence> = { status: 'aprobado', approvedBy: restaurantContext.currentRestaurant?.id?.toString() };
+                                await db.update(collection, id, updateData);
+                                showToast({ type: 'success', title: 'Solicitud aprobada', message: 'Se ha notificado al empleado' });
+                            } catch (error: unknown) {
+                                logger.error('Error approving request', error);
+                                showToast({ type: 'error', title: 'Error', message: 'No se pudo aprobar' });
+                            }
+                        }}
+                        onReject={async (id, type, reason) => {
+                            try {
+                                const collection = type === 'vacation' ? 'vacation_requests' : 'absences';
+                                const updateData: Partial<VacationRequest & Absence> = { status: 'rechazado', rejectionReason: reason };
+                                await db.update(collection, id, updateData);
+                                showToast({ type: 'info', title: 'Solicitud rechazada', message: 'Se ha notificado al empleado' });
+                            } catch (error: unknown) {
+                                logger.error('Error rejecting request', error);
+                                showToast({ type: 'error', title: 'Error', message: 'No se pudo rechazar' });
+                            }
+                        }}
+                        onCreateRequest={async (data) => {
+                            try {
+                                const collection = data.type === 'vacaciones' ? 'vacation_requests' : 'absences';
+                                const workerId = workers[0]?.id || 'unknown';
 
-                            await db.add(collection, {
-                                ...data,
-                                workerId: workerId.toString(),
-                                status: 'pendiente',
-                                requestDate: new Date().toISOString(),
-                                daysCount: data.startDate && data.endDate
-                                    ? Math.ceil((new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-                                    : 0
-                            });
-                            showToast({ type: 'success', title: 'Solicitud creada', message: 'Pendiente de aprobación' });
-                        } catch (e) {
-                            showToast({ type: 'error', title: 'Error', message: 'No se pudo crear la solicitud' });
-                        }
-                    }}
-                />
-            )}
-        </div>
+                                await db.add(collection, {
+                                    ...data,
+                                    workerId: workerId.toString(),
+                                    status: 'pendiente',
+                                    requestDate: new Date().toISOString(),
+                                    daysCount: data.startDate && data.endDate
+                                        ? Math.ceil((new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
+                                        : 0
+                                });
+                                showToast({ type: 'success', title: 'Solicitud creada', message: 'Pendiente de aprobación' });
+                            } catch (error: unknown) {
+                                logger.error('Error creating absence request', error);
+                                showToast({ type: 'error', title: 'Error', message: 'No se pudo crear la solicitud' });
+                            }
+                        }}
+                    />
+                )}
+
+                {activeTab === 'nominas' && <NominasTab />}
+            </PageLayoutV2>
+        </PageContainer>
     );
 };

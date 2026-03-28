@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Select, Table, Card, FormSection, Badge } from '@components';
 import { useDatabase, useRestaurant } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useToast } from '@utils/toast';
 import { formatCurrency } from '@utils/formatters';
 import type { Nomina, NominaStatus, Worker } from '@types';
@@ -79,8 +80,8 @@ export const NominasTab: React.FC = () => {
     });
 
     // Get data from database
-    const nominas = ((db as any).nominas || []) as Nomina[];
-    const workers = (db.workers || []) as Worker[];
+    const nominas = db.nominas as Nomina[];
+    const workers = db.workers as Worker[];
 
     // Filter by restaurant, period and search
     const filteredNominas = useMemo(() => {
@@ -216,14 +217,15 @@ export const NominasTab: React.FC = () => {
 
         try {
             if (editingNomina) {
-                await db.update('nominas' as any, editingNomina.id, nominaData as any);
+                await db.update<Nomina>('nominas', editingNomina.id, nominaData);
                 showToast({ type: 'success', title: 'Actualizada', message: 'Nomina actualizada correctamente' });
             } else {
-                await db.add('nominas' as any, nominaData as any);
+                await db.add<Nomina>('nominas', nominaData);
                 showToast({ type: 'success', title: 'Creada', message: 'Nomina registrada correctamente' });
             }
             setViewMode('list');
-        } catch (error) {
+        } catch (error: unknown) {
+            logger.error('Error saving nomina', error);
             showToast({ type: 'error', title: 'Error', message: 'No se pudo guardar la nomina' });
         }
     };
@@ -232,9 +234,10 @@ export const NominasTab: React.FC = () => {
     const handleDelete = async (nomina: Nomina) => {
         if (confirm(`Eliminar nomina de ${nomina.workerNombre}?`)) {
             try {
-                await db.delete('nominas' as any, nomina.id);
+                await db.delete('nominas', nomina.id);
                 showToast({ type: 'success', title: 'Eliminada', message: 'Nomina eliminada' });
-            } catch (error) {
+            } catch (error: unknown) {
+                logger.error('Error deleting nomina', error);
                 showToast({ type: 'error', title: 'Error', message: 'No se pudo eliminar' });
             }
         }
@@ -243,12 +246,13 @@ export const NominasTab: React.FC = () => {
     // Mark as paid
     const handleMarkPaid = async (nomina: Nomina) => {
         try {
-            await db.update('nominas' as any, nomina.id, {
+            await db.update<Nomina>('nominas', nomina.id, {
                 status: 'pagada',
                 fechaPago: new Date().toISOString().split('T')[0]
-            } as any);
+            });
             showToast({ type: 'success', title: 'Pagada', message: `Nomina de ${nomina.workerNombre}` });
-        } catch (error) {
+        } catch (error: unknown) {
+            logger.error('Error marking nomina as paid', error);
             showToast({ type: 'error', title: 'Error', message: 'No se pudo actualizar' });
         }
     };
@@ -324,7 +328,7 @@ export const NominasTab: React.FC = () => {
                                 No hay nominas para {MESES[filterMes - 1]} {filterAnio}
                             </div>
                         ) : (
-                            <Table<any>
+                            <Table<Record<string, React.ReactNode>>
                                 columns={[
                                     { key: 'trabajador', header: 'Trabajador' },
                                     { key: 'bruto', header: 'Bruto' },
