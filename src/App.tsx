@@ -6,6 +6,7 @@ import { AppShellV2 } from '@shared/components/layout';
 import { DashboardPage, AlmacenPage, CierresPage, OCRPage, PnLPage, EscandallosPage, PersonalPage, RestaurantConfigPage, LoginPage, SignUpPage, InvitationSignUpPage } from '@pages';
 import { useDatabase } from '@hooks';
 import { ToastProvider } from '@utils';
+import { logger } from '@core/services/LoggerService';
 
 /**
  * AppShellV2 is now used for ALL routes (Canon Stitch design)
@@ -21,8 +22,8 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     // Wait a bit for Firebase sync to complete
     const timer = setTimeout(() => {
-      runMigrationIfNeeded(db).catch((err: Error) => {
-        console.error('Migration error:', err);
+      runMigrationIfNeeded(db).catch((error: unknown) => {
+        logger.error('Migration error:', error instanceof Error ? error.message : String(error));
       });
     }, 2000);
 
@@ -94,7 +95,6 @@ const AppContent: React.FC = () => {
   );
 };
 
-
 // Main App component
 const App: React.FC = () => {
   return (
@@ -110,4 +110,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+export { App };
