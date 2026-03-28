@@ -76,6 +76,7 @@ export interface Shift extends BaseEntity {
  */
 export interface Absence extends BaseEntity {
     workerId: string;
+    restaurantId?: string;
     type: IncidenceType;
 
     startDate: string;
@@ -95,6 +96,7 @@ export interface Absence extends BaseEntity {
  */
 export interface VacationRequest extends BaseEntity {
     workerId: string;
+    restaurantId?: string;
     startDate: string;
     endDate: string;
 
@@ -165,37 +167,6 @@ export interface NominaSummary {
     countNominas: number;
 }
 
-/**
- * Calcula el resumen de nóminas para un período
- */
-export function calculateNominaSummary(nominas: Nomina[]): NominaSummary {
-    const pagadas = nominas.filter(n => n.status === 'pagada' || n.status === 'pendiente');
-
-    return {
-        totalSalarioBruto: pagadas.reduce((sum, n) => sum + (n.salarioBruto || 0), 0),
-        totalSeguridadSocialEmpresa: pagadas.reduce((sum, n) => sum + (n.seguridadSocialEmpresa || 0), 0),
-        totalCostePersonal: pagadas.reduce((sum, n) => sum + (n.salarioBruto || 0) + (n.seguridadSocialEmpresa || 0), 0),
-        countNominas: pagadas.length,
-    };
-}
-
-/**
- * Labels para estados de nómina
- */
-export const NOMINA_STATUS_LABELS: Record<NominaStatus, string> = {
-    borrador: 'Borrador',
-    pendiente: 'Pendiente',
-    pagada: 'Pagada',
-    anulada: 'Anulada',
-};
-
-/**
- * Colores para estados de nómina
- */
-export const NOMINA_STATUS_COLORS: Record<NominaStatus, string> = {
-    borrador: 'var(--text-muted)',
-    pendiente: 'var(--warning)',
-    pagada: 'var(--success)',
-    anulada: 'var(--danger)',
-};
+// Functions and constants moved to @utils/personalCalculations.ts
+// This file contains ONLY type definitions.
 

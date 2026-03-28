@@ -3,6 +3,19 @@
 // ============================================
 
 /**
+ * Inventory zone (used by roles, inventory items, mermas)
+ */
+export const INVENTORY_ZONES = ['bar', 'cocina', 'camara', 'almacen'] as const;
+export type InventoryZone = (typeof INVENTORY_ZONES)[number];
+
+/**
+ * Payment method for invoices.
+ * Known values are in PAYMENT_METHODS. Type accepts string for legacy Firestore data.
+ */
+export const PAYMENT_METHODS = ['transferencia', 'domiciliacion', 'efectivo', 'tarjeta'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number] | (string & {});
+
+/**
  * Base entity with common fields
  */
 export interface BaseEntity {
@@ -68,7 +81,7 @@ export interface Invoice extends BaseEntity {
   total: number;
   pagado?: boolean;
   fechaPago?: string;
-  metodoPago?: 'transferencia' | 'domiciliacion' | 'efectivo' | 'tarjeta' | string;
+  metodoPago?: PaymentMethod;
   categoria?: string;
   status: 'borrador' | 'pendiente' | 'pagada' | 'revisada' | 'punteada' | 'error';
   productos: InvoiceProduct[];
@@ -102,7 +115,7 @@ export interface InventoryItem extends BaseEntity {
   fecha: string;
   nombre?: string; // Nombre del inventario (ej: "Inventario Mensual")
   persona?: string; // Persona que realizó el inventario
-  zona?: 'bar' | 'cocina' | 'camara' | 'almacen'; // Zona de conteo
+  zona?: InventoryZone; // Zona de conteo
   productos: InventoryProductCount[];
   totalItems: number;
   valorTotal: number;
@@ -123,30 +136,81 @@ export type Permission =
   | 'usuarios.view' | 'usuarios.create' | 'usuarios.edit' | 'usuarios.delete'
   | 'configuracion.view' | 'configuracion.edit'
   | 'personal.view' | 'personal.edit'
-  | 'dashboard.view';
+  | 'dashboard.view'
+  | 'nominas.view' | 'nominas.create' | 'nominas.edit' | 'nominas.delete'
+  | 'gastos.view' | 'gastos.create' | 'gastos.edit' | 'gastos.delete'
+  | 'mermas.view' | 'mermas.create' | 'mermas.edit' | 'mermas.delete'
+  | 'pedidos.view' | 'pedidos.create' | 'pedidos.edit' | 'pedidos.delete'
+  | 'transferencias.view' | 'transferencias.create' | 'transferencias.edit' | 'transferencias.delete'
+  | 'invitaciones.view' | 'invitaciones.create' | 'invitaciones.delete'
+  | 'restaurantes.view' | 'restaurantes.create' | 'restaurantes.edit' | 'restaurantes.delete';
+
+/**
+ * Role IDs - The 6 system roles
+ */
+export type RoleId =
+  | 'director_operaciones'
+  | 'director_restaurante'
+  | 'encargado'
+  | 'jefe_cocina'
+  | 'camarero'
+  | 'cocinero';
+
+/**
+ * Role level (1 = highest access, 5 = lowest)
+ */
+export type RoleLevel = 1 | 2 | 3 | 4 | 5;
 
 /**
  * Role definition
  */
 export interface Role extends BaseEntity {
+  id: RoleId | string;
   nombre: string;
   descripcion: string;
+  nivel?: RoleLevel; // Optional for legacy compatibility
   permisos: Permission[];
-  zonasInventario?: ('bar' | 'cocina' | 'camara' | 'almacen')[];
+  zonasInventario?: InventoryZone[];
+  accesoMultiRestaurante?: boolean;
 }
 
 /**
- * App User with role
+ * App User with role (stored in Firestore 'usuarios' collection)
  */
 export interface AppUser extends BaseEntity {
+  uid?: string; // Firebase Auth UID (optional for legacy)
   nombre: string;
   email?: string;
   telefono?: string;
-  rolId: number | string;
-  restaurantes?: string[]; // IDs de restaurantes permitidos
+  rolId: RoleId | string | number; // Support both new and legacy
+  restaurantIds?: string[]; // IDs de restaurantes asignados
+  restaurantes?: string[]; // Legacy field alias
+  companyId?: string; // ID de la empresa (para director_operaciones)
   activo: boolean;
   fechaCreacion?: string;
   ultimoAcceso?: string;
+  invitadoPor?: string; // UID del usuario que lo invitó
+}
+
+/**
+ * Invitation for new users (stored in Firestore 'invitations' collection)
+ */
+export interface Invitation extends BaseEntity {
+  token: string; // Token único para el link
+  email: string;
+  rolId: RoleId;
+  restaurantIds: string[];
+  companyId?: string;
+  datosPrecompletados?: {
+    nombre?: string;
+    telefono?: string;
+  };
+  creadoPor: string; // UID del admin que creó la invitación
+  creadoEn: string; // Timestamp ISO
+  expiraEn: string; // Timestamp ISO (ej: 7 días desde creación)
+  usado: boolean;
+  usadoEn?: string; // Timestamp cuando se usó
+  usadoPor?: string; // UID del usuario que la usó
 }
 
 /**
@@ -161,7 +225,7 @@ export interface Merma extends BaseEntity {
   unidad: string;
   motivo: string;
   valorPerdido: number;
-  zona?: 'bar' | 'cocina' | 'camara' | 'almacen';
+  zona?: InventoryZone;
   responsable?: string;
   notas?: string;
 }
@@ -217,6 +281,12 @@ export interface Company extends BaseEntity {
   telefono?: string;
   email?: string;
   restaurantes: string[]; // IDs de restaurantes
+  // Campos adicionales (Fase 2)
+  logo?: string; // URL del logo
+  contactoPrincipal?: string; // Nombre del contacto principal
+  web?: string; // URL web corporativa
+  notas?: string; // Notas/observaciones
+  fechaAlta?: string; // Fecha de alta en el sistema
 }
 
 /**
@@ -225,6 +295,7 @@ export interface Company extends BaseEntity {
 export interface Restaurant extends BaseEntity {
   companyId: string;
   nombre: string;
+  nombreComercial?: string; // Nombre comercial si difiere del legal
   razonSocial?: string;
   cif?: string;
   direccion: string;
@@ -232,6 +303,9 @@ export interface Restaurant extends BaseEntity {
   email?: string;
   codigo: string; // Código único del restaurante
   activo: boolean;
+  usaDatosFiscalesGrupo?: boolean; // true = hereda datos del holding
+  horarios?: string; // Horarios de operación
+  responsableId?: string; // ID del responsable asignado
   configuracion: {
     zonaHoraria: string;
     moneda: string;
@@ -352,9 +426,12 @@ export interface Cierre extends BaseEntity {
   notasDescuadre?: string;
 }
 
+// Re-exports from domain type files
 export * from './escandallo.types';
 export * from './personal.types';
 export * from './gastos.types';
+export * from './ocr.types';
+export * from './pnl.types';
 
 
 /**
@@ -469,8 +546,7 @@ export type ViewName =
   | 'cierres'
   | 'productos'
   | 'proveedores'
-  | 'escandallos'
-  | 'delivery';
+  | 'escandallos';
 
 /**
  * Calculation result for financial metrics

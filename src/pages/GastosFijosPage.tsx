@@ -20,7 +20,7 @@ import { useDatabase, useRestaurant } from '@core';
 import { useToast } from '../utils/toast';
 import { formatCurrency } from '../utils/formatters';
 import type { GastoFijo, GastoFijoTipo } from '../types';
-import { GASTO_FIJO_LABELS, GASTO_FIJO_ICONS, calculateGastosFijosSummary } from '../types/gastos.types';
+import { GASTO_FIJO_LABELS, GASTO_FIJO_ICONS, calculateGastosFijosSummary } from '../utils/gastosCalculations';
 
 // Type options for the form dropdown
 const TIPO_OPTIONS: { value: GastoFijoTipo; label: string }[] = [

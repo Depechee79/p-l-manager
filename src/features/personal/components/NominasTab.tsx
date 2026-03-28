@@ -1,6 +1,6 @@
 /**
- * NominasPage - Payroll management page
- * 
+ * NominasTab - Payroll management tab for PersonalPage
+ *
  * CRUD interface for managing employee payroll (nóminas).
  * This data feeds into P&L for accurate Labor Cost calculation.
  */
@@ -11,15 +11,14 @@ import {
     Edit,
     Trash2,
     Save,
-    Users,
     Check
 } from 'lucide-react';
-import { Button, Input, Select, Table, Card, FormSection, Badge } from '@shared/components';
+import { Button, Input, Select, Table, Card, FormSection, Badge } from '@components';
 import { useDatabase, useRestaurant } from '@core';
-import { useToast } from '../utils/toast';
-import { formatCurrency } from '../utils/formatters';
-import type { Nomina, NominaStatus, Worker } from '../types';
-import { NOMINA_STATUS_LABELS, calculateNominaSummary } from '../utils/personalCalculations';
+import { useToast } from '@utils/toast';
+import { formatCurrency } from '@utils/formatters';
+import type { Nomina, NominaStatus, Worker } from '@types';
+import { NOMINA_STATUS_LABELS, calculateNominaSummary } from '@utils/personalCalculations';
 
 // Month names for display
 const MESES = [
@@ -29,13 +28,13 @@ const MESES = [
 
 // Status options for select
 const STATUS_OPTIONS: { value: NominaStatus; label: string }[] = [
-    { value: 'borrador', label: '📝 Borrador' },
-    { value: 'pendiente', label: '⏳ Pendiente de Pago' },
-    { value: 'pagada', label: '✅ Pagada' },
-    { value: 'anulada', label: '❌ Anulada' },
+    { value: 'borrador', label: 'Borrador' },
+    { value: 'pendiente', label: 'Pendiente de Pago' },
+    { value: 'pagada', label: 'Pagada' },
+    { value: 'anulada', label: 'Anulada' },
 ];
 
-export const NominasPage: React.FC = () => {
+export const NominasTab: React.FC = () => {
     const { db } = useDatabase();
     const { showToast } = useToast();
     const { currentRestaurant } = useRestaurant();
@@ -45,17 +44,6 @@ export const NominasPage: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterMes, setFilterMes] = useState<number>(new Date().getMonth() + 1);
     const [filterAnio, setFilterAnio] = useState<number>(new Date().getFullYear());
-
-    // AUDIT-FIX: Ensure data is loaded (R-14)
-    React.useEffect(() => {
-        const loadData = async () => {
-            await Promise.all([
-                db.ensureLoaded('workers'),
-                db.ensureLoaded('nominas')
-            ]);
-        };
-        loadData();
-    }, [db]);
 
     // Form state
     const [formData, setFormData] = useState<{
@@ -184,7 +172,7 @@ export const NominasPage: React.FC = () => {
     };
 
     // Save nomina
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.workerId || formData.salarioBruto <= 0) {
             showToast({
                 type: 'warning',
@@ -228,24 +216,24 @@ export const NominasPage: React.FC = () => {
 
         try {
             if (editingNomina) {
-                db.update('nominas' as any, editingNomina.id, nominaData as any);
-                showToast({ type: 'success', title: 'Nómina actualizada', message: 'Los cambios se han guardado' });
+                await db.update('nominas' as any, editingNomina.id, nominaData as any);
+                showToast({ type: 'success', title: 'Actualizada', message: 'Nomina actualizada correctamente' });
             } else {
-                db.add('nominas' as any, nominaData as any);
-                showToast({ type: 'success', title: 'Nómina creada', message: 'La nómina se ha registrado correctamente' });
+                await db.add('nominas' as any, nominaData as any);
+                showToast({ type: 'success', title: 'Creada', message: 'Nomina registrada correctamente' });
             }
             setViewMode('list');
         } catch (error) {
-            showToast({ type: 'error', title: 'Error', message: 'No se pudo guardar la nómina' });
+            showToast({ type: 'error', title: 'Error', message: 'No se pudo guardar la nomina' });
         }
     };
 
     // Delete nomina
-    const handleDelete = (nomina: Nomina) => {
-        if (confirm(`¿Eliminar nómina de ${nomina.workerNombre}?`)) {
+    const handleDelete = async (nomina: Nomina) => {
+        if (confirm(`Eliminar nomina de ${nomina.workerNombre}?`)) {
             try {
-                db.delete('nominas' as any, nomina.id);
-                showToast({ type: 'success', title: 'Eliminada', message: 'La nómina ha sido eliminada' });
+                await db.delete('nominas' as any, nomina.id);
+                showToast({ type: 'success', title: 'Eliminada', message: 'Nomina eliminada' });
             } catch (error) {
                 showToast({ type: 'error', title: 'Error', message: 'No se pudo eliminar' });
             }
@@ -253,13 +241,13 @@ export const NominasPage: React.FC = () => {
     };
 
     // Mark as paid
-    const handleMarkPaid = (nomina: Nomina) => {
+    const handleMarkPaid = async (nomina: Nomina) => {
         try {
-            db.update('nominas' as any, nomina.id, {
+            await db.update('nominas' as any, nomina.id, {
                 status: 'pagada',
                 fechaPago: new Date().toISOString().split('T')[0]
             } as any);
-            showToast({ type: 'success', title: 'Marcada como pagada', message: `Nómina de ${nomina.workerNombre}` });
+            showToast({ type: 'success', title: 'Pagada', message: `Nomina de ${nomina.workerNombre}` });
         } catch (error) {
             showToast({ type: 'error', title: 'Error', message: 'No se pudo actualizar' });
         }
@@ -278,68 +266,51 @@ export const NominasPage: React.FC = () => {
     }));
 
     return (
-        <div style={{ padding: 'var(--spacing-md)', paddingBottom: '80px' }}>
-            {/* Header */}
-            <div style={{ marginBottom: 'var(--spacing-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
-                <div>
-                    <h1 style={{ fontSize: 'var(--font-size-xl)', fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                        <Users size={24} />
-                        Nóminas
-                    </h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                        Gestión de nóminas mensuales {currentRestaurant && ` - ${currentRestaurant.nombre}`}
-                    </p>
-                </div>
-                {viewMode === 'list' && (
-                    <Button variant="primary" onClick={handleOpenForm}>
-                        <PlusCircle size={18} style={{ marginRight: '8px' }} /> Nueva Nómina
-                    </Button>
-                )}
-            </div>
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
             {viewMode === 'list' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
-                    {/* Period Selector */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-sm)' }}>
-                        <Select
-                            label="Mes"
-                            value={String(filterMes)}
-                            onChange={(v) => setFilterMes(Number(v))}
-                            options={monthOptions}
-                            fullWidth
-                        />
-                        <Select
-                            label="Año"
-                            value={String(filterAnio)}
-                            onChange={(v) => setFilterAnio(Number(v))}
-                            options={yearOptions}
-                            fullWidth
-                        />
+                <>
+                    {/* Actions bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-sm)' }}>
+                        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center' }}>
+                            <Select
+                                value={String(filterMes)}
+                                onChange={(v) => setFilterMes(Number(v))}
+                                options={monthOptions}
+                            />
+                            <Select
+                                value={String(filterAnio)}
+                                onChange={(v) => setFilterAnio(Number(v))}
+                                options={yearOptions}
+                            />
+                        </div>
+                        <Button variant="primary" onClick={handleOpenForm}>
+                            <PlusCircle size={16} /> Nueva Nomina
+                        </Button>
                     </div>
 
                     {/* Summary Cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--spacing-sm)' }}>
                         <Card>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>Coste Personal Total</p>
-                            <p style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent)' }}>{formatCurrency(summary.totalCostePersonal)}</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', margin: 0 }}>Coste Total</p>
+                            <p style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent)', margin: '4px 0 0' }}>{formatCurrency(summary.totalCostePersonal)}</p>
                         </Card>
                         <Card>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>Salarios Brutos</p>
-                            <p style={{ fontSize: '16px', fontWeight: '600' }}>{formatCurrency(summary.totalSalarioBruto)}</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', margin: 0 }}>Salarios Brutos</p>
+                            <p style={{ fontSize: '16px', fontWeight: '600', margin: '4px 0 0' }}>{formatCurrency(summary.totalSalarioBruto)}</p>
                         </Card>
                         <Card>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>Seg. Social Empresa</p>
-                            <p style={{ fontSize: '16px', fontWeight: '600' }}>{formatCurrency(summary.totalSeguridadSocialEmpresa)}</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', margin: 0 }}>SS Empresa</p>
+                            <p style={{ fontSize: '16px', fontWeight: '600', margin: '4px 0 0' }}>{formatCurrency(summary.totalSeguridadSocialEmpresa)}</p>
                         </Card>
                         <Card>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>Nóminas</p>
-                            <p style={{ fontSize: '16px', fontWeight: '600' }}>{summary.countNominas}</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', margin: 0 }}>Nominas</p>
+                            <p style={{ fontSize: '16px', fontWeight: '600', margin: '4px 0 0' }}>{summary.countNominas}</p>
                         </Card>
                     </div>
 
                     {/* Search */}
                     <Input
-                        placeholder="Buscar por nombre de trabajador..."
+                        placeholder="Buscar por nombre..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         icon={<Search size={18} />}
@@ -347,10 +318,10 @@ export const NominasPage: React.FC = () => {
                     />
 
                     {/* List */}
-                    <Card>
+                    <Card style={{ padding: 0, overflow: 'hidden' }}>
                         {filteredNominas.length === 0 ? (
                             <div style={{ padding: 'var(--spacing-xl)', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                                No hay nóminas para {MESES[filterMes - 1]} {filterAnio}
+                                No hay nominas para {MESES[filterMes - 1]} {filterAnio}
                             </div>
                         ) : (
                             <Table<any>
@@ -403,7 +374,7 @@ export const NominasPage: React.FC = () => {
                             />
                         )}
                     </Card>
-                </div>
+                </>
             ) : (
                 /* Form View */
                 <Card>
@@ -411,13 +382,13 @@ export const NominasPage: React.FC = () => {
                         <Button variant="ghost" size="sm" onClick={() => setViewMode('list')}>
                             ← Volver
                         </Button>
-                        <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: '600' }}>
-                            {editingNomina ? 'Editar Nómina' : 'Nueva Nómina'}
+                        <h2 style={{ fontSize: 'var(--font-size-lg)', fontWeight: '600', margin: 0 }}>
+                            {editingNomina ? 'Editar Nomina' : 'Nueva Nomina'}
                         </h2>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
-                        <FormSection title="Trabajador y Período">
+                        <FormSection title="Trabajador y Periodo">
                             <Select
                                 label="Trabajador *"
                                 value={formData.workerId}
@@ -440,7 +411,7 @@ export const NominasPage: React.FC = () => {
                                     required
                                 />
                                 <Select
-                                    label="Año *"
+                                    label="Ano *"
                                     value={String(formData.anio)}
                                     onChange={(v) => setFormData({ ...formData, anio: Number(v) })}
                                     options={yearOptions}
@@ -453,7 +424,7 @@ export const NominasPage: React.FC = () => {
                         <FormSection title="Importes">
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)' }}>
                                 <Input
-                                    label="Salario Bruto (€) *"
+                                    label="Salario Bruto *"
                                     type="number"
                                     step="0.01"
                                     value={formData.salarioBruto}
@@ -490,7 +461,7 @@ export const NominasPage: React.FC = () => {
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-md)' }}>
                                 <Input
-                                    label="Complementos (propinas, bonus)"
+                                    label="Complementos"
                                     type="number"
                                     step="0.01"
                                     value={formData.complementos}
@@ -498,7 +469,7 @@ export const NominasPage: React.FC = () => {
                                     fullWidth
                                 />
                                 <Input
-                                    label="Deducciones (anticipos)"
+                                    label="Deducciones"
                                     type="number"
                                     step="0.01"
                                     value={formData.deducciones}
@@ -525,7 +496,7 @@ export const NominasPage: React.FC = () => {
                                     fullWidth
                                 />
                                 <Input
-                                    label="Importe H. Extras (€)"
+                                    label="Importe H. Extras"
                                     type="number"
                                     step="0.01"
                                     value={formData.importeHorasExtras}
@@ -537,7 +508,7 @@ export const NominasPage: React.FC = () => {
 
                         <FormSection title="Estado">
                             <Select
-                                label="Estado de la Nómina"
+                                label="Estado de la Nomina"
                                 value={formData.status}
                                 onChange={(v) => setFormData({ ...formData, status: v as NominaStatus })}
                                 options={STATUS_OPTIONS}
@@ -548,7 +519,7 @@ export const NominasPage: React.FC = () => {
                         {/* Net Salary Preview */}
                         <Card style={{ backgroundColor: 'var(--bg-card-hover)', border: '2px solid var(--accent)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>Salario Neto (calculado):</span>
+                                <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>Salario Neto:</span>
                                 <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: '700', color: 'var(--accent)' }}>
                                     {formatCurrency(calcularSalarioNeto())}
                                 </span>
@@ -575,7 +546,7 @@ export const NominasPage: React.FC = () => {
                                 Cancelar
                             </Button>
                             <Button variant="primary" onClick={handleSave}>
-                                <Save size={16} /> {editingNomina ? 'Actualizar' : 'Guardar Nómina'}
+                                <Save size={16} /> {editingNomina ? 'Actualizar' : 'Guardar'}
                             </Button>
                         </div>
                     </div>
@@ -584,5 +555,3 @@ export const NominasPage: React.FC = () => {
         </div>
     );
 };
-
-export default NominasPage;

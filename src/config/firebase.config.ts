@@ -37,10 +37,11 @@ export const initializeFirebase = (): FirebaseApp => {
         try {
           analytics = getAnalytics(app);
         } catch (e) {
-          console.warn('Firebase Analytics initialization failed:', e);
+          // Analytics not available in this environment — silently ignore
         }
       }
     } catch (error) {
+      // console.error used intentionally: LoggerService requires Firebase to be initialized
       console.error('Critical: Firebase failed to initialize', error);
       throw error;
     }

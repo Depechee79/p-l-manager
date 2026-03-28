@@ -1,3 +1,5 @@
+const DEFAULT_LOCALE = 'es-ES';
+
 /**
  * Formatea una fecha a formato español DD/MM/YYYY
  * @param dateInput - Fecha en formato ISO, Date object, timestamp o string DD/MM/YYYY
@@ -16,7 +18,7 @@ export function formatDate(dateInput: string | Date | number | null | undefined)
     return typeof dateInput === 'string' ? dateInput : '';
   }
 
-  return date.toLocaleDateString('es-ES', {
+  return date.toLocaleDateString(DEFAULT_LOCALE, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -30,7 +32,7 @@ export function formatDate(dateInput: string | Date | number | null | undefined)
  */
 export function formatCurrency(amount: number | null | undefined): string {
   const value = amount || 0;
-  const formatted = new Intl.NumberFormat('es-ES', {
+  const formatted = new Intl.NumberFormat(DEFAULT_LOCALE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
     useGrouping: true,
@@ -50,7 +52,7 @@ export function formatNumber(
   decimals?: number
 ): string {
   const num = value || 0;
-  return new Intl.NumberFormat('es-ES', {
+  return new Intl.NumberFormat(DEFAULT_LOCALE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
     useGrouping: true,

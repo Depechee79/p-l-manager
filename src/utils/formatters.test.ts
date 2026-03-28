@@ -19,8 +19,8 @@ describe('formatters', () => {
     });
 
     it('should return empty string for null or undefined', () => {
-      expect(formatDate(null as any)).toBe('');
-      expect(formatDate(undefined as any)).toBe('');
+      expect(formatDate(null)).toBe('');
+      expect(formatDate(undefined)).toBe('');
       expect(formatDate('')).toBe('');
     });
 
@@ -57,8 +57,8 @@ describe('formatters', () => {
     });
 
     it('should handle null or undefined as 0', () => {
-      expect(formatCurrency(null as any)).toBe('0,00 €');
-      expect(formatCurrency(undefined as any)).toBe('0,00 €');
+      expect(formatCurrency(null)).toBe('0,00 €');
+      expect(formatCurrency(undefined)).toBe('0,00 €');
     });
   });
 
@@ -79,8 +79,8 @@ describe('formatters', () => {
     });
 
     it('should handle null or undefined as 0', () => {
-      expect(formatNumber(null as any)).toBe('0');
-      expect(formatNumber(undefined as any)).toBe('0');
+      expect(formatNumber(null)).toBe('0');
+      expect(formatNumber(undefined)).toBe('0');
     });
   });
 
@@ -103,8 +103,8 @@ describe('formatters', () => {
 
     it('should handle edge cases', () => {
       expect(formatPercentage(0)).toBe('0,00%');
-      expect(formatPercentage(null as any)).toBe('0,00%');
-      expect(formatPercentage(undefined as any)).toBe('0,00%');
+      expect(formatPercentage(null)).toBe('0,00%');
+      expect(formatPercentage(undefined)).toBe('0,00%');
     });
   });
 });

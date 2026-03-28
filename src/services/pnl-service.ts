@@ -2,8 +2,8 @@ import type { PnLData, PnLPeriod, PnLKPIs } from '../types/pnl.types';
 import type { Cierre, Invoice, DeliveryRecord } from '../types';
 import type { Nomina } from '../types/personal.types';
 import type { GastoFijo } from '../types/gastos.types';
-import { calculateNominaSummary } from '../types/personal.types';
-import { calculateGastosFijosSummary } from '../types/gastos.types';
+import { calculateNominaSummary } from '../utils/personalCalculations';
+import { calculateGastosFijosSummary } from '../utils/gastosCalculations';
 
 const PNL_CONFIG = {
   BEBIDA_KEYWORDS: ['bebida', 'licor', 'vino', 'cerveza', 'café', 'refresco'],

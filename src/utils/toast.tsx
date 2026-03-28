@@ -102,20 +102,68 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   return (
     <ToastContext.Provider value={{ showToast, removeToast }}>
       {children}
-      <div className="toast-container">
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '20px',
+        zIndex: 800, // --z-toast token value
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        maxWidth: '380px',
+        pointerEvents: 'none',
+      }}>
         {toasts.map((toast) => (
-          <div key={toast.id} className={`toast toast-${toast.type}`}>
-            <div style={{ color: `var(--${toast.type === 'error' ? 'danger' : toast.type === 'warning' ? 'warning' : toast.type === 'info' ? 'info' : toast.type === 'loading' ? 'text-secondary' : 'success'})` }}>
+          <div
+            key={toast.id}
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              backgroundColor: 'var(--surface)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              border: '1px solid var(--border)',
+              pointerEvents: 'auto',
+              animation: 'slideIn 0.3s ease',
+            }}
+          >
+            <div style={{
+              color: toast.type === 'error' ? 'var(--danger)'
+                : toast.type === 'warning' ? 'var(--warning)'
+                : toast.type === 'info' ? 'var(--info)'
+                : toast.type === 'loading' ? 'var(--text-secondary)'
+                : 'var(--success)',
+              flexShrink: 0,
+            }}>
               {getIcon(toast.type)}
             </div>
-            <div className="toast-content">
-              {toast.title && <div className="toast-title">{toast.title}</div>}
-              <div className="toast-message">{toast.message}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {toast.title && (
+                <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-main)', marginBottom: '2px' }}>
+                  {toast.title}
+                </div>
+              )}
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                {toast.message}
+              </div>
             </div>
             <button
-              className="toast-close"
               onClick={() => removeToast(toast.id)}
               aria-label="Cerrar"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                color: 'var(--text-muted)',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
             >
               <X size={16} />
             </button>
