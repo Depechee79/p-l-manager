@@ -48,7 +48,7 @@ export const EscandalloWizard: React.FC<EscandalloWizardProps> = ({
                 descripcion: initialData.descripcion || '',
                 notas: initialData.notas || '',
                 alergenos: initialData.alergenos || [],
-                imagen: (initialData as any).imagen || null,
+                imagen: initialData.imagen ?? null,
             };
         }
         return INITIAL_FORM_DATA;

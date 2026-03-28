@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Input, Table } from '@shared/components';
-import { Plus, Search, Edit, Package } from 'lucide-react';
+import { Search, Edit, Package } from 'lucide-react';
 import { formatCurrency } from '@utils/formatters';
 import type { Escandallo } from '@types';
 
@@ -8,7 +8,6 @@ interface EscandalloListProps {
     escandallos: Escandallo[];
     loading?: boolean;
     onEdit: (escandallo: Escandallo) => void;
-    onNew: () => void;
     searchQuery: string;
     onSearchChange: (q: string) => void;
     monthFilter: string;
@@ -19,32 +18,13 @@ export const EscandalloList: React.FC<EscandalloListProps> = ({
     escandallos,
     loading = false,
     onEdit,
-    onNew,
     searchQuery,
     onSearchChange,
     monthFilter,
     onMonthFilterChange,
 }) => {
     return (
-        <div className="escandallo-list">
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 'var(--spacing-lg)',
-                    flexWrap: 'wrap',
-                    gap: 'var(--spacing-md)',
-                }}
-            >
-                <h2 style={{ margin: 0, fontSize: 'var(--font-size-2xl)', fontWeight: '600', color: 'var(--text-main)' }}>
-                    Escandallos
-                </h2>
-                <Button onClick={onNew} variant="primary">
-                    <Plus size={16} /> Nuevo Escandallo
-                </Button>
-            </div>
-
+        <div className="escandallo-list" style={{ marginTop: 'var(--spacing-md)' }}>
             <div
                 style={{
                     display: 'grid',
@@ -70,7 +50,7 @@ export const EscandalloList: React.FC<EscandalloListProps> = ({
                         className="input-field"
                         style={{
                             width: '100%',
-                            height: '40px',
+                            height: '44px',
                             boxSizing: 'border-box',
                             padding: '0 12px',
                             fontSize: 'var(--font-size-base)',
@@ -92,7 +72,7 @@ export const EscandalloList: React.FC<EscandalloListProps> = ({
                         key: 'imagen',
                         header: 'Foto',
                         render: (_, row) => {
-                            const imagen = (row as any).imagen;
+                            const imagen = row.imagen;
                             return imagen ? (
                                 <img
                                     src={imagen}
@@ -207,13 +187,13 @@ export const EscandalloList: React.FC<EscandalloListProps> = ({
                             </table>
                         </div>
 
-                        {(escandallo as any).imagen && (
+                        {escandallo.imagen && (
                             <div style={{ marginBottom: 'var(--spacing-lg)' }}>
                                 <h4 style={{ margin: '0 0 var(--spacing-md) 0', color: 'var(--text-main)', fontSize: 'var(--font-size-lg)' }}>
                                     Foto del Emplatado
                                 </h4>
                                 <img
-                                    src={(escandallo as any).imagen}
+                                    src={escandallo.imagen}
                                     alt={escandallo.nombre}
                                     style={{
                                         width: '100%',

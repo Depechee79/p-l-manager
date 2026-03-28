@@ -1,20 +1,57 @@
+/**
+ * EscandallosPage - Recipes and Menu Engineering
+ *
+ * Session 007: Updated with V2 design system
+ * - Removed StickyPageHeader (title shown in topbar breadcrumb)
+ * - Using PageLayoutV2 for sticky tabs/filters
+ * - ActionHeaderV2 with tabs
+ */
 import React, { useState, useMemo, useEffect } from 'react';
-import { EscandalloList, EscandalloWizard, EscandalloFormData } from '../features/escandallos';
+import { useSearchParams } from 'react-router-dom';
+import { ClipboardList, BarChart3, Plus } from 'lucide-react';
+import { EscandalloList, EscandalloWizard, EscandalloFormData, MenuAnalysisTab } from '../features/escandallos';
+import { PageContainer, PageLayoutV2, ActionHeaderV2, ButtonV2, type TabV2 } from '@shared/components';
 import { useToast } from '../utils/toast';
 import { EscandalloService } from '../services/escandallo-service';
 import type { Escandallo } from '@types';
 import { useDatabase } from '@core';
+import { logger } from '@core/services/LoggerService';
+
+type TabId = 'recetas' | 'analisis';
+
+// V2 tabs with icons
+const TABS: TabV2[] = [
+  { id: 'recetas', label: 'Escandallos', icon: <ClipboardList size={16} /> },
+  { id: 'analisis', label: 'Análisis Menú', icon: <BarChart3 size={16} /> },
+];
 
 export const EscandallosPage: React.FC = () => {
   const { showToast } = useToast();
   const { db } = useDatabase();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Tab state - read from URL query param
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<TabId>(
+    tabParam === 'analisis' ? 'analisis' : 'recetas'
+  );
+
+  // Update URL when tab changes
+  const handleTabChange = (tab: TabId) => {
+    setActiveTab(tab);
+    if (tab === 'analisis') {
+      setSearchParams({ tab: 'analisis' });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Estado de la lista (READ from DB)
   const escandallos = (db.escandallos || []) as Escandallo[];
   const [searchQuery, setSearchQuery] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
 
-  // Estado de navegación / edición
+  // Estado de navegacion / edicion
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [editingEscandallo, setEditingEscandallo] = useState<Escandallo | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,10 +62,11 @@ export const EscandallosPage: React.FC = () => {
       try {
         await Promise.all([
           db.ensureLoaded('escandallos'),
-          db.ensureLoaded('productos') // Needed for ingredients
+          db.ensureLoaded('productos'), // Needed for ingredients
+          db.ensureLoaded('cierres'), // Needed for menu analysis
         ]);
-      } catch (error) {
-        console.error("Error loading EscandallosPage data:", error);
+      } catch (error: unknown) {
+        logger.error('Error loading EscandallosPage data:', error);
       }
     };
     loadData();
@@ -47,7 +85,7 @@ export const EscandallosPage: React.FC = () => {
       );
     }
 
-    // El filtrado por mes se implementará cuando el modelo tenga fecha
+    // El filtrado por mes se implementara cuando el modelo tenga fecha
     return filtered;
   }, [escandallos, searchQuery]);
 
@@ -64,9 +102,9 @@ export const EscandallosPage: React.FC = () => {
   const handleSave = async (formData: EscandalloFormData) => {
     setLoading(true);
     try {
-      // Calculate derived valus (costs, margins)
+      // Calculate derived values (costs, margins)
       const escandalloData = EscandalloService.recalculate({
-        id: editingEscandallo?.id, // ID is handled by DB for new items usually, but here we might pass it if editing
+        id: editingEscandallo?.id,
         ...formData,
       });
 
@@ -74,7 +112,7 @@ export const EscandallosPage: React.FC = () => {
       if (!validation.valid) {
         showToast({
           type: 'error',
-          title: 'Error de validación',
+          title: 'Error de validacion',
           message: validation.errors.join(', '),
         });
         setLoading(false);
@@ -100,8 +138,8 @@ export const EscandallosPage: React.FC = () => {
       }
 
       handleCloseForm();
-    } catch (error) {
-      console.error(error);
+    } catch (error: unknown) {
+      logger.error('Error saving escandallo:', error);
       showToast({
         type: 'error',
         title: 'Error',
@@ -112,27 +150,50 @@ export const EscandallosPage: React.FC = () => {
     }
   };
 
-  return (
-    <div style={{ padding: 'var(--spacing-lg)' }}>
-      {viewMode === 'form' ? (
+  // Form mode - no sticky header
+  if (viewMode === 'form') {
+    return (
+      <PageContainer>
         <EscandalloWizard
           initialData={editingEscandallo}
           onSave={handleSave}
           onCancel={handleCloseForm}
           loading={loading}
         />
-      ) : (
-        <EscandalloList
-          escandallos={filteredEscandallos}
-          loading={loading}
-          onEdit={handleOpenForm}
-          onNew={() => handleOpenForm()}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          monthFilter={monthFilter}
-          onMonthFilterChange={setMonthFilter}
-        />
-      )}
-    </div>
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer>
+      <PageLayoutV2
+        header={
+          <ActionHeaderV2
+            tabs={TABS}
+            activeTab={activeTab}
+            onTabChange={(id) => handleTabChange(id as TabId)}
+            actions={activeTab === 'recetas' ? (
+              <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={() => handleOpenForm()}>
+                Nuevo Escandallo
+              </ButtonV2>
+            ) : undefined}
+          />
+        }
+      >
+        {activeTab === 'recetas' ? (
+          <EscandalloList
+            escandallos={filteredEscandallos}
+            loading={loading}
+            onEdit={handleOpenForm}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            monthFilter={monthFilter}
+            onMonthFilterChange={setMonthFilter}
+          />
+        ) : (
+          <MenuAnalysisTab />
+        )}
+      </PageLayoutV2>
+    </PageContainer>
   );
 };

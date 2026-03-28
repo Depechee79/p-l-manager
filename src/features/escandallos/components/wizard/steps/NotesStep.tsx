@@ -31,7 +31,7 @@ export const NotesStep: React.FC<NotesStepProps> = ({
             />
 
             <div style={{ marginTop: 'var(--spacing-md)' }}>
-                <label className="input-label" style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                <label className="input-label" style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
                     Notas / Instrucciones
                 </label>
                 <textarea
@@ -44,8 +44,8 @@ export const NotesStep: React.FC<NotesStepProps> = ({
                         height: 'auto',
                         minHeight: '120px',
                         resize: 'vertical',
-                        padding: '12px 16px',
-                        marginTop: '6px'
+                        padding: 'var(--spacing-sm) var(--spacing-md)',
+                        marginTop: 'var(--spacing-xs)'
                     }}
                     placeholder="Notas sobre la preparación, instrucciones especiales..."
                 />

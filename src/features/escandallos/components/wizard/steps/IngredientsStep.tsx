@@ -50,7 +50,7 @@ export const IngredientsStep: React.FC<IngredientsStepProps> = ({
         setProductSearchQuery('');
     };
 
-    const updateIngredient = (index: number, field: keyof Ingredient, value: any) => {
+    const updateIngredient = (index: number, field: keyof Ingredient, value: string | number) => {
         const newIngredientes = [...data.ingredientes];
         newIngredientes[index] = {
             ...newIngredientes[index],
