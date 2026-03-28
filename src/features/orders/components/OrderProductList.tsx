@@ -32,7 +32,7 @@ export const OrderProductList: React.FC<OrderProductListProps> = ({ products, av
         onChange(newProducts);
     };
 
-    const handleUpdateProduct = (index: number, field: keyof OrderProduct, value: any) => {
+    const handleUpdateProduct = (index: number, field: keyof OrderProduct, value: string | number) => {
         if (index < 0 || index >= products.length) return;
 
         const newProducts = [...products];
@@ -46,8 +46,10 @@ export const OrderProductList: React.FC<OrderProductListProps> = ({ products, av
                 product.precioUnitario = p.precioCompra || 0;
                 product.unidad = p.unidadBase || 'ud';
             }
-        } else {
-            (product as any)[field] = value;
+        } else if (field === 'cantidad' || field === 'precioUnitario' || field === 'subtotal') {
+            product[field] = Number(value);
+        } else if (field === 'nombre' || field === 'unidad') {
+            product[field] = String(value);
         }
 
         // Auto-calculate subtotal

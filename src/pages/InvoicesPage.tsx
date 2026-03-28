@@ -4,6 +4,7 @@ import { useDatabase } from '@core';
 import { useInvoices } from '../hooks/useInvoices';
 import { useProviders } from '../hooks/useProviders';
 import { InvoiceForm, InvoicesList } from '@/features/invoices';
+import { logger } from '@core/services/LoggerService';
 import type { Invoice, InvoiceFormData } from '@/features/invoices';
 import type { Product } from '@types';
 
@@ -32,8 +33,8 @@ export const InvoicesPage: React.FC = () => {
           db.ensureLoaded('proveedores'),
           db.ensureLoaded('productos')
         ]);
-      } catch (error) {
-        console.error("Error loading InvoicesPage data:", error);
+      } catch (error: unknown) {
+        logger.error("Error loading InvoicesPage data:", error instanceof Error ? error.message : String(error));
       }
     };
     loadData();
@@ -111,7 +112,7 @@ export const InvoicesPage: React.FC = () => {
           esEmpaquetado: false,
           stockActualUnidades: 0,
           ultimaFechaCompra: formData.fecha
-        } as any);
+        } as Omit<Product, 'id'>);
       }
     });
 

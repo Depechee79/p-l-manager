@@ -48,7 +48,7 @@ export const InvoiceProductList: React.FC<InvoiceProductListProps> = ({ products
         onChange(newProducts);
     };
 
-    const handleUpdateProduct = (index: number, field: keyof InvoiceProduct, value: any) => {
+    const handleUpdateProduct = (index: number, field: keyof InvoiceProduct, value: string | number | boolean) => {
         const newProducts = [...products];
         const product = { ...newProducts[index], [field]: value };
 

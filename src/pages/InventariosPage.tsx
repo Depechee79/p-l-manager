@@ -3,6 +3,7 @@ import { InventoryList, InventoryWizard, InventoryFormData } from '../features/i
 import { useDatabase } from '@core';
 import { useToast } from '../utils/toast';
 import { formatDate } from '../utils/formatters';
+import { logger } from '@core/services/LoggerService';
 import type { InventoryItem, InventoryProductCount, Product } from '@types';
 
 export const InventariosPage: React.FC = () => {
@@ -62,7 +63,8 @@ export const InventariosPage: React.FC = () => {
           title: 'Inventario eliminado',
           message: 'El inventario ha sido eliminado correctamente',
         });
-      } catch (error) {
+      } catch (error: unknown) {
+        logger.error('Error eliminando inventario:', error instanceof Error ? error.message : String(error));
         showToast({
           type: 'error',
           title: 'Error',
@@ -111,11 +113,10 @@ export const InventariosPage: React.FC = () => {
         totalItems: productosDetalle.length,
         valorTotal: productosDetalle.reduce((sum, p) => sum + p.valorDiferencia, 0),
         notas: formData.notas,
-        // Custom fields (using any to bypass strict type if needed, but keeping labels clear)
         nombre: formData.nombre,
         persona: formData.persona,
         zona: formData.zona,
-      } as any;
+      };
 
       if (editingInventory) {
         db.update('inventarios', editingInventory.id as number, inventario);
@@ -134,7 +135,8 @@ export const InventariosPage: React.FC = () => {
       }
 
       handleCloseForm();
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Error guardando inventario:', error instanceof Error ? error.message : String(error));
       showToast({
         type: 'error',
         title: 'Error',

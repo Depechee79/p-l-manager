@@ -1,7 +1,7 @@
 import React from 'react';
 import { User } from 'lucide-react';
 import { Input, FormSection, DatePicker, Button } from '@/shared/components';
-import { InventoryFormData, ZONES } from '../../../inventory.types';
+import { InventoryFormData, ZONES, CountingZone } from '../../../inventory.types';
 import { ArrowRight } from 'lucide-react';
 
 interface InfoStepProps {
@@ -50,7 +50,7 @@ export const InfoStep: React.FC<InfoStepProps> = ({ formData, setFormData, onNex
                     </label>
                     <select
                         value={formData.zona}
-                        onChange={(e) => setFormData({ ...formData, zona: e.target.value as any })}
+                        onChange={(e) => setFormData({ ...formData, zona: e.target.value as CountingZone })}
                         style={{
                             padding: '0 16px',
                             border: '1px solid var(--border)',

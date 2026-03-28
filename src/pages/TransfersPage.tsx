@@ -10,10 +10,12 @@ import {
 } from 'lucide-react';
 import { Button, Input, Select, Table, Card, FormSection } from '@shared/components';
 import { useDatabase, useRestaurantContext } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useTransfers } from '../hooks/useTransfers';
 import { useToast } from '../utils/toast';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import type { Transfer } from '../types';
+import type { Product } from '@types';
 
 export const TransfersPage: React.FC = () => {
   const { db } = useDatabase();
@@ -30,8 +32,8 @@ export const TransfersPage: React.FC = () => {
           db.ensureLoaded('productos'),
           db.ensureLoaded('restaurants')
         ]);
-      } catch (error) {
-        console.error("Error loading TransfersPage data:", error);
+      } catch (error: unknown) {
+        logger.error('Error loading TransfersPage data:', error instanceof Error ? error.message : String(error));
       }
     };
     loadData();
@@ -56,7 +58,7 @@ export const TransfersPage: React.FC = () => {
     String(r.id) !== currentRestaurantId
   );
 
-  const productos = (db.productos || []) as any[];
+  const productos = (db.productos || []) as Product[];
 
   const filteredTransfers = useMemo(() => {
     let filtered = transfers;
@@ -119,7 +121,8 @@ export const TransfersPage: React.FC = () => {
         productos: [],
         notas: '',
       });
-    } catch (err) {
+    } catch (error: unknown) {
+      logger.error('Error creating transfer:', error instanceof Error ? error.message : String(error));
       showToast({
         type: 'error',
         title: 'Error',
@@ -138,7 +141,8 @@ export const TransfersPage: React.FC = () => {
         title: 'Transferencia aprobada',
         message: 'La transferencia ha sido aprobada y está en tránsito',
       });
-    } catch (err) {
+    } catch (error: unknown) {
+      logger.error('Error approving transfer:', error instanceof Error ? error.message : String(error));
       showToast({
         type: 'error',
         title: 'Error',
@@ -155,7 +159,8 @@ export const TransfersPage: React.FC = () => {
         title: 'Transferencia completada',
         message: 'La transferencia ha sido completada y los inventarios actualizados',
       });
-    } catch (err) {
+    } catch (error: unknown) {
+      logger.error('Error completing transfer:', error instanceof Error ? error.message : String(error));
       showToast({
         type: 'error',
         title: 'Error',
@@ -176,7 +181,7 @@ export const TransfersPage: React.FC = () => {
     });
   };
 
-  const updateProducto = (index: number, field: string, value: any) => {
+  const updateProducto = (index: number, field: string, value: string | number) => {
     const nuevosProductos = [...formData.productos];
     nuevosProductos[index] = { ...nuevosProductos[index], [field]: value };
 
@@ -492,9 +497,8 @@ export const TransfersPage: React.FC = () => {
                   },
                 },
               ]}
-              onRowClick={(transfer) => {
-                // Show transfer details
-                console.log('Transfer details:', transfer);
+              onRowClick={(_transfer) => {
+                // TODO: Show transfer details modal
               }}
               hoverable
               striped

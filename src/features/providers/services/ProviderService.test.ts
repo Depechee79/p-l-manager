@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ProviderService } from './ProviderService';
 import { DatabaseService } from '@core';
+import type { Provider } from '@types';
 
 
 describe('ProviderService', () => {
@@ -24,13 +25,13 @@ describe('ProviderService', () => {
         nombre: 'Provider 1',
         cif: 'A12345678',
         contacto: 'contact1@test.com',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       db.add('proveedores', {
         nombre: 'Provider 2',
         cif: 'B87654321',
         contacto: 'contact2@test.com',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       const providers = providerService.getAll();
       expect(providers).toHaveLength(2);
@@ -45,13 +46,13 @@ describe('ProviderService', () => {
         nombre: 'Test Provider',
         cif: 'A12345678',
         contacto: 'test@provider.com',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       const provider = providerService.getById(added.id);
 
       expect(provider).toBeDefined();
       expect(provider?.id).toBe(added.id);
-      expect((provider as any).nombre).toBe('Test Provider');
+      expect(provider?.nombre).toBe('Test Provider');
     });
 
     it('should return undefined for non-existent id', () => {
@@ -80,7 +81,7 @@ describe('ProviderService', () => {
       expect(result.success).toBe(true);
       expect(db.proveedores).toHaveLength(1);
 
-      const saved = db.proveedores[0] as any;
+      const saved = db.proveedores[0] as Provider;
       expect(saved.nombre).toBe('Test Provider');
       expect(saved.cif).toBe('A12345678');
       expect(saved.id).toBeDefined();
@@ -89,7 +90,7 @@ describe('ProviderService', () => {
     it('should add fechaAlta when creating new provider', () => {
       providerService.save(baseProvider);
 
-      const saved = db.proveedores[0] as any;
+      const saved = db.proveedores[0] as Provider;
       expect(saved.fechaAlta).toBeDefined();
       expect(saved.fechaAlta).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
@@ -97,7 +98,7 @@ describe('ProviderService', () => {
     it('should add fechaModificacion when creating new provider', () => {
       providerService.save(baseProvider);
 
-      const saved = db.proveedores[0] as any;
+      const saved = db.proveedores[0] as Provider;
       expect(saved.fechaModificacion).toBeDefined();
       expect(saved.fechaModificacion).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
@@ -106,7 +107,7 @@ describe('ProviderService', () => {
       const initial = db.add('proveedores', {
         ...baseProvider,
         fechaAlta: '2024-01-01',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       const result = providerService.save(
         {
@@ -120,7 +121,7 @@ describe('ProviderService', () => {
       expect(result.success).toBe(true);
       expect(db.proveedores).toHaveLength(1);
 
-      const updated = db.proveedores[0] as any;
+      const updated = db.proveedores[0] as Provider;
       expect(updated.id).toBe(initial.id);
       expect(updated.nombre).toBe('Updated Provider');
       expect(updated.email).toBe('updated@provider.com');
@@ -130,7 +131,7 @@ describe('ProviderService', () => {
       const initial = db.add('proveedores', {
         ...baseProvider,
         fechaAlta: '2024-01-01',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       providerService.save(
         {
@@ -140,7 +141,7 @@ describe('ProviderService', () => {
         initial.id
       );
 
-      const updated = db.proveedores[0] as any;
+      const updated = db.proveedores[0] as Provider;
       expect(updated.fechaAlta).toBe('2024-01-01');
     });
 
@@ -148,7 +149,7 @@ describe('ProviderService', () => {
       const initial = db.add('proveedores', {
         ...baseProvider,
         fechaModificacion: '2024-01-01T00:00:00.000Z',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       const now = new Date();
       providerService.save(
@@ -159,7 +160,7 @@ describe('ProviderService', () => {
         initial.id
       );
 
-      const updated = db.proveedores[0] as any;
+      const updated = db.proveedores[0] as Provider;
       expect(updated.fechaModificacion).not.toBe('2024-01-01T00:00:00.000Z');
       expect(new Date(updated.fechaModificacion).getTime()).toBeGreaterThan(
         now.getTime() - 1000
@@ -206,7 +207,7 @@ describe('ProviderService', () => {
       expect(result.success).toBe(true);
       expect(db.proveedores).toHaveLength(1);
 
-      const saved = db.proveedores[0] as any;
+      const saved = db.proveedores[0] as Provider;
       expect(saved.nombre).toBe('Minimal Provider');
     });
   });
@@ -217,7 +218,7 @@ describe('ProviderService', () => {
         nombre: 'Test Provider',
         cif: 'A12345678',
         contacto: 'test@provider.com',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       expect(db.proveedores).toHaveLength(1);
 
@@ -231,7 +232,7 @@ describe('ProviderService', () => {
         nombre: 'Test Provider',
         cif: 'A12345678',
         contacto: 'test@provider.com',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       const result = providerService.delete(provider.id);
       expect(result).toBe(true);
@@ -251,33 +252,33 @@ describe('ProviderService', () => {
         cif: 'A12345678',
         contacto: 'john@acme.com',
         ciudad: 'Madrid',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       db.add('proveedores', {
         nombre: 'Beta Solutions',
         cif: 'B87654321',
         contacto: 'info@beta.com',
         ciudad: 'Barcelona',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       db.add('proveedores', {
         nombre: 'Gamma Industries',
         cif: 'C11111111',
         contacto: 'contact@gamma.com',
         ciudad: 'Madrid',
-      } as any);
+      } as Omit<Provider, 'id'>);
     });
 
     it('should search by nombre (case insensitive)', () => {
       const results = providerService.search('acme');
       expect(results).toHaveLength(1);
-      expect((results[0] as any).nombre).toBe('Acme Corporation');
+      expect(results[0].nombre).toBe('Acme Corporation');
     });
 
     it('should search by cif', () => {
       const results = providerService.search('B87654321');
       expect(results).toHaveLength(1);
-      expect((results[0] as any).nombre).toBe('Beta Solutions');
+      expect(results[0].nombre).toBe('Beta Solutions');
     });
 
     it('should search by ciudad', () => {
@@ -298,7 +299,7 @@ describe('ProviderService', () => {
     it('should match partial strings', () => {
       const results = providerService.search('Beta');
       expect(results).toHaveLength(1);
-      expect((results[0] as any).nombre).toBe('Beta Solutions');
+      expect(results[0].nombre).toBe('Beta Solutions');
     });
   });
 
@@ -308,19 +309,19 @@ describe('ProviderService', () => {
         nombre: 'Provider 1',
         cif: 'A12345678',
         contacto: 'p1@test.com',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       db.add('proveedores', {
         nombre: 'Provider 2',
         cif: 'B87654321',
         contacto: 'p2@test.com',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       db.add('proveedores', {
         nombre: 'Provider 3',
         cif: 'C11111111',
         contacto: 'p3@test.com',
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       // Add invoices for stats
       const p1 = db.proveedores[0];
@@ -330,19 +331,19 @@ describe('ProviderService', () => {
         proveedorId: p1.id,
         fecha: '2024-01-15',
         total: 1000,
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       db.add('facturas', {
         proveedorId: p1.id,
         fecha: '2024-01-20',
         total: 500,
-      } as any);
+      } as Omit<Provider, 'id'>);
 
       db.add('facturas', {
         proveedorId: p2.id,
         fecha: '2024-01-18',
         total: 750,
-      } as any);
+      } as Omit<Provider, 'id'>);
     });
 
     it('should return total providers count', () => {

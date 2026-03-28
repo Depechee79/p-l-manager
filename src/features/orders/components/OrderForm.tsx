@@ -10,7 +10,7 @@ interface OrderFormProps {
     initialData?: Order | null;
     providers: Provider[];
     products: Product[];
-    onSave: (data: any) => void;
+    onSave: (data: OrderFormData) => void;
     onCancel: () => void;
 }
 

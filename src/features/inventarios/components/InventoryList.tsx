@@ -71,13 +71,13 @@ export const InventoryList: React.FC<InventoryListProps> = ({
                     {
                         key: 'nombre',
                         header: 'Nombre',
-                        render: (_, inv) => (inv as any).nombre || 'Sin nombre',
+                        render: (_, inv) => inv.nombre || 'Sin nombre',
                         sortable: true,
                     },
                     {
                         key: 'persona',
                         header: 'Persona',
-                        render: (_, inv) => (inv as any).persona || '-',
+                        render: (_, inv) => inv.persona || '-',
                         sortable: true,
                     },
                     {

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProvidersPage } from './ProvidersPage';
 import { DatabaseService } from '../services/DatabaseService';
+import type { Provider } from '@types';
 
 describe('ProvidersPage', () => {
   let db: DatabaseService;
@@ -37,13 +38,13 @@ describe('ProvidersPage', () => {
       nombre: 'Proveedor 1',
       cif: 'A12345678',
       contacto: 'contact@provider1.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     db.add('proveedores', {
       nombre: 'Proveedor 2',
       cif: 'B87654321',
       contacto: 'contact@provider2.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     render(<ProvidersPage db={db} />);
     
@@ -58,13 +59,13 @@ describe('ProvidersPage', () => {
       nombre: 'Acme Corporation',
       cif: 'A12345678',
       contacto: 'acme@example.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     db.add('proveedores', {
       nombre: 'Beta Solutions',
       cif: 'B87654321',
       contacto: 'beta@example.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     render(<ProvidersPage db={db} />);
 
@@ -113,13 +114,13 @@ describe('ProvidersPage', () => {
       nombre: 'Provider 1',
       cif: 'A12345678',
       contacto: 'p1@example.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     db.add('proveedores', {
       nombre: 'Provider 2',
       cif: 'B87654321',
       contacto: 'p2@example.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     render(<ProvidersPage db={db} />);
 
@@ -135,7 +136,7 @@ describe('ProvidersPage', () => {
       nombre: 'Provider to Edit',
       cif: 'A12345678',
       contacto: 'edit@example.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     render(<ProvidersPage db={db} />);
 
@@ -156,7 +157,7 @@ describe('ProvidersPage', () => {
       nombre: 'Provider to Delete',
       cif: 'A12345678',
       contacto: 'delete@example.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     render(<ProvidersPage db={db} />);
 
@@ -178,7 +179,7 @@ describe('ProvidersPage', () => {
       nombre: 'Provider to Keep',
       cif: 'A12345678',
       contacto: 'keep@example.com',
-    } as any);
+    } as Omit<Provider, 'id'>);
 
     render(<ProvidersPage db={db} />);
 

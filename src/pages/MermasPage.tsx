@@ -10,7 +10,8 @@ import { Button, Input, Select, Table, Card, FormSection, DatePicker } from '@sh
 import { useDatabase, useRestaurant } from '@core';
 import { useToast } from '../utils/toast';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import type { Product, Merma } from '../types';
+import { logger } from '@core/services/LoggerService';
+import type { Product, Merma, Worker, InventoryZone } from '../types';
 
 export const MermasPage: React.FC = () => {
   const { db } = useDatabase();
@@ -43,7 +44,7 @@ export const MermasPage: React.FC = () => {
   });
 
   const productos = (db.productos || []) as Product[];
-  const workers = (db.workers || []) as any[];
+  const workers = (db.workers || []) as Worker[];
   const mermas = (db.mermas || []) as Merma[];
 
   // Update restaurantId in form when context changes
@@ -62,8 +63,8 @@ export const MermasPage: React.FC = () => {
           db.ensureLoaded('productos'),
           db.ensureLoaded('workers')
         ]);
-      } catch (error) {
-        console.error("Error loading MermasPage data:", error);
+      } catch (error: unknown) {
+        logger.error("Error loading MermasPage data:", error instanceof Error ? error.message : String(error));
       }
     };
     loadData();
@@ -163,7 +164,8 @@ export const MermasPage: React.FC = () => {
         });
       }
       setViewMode('list');
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Error guardando merma:', error instanceof Error ? error.message : String(error));
       showToast({
         type: 'error',
         title: 'Error',
@@ -181,7 +183,8 @@ export const MermasPage: React.FC = () => {
           title: 'Registro eliminado',
           message: 'La merma ha sido eliminada correctamente'
         });
-      } catch (error) {
+      } catch (error: unknown) {
+        logger.error('Error eliminando merma:', error instanceof Error ? error.message : String(error));
         showToast({
           type: 'error',
           title: 'Error',
@@ -251,7 +254,7 @@ export const MermasPage: React.FC = () => {
                 No hay mermas registradas con los filtros actuales.
               </div>
             ) : (
-              <Table<any>
+              <Table<Record<string, React.ReactNode>>
                 columns={[
                   { key: 'fecha', header: 'Fecha' },
                   { key: 'producto', header: 'Producto' },
@@ -318,7 +321,7 @@ export const MermasPage: React.FC = () => {
                 <Select
                   label="Zona *"
                   value={formData.zona}
-                  onChange={(val) => setFormData({ ...formData, zona: val as any })}
+                  onChange={(val) => setFormData({ ...formData, zona: val as InventoryZone })}
                   options={[
                     { value: 'bar', label: 'Barra' },
                     { value: 'cocina', label: 'Cocina' },

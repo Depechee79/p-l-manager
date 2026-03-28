@@ -109,9 +109,9 @@ describe('InvoicesPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useDatabase as any).mockReturnValue({ db: {} });
-    (useInvoices as any).mockReturnValue(mockUseInvoices);
-    (useProviders as any).mockReturnValue(mockUseProviders);
+    (vi.mocked(useDatabase)).mockReturnValue({ db: {} });
+    (vi.mocked(useInvoices)).mockReturnValue(mockUseInvoices);
+    (vi.mocked(useProviders)).mockReturnValue(mockUseProviders);
   });
 
   it('renders page title', () => {
@@ -125,7 +125,7 @@ describe('InvoicesPage', () => {
   });
 
   it('displays empty state when no invoices', () => {
-    (useInvoices as any).mockReturnValue({
+    (vi.mocked(useInvoices)).mockReturnValue({
       ...mockUseInvoices,
       invoices: [],
       filteredInvoices: []
@@ -287,7 +287,7 @@ describe('InvoicesPage', () => {
   });
 
   it('displays error message when present', () => {
-    (useInvoices as any).mockReturnValue({
+    (vi.mocked(useInvoices)).mockReturnValue({
       ...mockUseInvoices,
       error: 'Error al cargar facturas'
     });
@@ -298,7 +298,7 @@ describe('InvoicesPage', () => {
 
   it('clears error message when clicking close', async () => {
     const user = userEvent.setup();
-    (useInvoices as any).mockReturnValue({
+    (vi.mocked(useInvoices)).mockReturnValue({
       ...mockUseInvoices,
       error: 'Error al cargar facturas'
     });

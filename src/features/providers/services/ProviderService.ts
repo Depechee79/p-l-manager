@@ -1,5 +1,6 @@
 import type { Provider, Invoice } from '@/types';
 import { DatabaseService } from '@core';
+import { logger } from '@core/services/LoggerService';
 
 /**
  * Provider data for saving
@@ -106,7 +107,8 @@ export class ProviderService {
         success: true,
         data: saved,
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Error saving provider:', error instanceof Error ? error.message : String(error));
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido',
@@ -121,7 +123,8 @@ export class ProviderService {
     try {
       await this.db.delete('proveedores', id);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Error deleting provider:', error instanceof Error ? error.message : String(error));
       return false;
     }
   }

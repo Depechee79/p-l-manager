@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, Table, Button } from '@components';
+import type { TableColumn } from '@components';
 import { Pencil, Trash2 } from 'lucide-react';
 import { formatDate, formatCurrency } from '@utils';
 import type { Invoice } from '../invoices.types';
@@ -22,46 +23,49 @@ export const InvoicesList: React.FC<InvoicesListProps> = ({ invoices, loading, o
         );
     }
 
-    const columns = [
+    const columns: TableColumn<Invoice>[] = [
         {
-            key: 'numero' as keyof Invoice,
+            key: 'numero',
             header: 'Número',
             sortable: true
         },
         {
-            key: 'proveedor' as keyof Invoice,
+            key: 'proveedor',
             header: 'Proveedor',
             sortable: true
         },
         {
-            key: 'fecha' as keyof Invoice,
+            key: 'fecha',
             header: 'Fecha',
             sortable: true,
-            render: (value: any) => formatDate(value)
+            render: (_value, row) => formatDate(row.fecha)
         },
         {
-            key: 'total' as keyof Invoice,
+            key: 'total',
             header: 'Total',
             sortable: true,
-            render: (value: any) => formatCurrency(value)
+            render: (_value, row) => formatCurrency(row.total)
         },
         {
-            key: 'tipo' as keyof Invoice,
+            key: 'tipo',
             header: 'Tipo',
             sortable: true,
-            render: (value: any) => (
-                <span style={{
-                    padding: 'var(--spacing-xs) var(--spacing-sm)',
-                    borderRadius: 'var(--radius)',
-                    backgroundColor: value === 'factura' ? 'var(--info-lighter)' : 'var(--warning-lighter)',
-                    color: value === 'factura' ? 'var(--info)' : 'var(--warning)',
-                    fontSize: 'var(--font-size-xs)',
-                    fontWeight: '500',
-                    textTransform: 'capitalize'
-                }}>
-                    {value}
-                </span>
-            )
+            render: (_value, row) => {
+                const tipo = row.tipo || 'factura';
+                return (
+                    <span style={{
+                        padding: 'var(--spacing-xs) var(--spacing-sm)',
+                        borderRadius: 'var(--radius)',
+                        backgroundColor: tipo === 'factura' ? 'var(--info-lighter)' : 'var(--warning-lighter)',
+                        color: tipo === 'factura' ? 'var(--info)' : 'var(--warning)',
+                        fontSize: 'var(--font-size-xs)',
+                        fontWeight: '500',
+                        textTransform: 'capitalize'
+                    }}>
+                        {tipo}
+                    </span>
+                );
+            }
         }
     ];
 

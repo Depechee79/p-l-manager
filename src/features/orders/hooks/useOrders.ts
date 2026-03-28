@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDatabase, useRestaurant } from '@core';
+import { logger } from '@core/services/LoggerService';
 
 import type { Order } from '../orders.types';
 import { useToast } from '@utils/toast';
@@ -37,8 +38,8 @@ export const useOrders = () => {
                     db.ensureLoaded('proveedores'), // Needed for create
                     db.ensureLoaded('productos')    // Needed for create
                 ]);
-            } catch (err) {
-                console.error("Error loading orders data:", err);
+            } catch (error: unknown) {
+                logger.error('Error loading orders data:', error instanceof Error ? error.message : String(error));
             }
             refreshOrders();
             setLoading(false);
@@ -82,8 +83,8 @@ export const useOrders = () => {
             showToast({ type: 'success', title: 'Pedido creado', message: 'El pedido se ha guardado correctamente' });
             refreshOrders();
             return true;
-        } catch (err) {
-            console.error("Error creating order:", err);
+        } catch (error: unknown) {
+            logger.error('Error creating order:', error instanceof Error ? error.message : String(error));
             showToast({ type: 'error', title: 'Error', message: 'No se pudo crear el pedido' });
             return false;
         }
@@ -95,7 +96,8 @@ export const useOrders = () => {
             showToast({ type: 'success', title: 'Pedido actualizado', message: 'Los cambios se han guardado' });
             refreshOrders();
             return true;
-        } catch (err) {
+        } catch (error: unknown) {
+            logger.error('Error updating order:', error instanceof Error ? error.message : String(error));
             showToast({ type: 'error', title: 'Error', message: 'No se pudo actualizar el pedido' });
             return false;
         }
@@ -107,7 +109,8 @@ export const useOrders = () => {
             showToast({ type: 'success', title: 'Pedido eliminado', message: 'El pedido ha sido eliminado' });
             refreshOrders();
             return true;
-        } catch (err) {
+        } catch (error: unknown) {
+            logger.error('Error deleting order:', error instanceof Error ? error.message : String(error));
             showToast({ type: 'error', title: 'Error', message: 'No se pudo eliminar el pedido' });
             return false;
         }

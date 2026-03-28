@@ -1,34 +1,35 @@
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { OrderForm } from './OrderForm';
-import { Product, Provider } from '@types';
+import type { Product, Provider } from '@types';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
 vi.mock('@components', () => ({
-    Card: ({ children }: any) => <div>{children}</div>,
-    Button: ({ onClick, children, disabled }: any) => <button onClick={onClick} disabled={disabled}>{children}</button>,
-    Input: ({ label, value, onChange, placeholder, type }: any) => (
+    Card: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Button: ({ onClick, children, disabled }: { onClick?: () => void; children: React.ReactNode; disabled?: boolean }) => <button onClick={onClick} disabled={disabled}>{children}</button>,
+    Input: ({ label, value, onChange, placeholder, type }: { label?: string; value?: string | number; onChange?: React.ChangeEventHandler<HTMLInputElement>; placeholder?: string; type?: string }) => (
         <div>
             <label>{label}</label>
             <input type={type} placeholder={placeholder} value={value} onChange={onChange} data-testid={`input-${label}`} />
         </div>
     ),
-    Select: ({ label, value, onChange, options }: any) => (
+    Select: ({ label, value, onChange, options }: { label?: string; value?: string; onChange?: (value: string) => void; options: Array<{ value: string; label: string }> }) => (
         <div>
             <label>{label}</label>
-            <select value={value} onChange={(e) => onChange(e.target.value)} data-testid={`select-${label}`}>
+            <select value={value} onChange={(e) => onChange?.(e.target.value)} data-testid={`select-${label}`}>
                 <option value="">Select...</option>
-                {options.map((o: any) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
         </div>
     ),
-    DatePicker: ({ label, value, onChange }: any) => (
+    DatePicker: ({ label, value, onChange }: { label?: string; value?: string; onChange?: (value: string) => void }) => (
         <div>
             <label>{label}</label>
-            <input type="date" value={value} onChange={(e) => onChange(e.target.value)} />
+            <input type="date" value={value} onChange={(e) => onChange?.(e.target.value)} />
         </div>
     ),
-    FormSection: ({ title, children }: any) => <div><h3>{title}</h3>{children}</div>,
+    FormSection: ({ title, children }: { title: string; children: React.ReactNode }) => <div><h3>{title}</h3>{children}</div>,
 }));
 
 // Mock child components
@@ -38,10 +39,10 @@ vi.mock('../components/StockSuggestions', () => ({
 
 // Mock internal component to ensure stable test environment
 vi.mock('../components/OrderProductList', () => ({
-    OrderProductList: ({ products, onChange }: any) => (
+    OrderProductList: ({ products, onChange }: { products: Array<{ productoId: string | number; nombre?: string; cantidad: number; unidad: string; precioUnitario: number }>; onChange: (products: Array<{ productoId: string | number; cantidad: number; unidad: string; precioUnitario: number }>) => void }) => (
         <div>
             <div data-testid="product-list">
-                {products.map((p: any, i: number) => (
+                {products.map((p, i: number) => (
                     <div key={i} data-testid={`product-row-${i}`}>
                         <span>{p.nombre}</span>
                         <button onClick={() => {

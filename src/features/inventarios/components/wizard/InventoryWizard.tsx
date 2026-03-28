@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Card, Button, StepIndicator } from '@/shared/components';
-import { InventoryFormData, INITIAL_FORM_DATA } from '../../inventory.types';
+import { InventoryFormData, INITIAL_FORM_DATA, ProductCount, CountingMethod } from '../../inventory.types';
 import { InfoStep, CountingStep, SummaryStep } from './steps';
-import type { InventoryItem } from '@types';
+import type { InventoryItem, Product } from '@types';
 import { useDatabase } from '@core';
 
 interface InventoryWizardProps {
@@ -27,26 +27,25 @@ export const InventoryWizard: React.FC<InventoryWizardProps> = ({
     useEffect(() => {
         if (initialData) {
             // Convert InventoryItem to InventoryFormData
-            const productos = initialData.productos.map(p => {
-                const product = db.productos?.find(prod => prod.id === p.productoId);
-                const metodo = (p as any).metodo || 'total';
+            const productos: ProductCount[] = initialData.productos.map(p => {
+                const product = (db.productos as Product[])?.find(prod => prod.id === p.productoId);
                 return {
                     productoId: p.productoId,
                     nombre: p.nombre,
-                    zona: (initialData as any).zona || 'bar',
-                    metodo,
-                    cantidadTotal: metodo === 'total' ? p.stockReal : undefined,
-                    cantidadPack: metodo === 'pack' ? Math.floor(p.stockReal / (product?.unidadesPorPack || 1)) : undefined,
-                    unidadesPorPack: metodo === 'pack' ? (product?.unidadesPorPack || 1) : undefined,
+                    zona: initialData.zona || 'bar',
+                    metodo: 'total' as CountingMethod,
+                    cantidadTotal: p.stockReal,
+                    cantidadPack: undefined,
+                    unidadesPorPack: product?.unidadesPorPack || 1,
                 };
             });
 
             setFormData({
                 fecha: initialData.fecha,
-                persona: (initialData as any).persona || '',
-                nombre: (initialData as any).nombre || '',
-                zona: (initialData as any).zona || 'bar',
-                productos: productos as any,
+                persona: initialData.persona || '',
+                nombre: initialData.nombre || '',
+                zona: initialData.zona || 'bar',
+                productos,
                 notas: initialData.notas || '',
             });
         }

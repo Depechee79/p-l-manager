@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Input, Select, Card } from '@shared/components';
 import { Plus, Search } from 'lucide-react';
 import { useDatabase } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useToast } from '@utils/toast';
 import { useOrders, OrderForm, OrdersList } from '@/features/orders';
 import type { Order, OrderFormData } from '@/features/orders';
@@ -20,8 +21,8 @@ export const OrdersPage: React.FC = () => {
           db.ensureLoaded('productos'),
           db.ensureLoaded('proveedores')
         ]);
-      } catch (error) {
-        console.error("Error loading OrdersPage data:", error);
+      } catch (error: unknown) {
+        logger.error('Error loading OrdersPage data:', error instanceof Error ? error.message : String(error));
       }
     };
     loadData();
@@ -64,7 +65,7 @@ export const OrdersPage: React.FC = () => {
 
   const handleSend = async (order: Order) => {
     if (window.confirm(`¿Enviar el pedido a ${order.proveedorNombre}?`)) {
-      await (sendOrder as any)(order);
+      await sendOrder(order);
     }
   };
 
@@ -89,7 +90,7 @@ export const OrdersPage: React.FC = () => {
 
     const total = productosDetalle.reduce((sum, p) => sum + p.subtotal, 0);
 
-    const orderData: any = {
+    const orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'restaurantId'> = {
       fecha: formData.fecha,
       fechaEntrega: formData.fechaEntrega,
       proveedorId: formData.proveedorId,

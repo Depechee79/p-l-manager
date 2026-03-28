@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDatabase } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useProviders } from '@hooks';
 import { useToast } from '../utils/toast';
 import type { Provider } from '@types';
@@ -51,11 +52,12 @@ export const ProvidersPage: React.FC = () => {
         });
       }
       handleCloseForm();
-    } catch (err) {
+    } catch (saveError: unknown) {
+      logger.error('Error saving provider:', saveError instanceof Error ? saveError.message : String(saveError));
       showToast({
         type: 'error',
         title: 'Error',
-        message: error || 'No se pudo guardar el proveedor',
+        message: saveError instanceof Error ? saveError.message : 'No se pudo guardar el proveedor',
       });
     }
   };
@@ -69,7 +71,8 @@ export const ProvidersPage: React.FC = () => {
           title: 'Proveedor eliminado',
           message: `El proveedor ${provider.nombre} ha sido eliminado correctamente`,
         });
-      } catch (err) {
+      } catch (deleteError: unknown) {
+        logger.error('Error deleting provider:', deleteError instanceof Error ? deleteError.message : String(deleteError));
         showToast({
           type: 'error',
           title: 'Error',

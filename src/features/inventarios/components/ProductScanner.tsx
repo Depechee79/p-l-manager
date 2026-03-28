@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { Card, Button } from '@/shared/components';
 import { X, Camera } from 'lucide-react';
+import { logger } from '@core/services/LoggerService';
 
 interface ProductScannerProps {
     onScan: (decodedText: string) => void;
@@ -38,16 +39,16 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onScan, onClose,
                             // Suppress frequent errors
                         }
                     );
-                } catch (err) {
+                } catch (err: unknown) {
                     setError("No se pudo iniciar la cámara. Asegúrate de dar permisos.");
-                    console.error("Scanner Error:", err);
+                    logger.error("Scanner Error:", err instanceof Error ? err.message : String(err));
                 }
             }, 100);
 
             return () => {
                 clearTimeout(timer);
                 if (scannerRef.current) {
-                    scannerRef.current.clear().catch(err => console.error("Failed to clear scanner:", err));
+                    scannerRef.current.clear().catch((err: unknown) => logger.error("Failed to clear scanner:", err instanceof Error ? err.message : String(err)));
                 }
             };
         }

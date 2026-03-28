@@ -71,12 +71,6 @@ export const CountingStep: React.FC<CountingStepProps> = ({
         return Array.from(new Set(products.map(p => p.familia).filter(Boolean)));
     }, [db.productos]);
 
-    /* const subfamilies = useMemo(() => {
-        const products = db.productos as Product[] || [];
-        if (!familyFilter) return [];
-        return Array.from(new Set(products.filter(p => p.familia === familyFilter).map(p => p.subfamilia).filter(Boolean)));
-    }, [db.productos, familyFilter]); */
-
     const handleSelectProduct = (product: Product) => {
         setCurrentProduct(product);
         setCurrentCount({
