@@ -32,7 +32,7 @@ interface QueryOptions {
   /** Numero maximo de documentos a retornar */
   limitCount?: number;
   /** Filtros adicionales: { campo: valor } */
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
 }
 
 /**
@@ -53,8 +53,9 @@ const RESTAURANT_FILTERED_COLLECTIONS: CollectionName[] = [
 
 /**
  * Colecciones que se comparten (no requieren filtro por restaurante)
+ * @internal Used for documentation/reference
  */
-const SHARED_COLLECTIONS: CollectionName[] = [
+const _SHARED_COLLECTIONS: CollectionName[] = [
   'productos',
   'proveedores',
   'escandallos',
@@ -63,6 +64,8 @@ const SHARED_COLLECTIONS: CollectionName[] = [
   'usuarios',
   'roles',
 ];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+void _SHARED_COLLECTIONS; // Suppress unused warning - kept for documentation
 
 /**
  * Colecciones de RRHH (filtran por companyId o workerId)
@@ -84,7 +87,7 @@ export class FirestoreService {
   constructor() {
     try {
       this.db = getFirestoreInstance();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Firestore failed to initialize (Offline mode):', error);
     }
   }
@@ -99,7 +102,7 @@ export class FirestoreService {
   /**
    * Add a document to a collection
    */
-  async add<T extends Record<string, any>>(
+  async add<T extends Record<string, unknown>>(
     collectionName: CollectionName,
     data: T,
     customId?: string
@@ -142,7 +145,7 @@ export class FirestoreService {
           data: { ...dataWithTimestamp, id: docRef.id } as T & { id: string },
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error adding to ${collectionName}:`, error);
       return {
         success: false,
@@ -172,10 +175,10 @@ export class FirestoreService {
         updatedAt: Timestamp.now(),
       };
 
-      await updateDoc(docRef, dataWithTimestamp as any);
+      await updateDoc(docRef, dataWithTimestamp as Record<string, unknown>);
       logger.info(`Updated in Firebase: ${collectionName}/${id}`);
       return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error updating ${collectionName}/${id}:`, error);
       return {
         success: false,
@@ -200,7 +203,7 @@ export class FirestoreService {
       await deleteDoc(docRef);
       logger.info(`Deleted from Firebase: ${collectionName}/${id}`);
       return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error deleting ${collectionName}/${id}:`, error);
       return {
         success: false,
@@ -225,8 +228,9 @@ export class FirestoreService {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        const data = { id: docSnap.id, ...docSnap.data() } as T;
-        this.validateDocumentStructure(collectionName, data);
+        const rawData: Record<string, unknown> = { id: docSnap.id, ...docSnap.data() };
+        this.validateDocumentStructure(collectionName, rawData);
+        const data = rawData as T;
         return {
           success: true,
           data,
@@ -237,7 +241,7 @@ export class FirestoreService {
           error: 'Document not found',
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error getting ${collectionName}/${id}:`, error);
       return {
         success: false,
@@ -249,7 +253,7 @@ export class FirestoreService {
   /**
    * Validate document structure and types from Firebase
    */
-  private validateDocumentStructure(collectionName: CollectionName, data: any): void {
+  private validateDocumentStructure(collectionName: CollectionName, data: Record<string, unknown>): void {
     const requiredFields: Record<CollectionName, string[]> = {
       productos: ['nombre', 'proveedorId'],
       proveedores: ['nombre', 'cif'],
@@ -297,18 +301,30 @@ export class FirestoreService {
 
   /**
    * Get all documents from a collection (sin filtro)
-   * @deprecated Usar getByRestaurant() para colecciones filtradas
+   * AUDIT-FIX: P2.2 - Documented acceptable use cases
+   *
+   * Acceptable use cases:
+   * - Shared collections: productos, proveedores, escandallos, roles, usuarios
+   * - System collections: companies, restaurants
+   * - Initial data sync for critical data
+   *
+   * @param collectionName - Collection to fetch
+   * @param silent - If true, suppress performance warning (for known acceptable uses)
    */
-  async getAll<T>(collectionName: CollectionName): Promise<FirebaseResponse<T[]>> {
+  async getAll<T>(
+    collectionName: CollectionName,
+    silent: boolean = false
+  ): Promise<FirebaseResponse<T[]>> {
     if (!this.db) {
       return { success: false, error: 'Firestore not initialized' };
     }
 
-    // Advertir si se usa getAll en coleccion que deberia filtrarse
-    if (this.requiresRestaurantFilter(collectionName)) {
-      logger.warn(
-        `[PERFORMANCE] getAll() usado en ${collectionName}. ` +
-        `Considera usar getByRestaurant() para mejor rendimiento.`
+    // AUDIT-FIX: P2.2 - Only warn for truly filterable collections when not silent
+    if (!silent && this.requiresRestaurantFilter(collectionName)) {
+      // This warning helps identify places where getByRestaurant() should be used
+      // Silent mode should be used for critical data sync where all data is needed
+      logger.debug(
+        `[SYNC] getAll() on ${collectionName} - use getByRestaurant() for filtered queries`
       );
     }
 
@@ -321,7 +337,7 @@ export class FirestoreService {
       })) as T[];
 
       return { success: true, data };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error fetching ${collectionName}:`, error);
       return {
         success: false,
@@ -390,7 +406,7 @@ export class FirestoreService {
       );
 
       return { success: true, data };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error fetching ${collectionName}:`, error);
 
       // Si el error es por falta de indice, dar instrucciones
@@ -458,7 +474,7 @@ export class FirestoreService {
       })) as T[];
 
       return { success: true, data };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error in custom query for ${collectionName}:`, error);
       return {
         success: false,
@@ -512,7 +528,7 @@ export class FirestoreService {
       })) as T[];
 
       return { success: true, data };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error fetching ${collectionName} by worker:`, error);
       return {
         success: false,
@@ -557,7 +573,7 @@ export class FirestoreService {
       })) as T[];
 
       return { success: true, data };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Firebase error fetching ${collectionName} by company:`, error);
       return {
         success: false,
@@ -597,7 +613,7 @@ export class FirestoreService {
         success: true,
         data: true,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Firebase connection test failed:', error);
       return {
         success: false,

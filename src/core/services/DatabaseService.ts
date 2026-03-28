@@ -188,15 +188,17 @@ export class DatabaseService implements Collections {
 
   /**
    * Sync a single collection from cloud
+   * AUDIT-FIX: P2.2 - Using silent mode for sync to avoid console spam
    */
   async syncCollection(col: CollectionName): Promise<void> {
     try {
       if (this.loadedCollections.has(col)) {
-        // Already loading or loaded? 
+        // Already loading or loaded?
         // For now, simpler: allow re-sync if called explicitly
       }
 
-      const response = await this.cloudService.getAll<BaseEntity>(col);
+      // AUDIT-FIX: P2.2 - Pass silent=true to suppress performance warnings during sync
+      const response = await this.cloudService.getAll<BaseEntity>(col, true);
       if (response.success && response.data) {
         // Convert IDs back to numbers if they are numeric strings
         const cloudData = response.data.map(item => ({
@@ -216,7 +218,7 @@ export class DatabaseService implements Collections {
       } else if (response.error) {
         logger.warn(`⚠️ [LOAD] ${col}: ${response.error}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`❌ [LOAD] ${col} failed:`, error);
     }
   }
@@ -326,29 +328,32 @@ export class DatabaseService implements Collections {
    * Set collection by name
    */
   private setCollection(name: CollectionName, data: BaseEntity[]): void {
+    // DatabaseService stores heterogeneous data: BaseEntity[] is the common interface,
+    // but each collection property has a more specific type. Since all specific types
+    // extend BaseEntity, this cast is safe for runtime but needs explicit assertion.
     switch (name) {
-      case 'cierres': this.cierres = data as any; break;
-      case 'facturas': this.facturas = data as any; break;
-      case 'albaranes': this.albaranes = data as any; break;
-      case 'proveedores': this.proveedores = data as any; break;
-      case 'productos': this.productos = data as any; break;
-      case 'escandallos': this.escandallos = data as any; break;
-      case 'inventarios': this.inventarios = data as any; break;
-      case 'delivery': this.delivery = data as any; break;
-      case 'usuarios': this.usuarios = data as any; break;
-      case 'roles': this.roles = data as any; break;
-      case 'companies': this.companies = data as any; break;
-      case 'restaurants': this.restaurants = data as any; break;
-      case 'transfers': this.transfers = data as any; break;
-      case 'workers': this.workers = data as any; break;
-      case 'mermas': this.mermas = data as any; break;
-      case 'orders': this.orders = data as any; break;
-      case 'pnl_adjustments': this.pnl_adjustments = data as any; break;
-      case 'absences': this.absences = data as any; break;
-      case 'vacation_requests': this.vacation_requests = data as any; break;
-      case 'gastosFijos': this.gastosFijos = data as any; break;
-      case 'nominas': this.nominas = data as any; break;
-      case 'fichajes': this.fichajes = data as any; break;
+      case 'cierres': this.cierres = data as unknown as Cierre[]; break;
+      case 'facturas': this.facturas = data as unknown as Invoice[]; break;
+      case 'albaranes': this.albaranes = data as unknown as Invoice[]; break;
+      case 'proveedores': this.proveedores = data as unknown as Provider[]; break;
+      case 'productos': this.productos = data as unknown as Product[]; break;
+      case 'escandallos': this.escandallos = data as unknown as Escandallo[]; break;
+      case 'inventarios': this.inventarios = data as unknown as InventoryItem[]; break;
+      case 'delivery': this.delivery = data as unknown as DeliveryRecord[]; break;
+      case 'usuarios': this.usuarios = data as unknown as AppUser[]; break;
+      case 'roles': this.roles = data as unknown as Role[]; break;
+      case 'companies': this.companies = data as unknown as Company[]; break;
+      case 'restaurants': this.restaurants = data as unknown as Restaurant[]; break;
+      case 'transfers': this.transfers = data as unknown as Transfer[]; break;
+      case 'workers': this.workers = data as unknown as Worker[]; break;
+      case 'mermas': this.mermas = data; break;
+      case 'orders': this.orders = data; break;
+      case 'pnl_adjustments': this.pnl_adjustments = data; break;
+      case 'absences': this.absences = data as unknown as Absence[]; break;
+      case 'vacation_requests': this.vacation_requests = data as unknown as VacationRequest[]; break;
+      case 'gastosFijos': this.gastosFijos = data as unknown as GastoFijo[]; break;
+      case 'nominas': this.nominas = data; break;
+      case 'fichajes': this.fichajes = data; break;
     }
   }
 
@@ -371,9 +376,10 @@ export class DatabaseService implements Collections {
   async add<T extends BaseEntity>(
     collection: CollectionName,
     item: Omit<T, 'id'>,
-    options: { silent?: boolean } = {}
+    _options: { silent?: boolean } = {}
   ): Promise<T> {
-    const toastId = options.silent ? null : ToastService.saving('Guardando...');
+    // Session 006: Disabled automatic toasts - too noisy. Only show errors.
+    const toastId = null;
 
     try {
       // Validate foreign keys before adding
@@ -382,7 +388,7 @@ export class DatabaseService implements Collections {
 
       if (collectionRelations) {
         for (const [field, config] of Object.entries(collectionRelations)) {
-          const value = (item as any)[field];
+          const value = (item as unknown as Record<string, unknown>)[field] as string | number | null | undefined;
           const validation = this.integrityService.validateForeignKey(
             collection,
             field,
@@ -399,7 +405,7 @@ export class DatabaseService implements Collections {
       }
 
       // Validate nested references
-      this.validateNestedReferences(collection, item);
+      this.validateNestedReferences(collection, item as unknown as Record<string, unknown>);
 
       const newItem = {
         ...item,
@@ -411,7 +417,7 @@ export class DatabaseService implements Collections {
       const firestoreId = String(newItem.id);
 
       // CLOUD-FIRST: Send to Firebase first
-      const result = await this.cloudService.add(collection, newItem, firestoreId);
+      const result = await this.cloudService.add(collection, newItem as unknown as Record<string, unknown>, firestoreId);
 
       if (!result.success) {
         throw new Error(result.error || 'Error al guardar en Firebase');
@@ -426,11 +432,11 @@ export class DatabaseService implements Collections {
 
       if (toastId) {
         ToastService.dismiss(toastId);
-        ToastService.success('Guardado correctamente');
+        // Session 006: Removed success toast - too noisy. Only show errors.
       }
 
       return newItem;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       logger.error(`❌ [ADD] ${collection} failed:`, errorMessage);
 
@@ -457,7 +463,7 @@ export class DatabaseService implements Collections {
 
     if (collectionRelations) {
       for (const [field, config] of Object.entries(collectionRelations)) {
-        const value = (item as any)[field];
+        const value = (item as unknown as Record<string, unknown>)[field] as string | number | null | undefined;
         const validation = this.integrityService.validateForeignKey(
           collection,
           field,
@@ -474,7 +480,7 @@ export class DatabaseService implements Collections {
     }
 
     // Validate nested references
-    this.validateNestedReferences(collection, item);
+    this.validateNestedReferences(collection, item as unknown as Record<string, unknown>);
 
     const newItem = {
       ...item,
@@ -496,7 +502,7 @@ export class DatabaseService implements Collections {
   /**
    * Validate nested references in item (arrays with foreign keys)
    */
-  private validateNestedReferences(collection: CollectionName, item: any): void {
+  private validateNestedReferences(collection: CollectionName, item: Record<string, unknown>): void {
     if (collection === 'inventarios' && item.productos && Array.isArray(item.productos)) {
       const productos = this.productos as BaseEntity[];
       const productoIds = new Set(productos.map(p => String(p.id)));
@@ -548,7 +554,7 @@ export class DatabaseService implements Collections {
     collection: CollectionName,
     id: number | string,
     updatedItem: Partial<T>,
-    options: { silent?: boolean } = {}
+    _options: { silent?: boolean } = {}
   ): Promise<T | null> {
     const currentCollection = this.getCollection(collection);
     const index = currentCollection.findIndex((item) => item.id === id);
@@ -557,7 +563,8 @@ export class DatabaseService implements Collections {
       return null;
     }
 
-    const toastId = options.silent ? null : ToastService.saving('Actualizando...');
+    // Session 006: Disabled automatic toasts - too noisy. Only show errors.
+    const toastId = null;
 
     try {
       const oldItem = currentCollection[index];
@@ -577,7 +584,7 @@ export class DatabaseService implements Collections {
         for (const [field, config] of Object.entries(collectionRelations)) {
           // Only validate if the field is being updated
           if (field in updatedItem) {
-            const value = (updated as any)[field];
+            const value = (updated as unknown as Record<string, unknown>)[field] as string | number | null | undefined;
             const validation = this.integrityService.validateForeignKey(
               collection,
               field,
@@ -595,14 +602,15 @@ export class DatabaseService implements Collections {
       }
 
       // Validate nested references if they are being updated
-      if ((updatedItem as any).productos || (updatedItem as any).ingredientes) {
-        this.validateNestedReferences(collection, updated);
+      const partialRecord = updatedItem as unknown as Record<string, unknown>;
+      if (partialRecord.productos || partialRecord.ingredientes) {
+        this.validateNestedReferences(collection, updated as unknown as Record<string, unknown>);
       }
 
       const firestoreId = String(id);
 
       // CLOUD-FIRST: Send to Firebase first
-      const result = await this.cloudService.update(collection, firestoreId, updated);
+      const result = await this.cloudService.update(collection, firestoreId, updated as unknown as Record<string, unknown>);
 
       if (!result.success) {
         throw new Error(result.error || 'Error al actualizar en Firebase');
@@ -616,11 +624,11 @@ export class DatabaseService implements Collections {
 
       if (toastId) {
         ToastService.dismiss(toastId);
-        ToastService.success('Actualizado correctamente');
+        // Session 006: Removed success toast - too noisy. Only show errors.
       }
 
       return updated;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       logger.error(`❌ [UPDATE] ${collection}/${id} failed:`, errorMessage);
 
@@ -665,7 +673,7 @@ export class DatabaseService implements Collections {
     if (collectionRelations) {
       for (const [field, config] of Object.entries(collectionRelations)) {
         if (field in updatedItem) {
-          const value = (updated as any)[field];
+          const value = (updated as unknown as Record<string, unknown>)[field] as string | number | null | undefined;
           const validation = this.integrityService.validateForeignKey(
             collection,
             field,
@@ -682,8 +690,9 @@ export class DatabaseService implements Collections {
       }
     }
 
-    if ((updatedItem as any).productos || (updatedItem as any).ingredientes) {
-      this.validateNestedReferences(collection, updated);
+    const partialRecord = updatedItem as unknown as Record<string, unknown>;
+    if (partialRecord.productos || partialRecord.ingredientes) {
+      this.validateNestedReferences(collection, updated as unknown as Record<string, unknown>);
     }
 
     currentCollection[index] = updated;
@@ -703,7 +712,7 @@ export class DatabaseService implements Collections {
   async delete(
     collection: CollectionName,
     id: number | string,
-    options: { silent?: boolean } = {}
+    _options: { silent?: boolean } = {}
   ): Promise<void> {
     // Check if item can be safely deleted
     const canDelete = this.integrityService.canDelete(collection, id);
@@ -718,7 +727,8 @@ export class DatabaseService implements Collections {
       );
     }
 
-    const toastId = options.silent ? null : ToastService.saving('Eliminando...');
+    // Session 006: Disabled automatic toasts - too noisy. Only show errors.
+    const toastId = null;
 
     try {
       const firestoreId = String(id);
@@ -740,9 +750,9 @@ export class DatabaseService implements Collections {
 
       if (toastId) {
         ToastService.dismiss(toastId);
-        ToastService.success('Eliminado correctamente');
+        // Session 006: Removed success toast - too noisy. Only show errors.
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       logger.error(`❌ [DELETE] ${collection}/${id} failed:`, errorMessage);
 
@@ -788,10 +798,11 @@ export class DatabaseService implements Collections {
     const now = new Date();
     const items = this.getCollection(collection);
 
-    return items.filter((item: any) => {
-      if (!item.fecha) return true;
+    return items.filter((item) => {
+      const record = item as unknown as Record<string, unknown>;
+      if (!record.fecha) return true;
 
-      const itemDate = new Date(item.fecha);
+      const itemDate = new Date(record.fecha as string);
       if (isNaN(itemDate.getTime())) return false;
 
       switch (period) {
@@ -827,7 +838,7 @@ export class DatabaseService implements Collections {
   private async _syncToCloud(
     collectionName: CollectionName,
     action: 'ADD' | 'UPDATE' | 'DELETE',
-    data: any,
+    data: BaseEntity | { id: number | string },
     retryCount: number = 0
   ): Promise<void> {
     const maxRetries = 3;
@@ -836,13 +847,15 @@ export class DatabaseService implements Collections {
     try {
       let result;
 
+      const dataRecord = data as unknown as Record<string, unknown>;
+
       if (action === 'ADD') {
-        result = await this.cloudService.add(collectionName, data, firestoreId);
+        result = await this.cloudService.add(collectionName, dataRecord, firestoreId);
         if (!result.success) {
           throw new Error(result.error || 'Add operation failed');
         }
       } else if (action === 'UPDATE') {
-        result = await this.cloudService.update(collectionName, firestoreId, data);
+        result = await this.cloudService.update(collectionName, firestoreId, dataRecord);
         if (!result.success) {
           throw new Error(result.error || 'Update operation failed');
         }
@@ -866,7 +879,7 @@ export class DatabaseService implements Collections {
       } else {
         logger.info(`✅ [SYNC] ${action} ${collectionName}/${firestoreId} → Firebase`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       if (retryCount < maxRetries) {
@@ -1010,9 +1023,9 @@ export class DatabaseService implements Collections {
     if (collectionRelations) {
       for (const item of data) {
         for (const [field, config] of Object.entries(collectionRelations)) {
-          const value = (item as any)[field];
+          const value = (item as unknown as Record<string, unknown>)[field];
           if (value !== undefined && value !== null && config.required) {
-            const targetCollection = (this as any)[config.target] as BaseEntity[];
+            const targetCollection = this.getCollection(config.target);
             if (!targetCollection || targetCollection.length === 0) {
               // Target collection not loaded yet, skip validation
               continue;

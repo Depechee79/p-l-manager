@@ -42,7 +42,7 @@ export class CompanyService {
       ...restaurant,
       companyId,
     };
-    const created = await this.db.add('restaurants', newRestaurant as any) as Restaurant;
+    const created = await this.db.add('restaurants', newRestaurant as Omit<Restaurant, 'id'>) as Restaurant;
 
     // Update company's restaurant list
     const company = this.getCompany(companyId);
@@ -59,6 +59,6 @@ export class CompanyService {
    * Get all companies
    */
   getCompanies(): Company[] {
-    return (this.db as any).companies as Company[];
+    return this.db.companies as Company[];
   }
 }

@@ -1,12 +1,12 @@
-// @ts-nocheck
 import { DatabaseService } from '@core/services/DatabaseService';
 import { CompanyService } from '@core/services/CompanyService';
 import { RestaurantService } from '@core/services/RestaurantService';
-import type { Company, Restaurant } from '@types';
+import { logger } from '@core/services/LoggerService';
+import type { Company, Restaurant, BaseEntity, CollectionName } from '@types';
 
 /**
  * Migration script to convert existing single-restaurant data to multi-restaurant structure
- * 
+ *
  * This migration:
  * 1. Creates a default company
  * 2. Creates a default restaurant linked to the company
@@ -28,7 +28,7 @@ export class DataMigration {
    * Check if migration has already been run
    */
   async isMigrated(): Promise<boolean> {
-    const companies = await this.companyService.getCompanies();
+    const companies = this.companyService.getCompanies();
     return companies.length > 0;
   }
 
@@ -56,11 +56,10 @@ export class DataMigration {
       };
 
       const company = await this.companyService.createCompany(defaultCompany);
-      const companyId = company.id;
+      const companyId = String(company.id);
 
       // Step 2: Create default restaurant
-      const defaultRestaurant: Omit<Restaurant, 'id' | 'createdAt' | 'updatedAt'> = {
-        companyId: String(companyId),
+      const defaultRestaurantData: Omit<Restaurant, 'id' | 'createdAt' | 'updatedAt' | 'companyId'> = {
         nombre: 'Restaurante Principal',
         direccion: '',
         telefono: '',
@@ -76,27 +75,27 @@ export class DataMigration {
         trabajadores: [],
       };
 
-      const restaurant = await this.restaurantService.createRestaurant(defaultRestaurant);
-      const restaurantId = restaurant.id;
+      const restaurant = await this.restaurantService.createRestaurant(companyId, defaultRestaurantData);
+      const restaurantId = String(restaurant.id);
 
       // Step 3: Update company with restaurant reference
-      await this.companyService.updateCompany(String(companyId), {
-        restaurantes: [String(restaurantId)],
+      await this.companyService.updateCompany(companyId, {
+        restaurantes: [restaurantId],
       });
 
       // Step 4: Add restaurantId to all existing data entities
-      await this.migrateEntities(String(restaurantId));
+      await this.migrateEntities(restaurantId);
 
       // Step 5: Set default restaurant in localStorage
-      localStorage.setItem('current_restaurant_id', String(restaurantId));
+      localStorage.setItem('current_restaurant_id', restaurantId);
 
       return {
         success: true,
-        companyId: String(companyId),
-        restaurantId: String(restaurantId),
+        companyId,
+        restaurantId,
       };
-    } catch (error) {
-      console.error('Migration error:', error);
+    } catch (error: unknown) {
+      logger.error('Migration error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -108,7 +107,7 @@ export class DataMigration {
    * Add restaurantId to all existing entities
    */
   private async migrateEntities(restaurantId: string): Promise<void> {
-    const collections: Array<keyof DatabaseService> = [
+    const collections: CollectionName[] = [
       'cierres',
       'facturas',
       'albaranes',
@@ -121,40 +120,42 @@ export class DataMigration {
     ];
 
     for (const collectionName of collections) {
-      const collection = this.db[collectionName] as any[];
+      const collection = this.db[collectionName] as BaseEntity[];
 
       for (const entity of collection) {
+        const record = entity as unknown as Record<string, unknown>;
         // Only add restaurantId if it doesn't already have one
-        if (!entity.restaurantId) {
-          entity.restaurantId = restaurantId;
+        if (!record['restaurantId']) {
+          record['restaurantId'] = restaurantId;
           // Update in database
           try {
-            await this.db.update(collectionName as any, entity.id, { restaurantId });
-          } catch (err) {
+            await this.db.update(collectionName, entity.id, { restaurantId } as unknown as Partial<BaseEntity>);
+          } catch (err: unknown) {
             // If update fails, try to add directly
-            console.warn(`Failed to update ${collectionName} entity ${entity.id}:`, err);
+            logger.warn(`Failed to update ${collectionName} entity ${entity.id}:`, err);
           }
         }
       }
     }
 
     // Migrate users
-    const usuarios = this.db.usuarios as any[];
+    const usuarios = this.db.usuarios;
     for (const user of usuarios) {
-      if (!user.companyId) {
+      const userRecord = user as unknown as Record<string, unknown>;
+      if (!userRecord['companyId']) {
         // Get company ID from restaurants
-        const restaurants = await this.restaurantService.getRestaurants();
+        const restaurants = this.restaurantService.getAllRestaurants();
         if (restaurants.length > 0) {
           const companyId = restaurants[0].companyId;
-          user.companyId = companyId;
-          user.restaurantes = [String(restaurants[0].id)];
+          userRecord['companyId'] = companyId;
+          userRecord['restaurantes'] = [String(restaurants[0].id)];
           try {
             await this.db.update('usuarios', user.id, {
               companyId,
               restaurantes: [String(restaurants[0].id)],
-            });
-          } catch (err) {
-            console.warn(`Failed to update user ${user.id}:`, err);
+            } as unknown as Partial<BaseEntity>);
+          } catch (err: unknown) {
+            logger.warn(`Failed to update user ${user.id}:`, err);
           }
         }
       }
@@ -167,7 +168,7 @@ export class DataMigration {
   async rollback(): Promise<{ success: boolean; error?: string }> {
     try {
       // Remove restaurantId from all entities
-      const collections: Array<keyof DatabaseService> = [
+      const collections: CollectionName[] = [
         'cierres',
         'facturas',
         'albaranes',
@@ -180,37 +181,34 @@ export class DataMigration {
       ];
 
       for (const collectionName of collections) {
-        const collection = this.db[collectionName] as any[];
+        const collection = this.db[collectionName] as BaseEntity[];
 
         for (const entity of collection) {
-          if (entity.restaurantId) {
-            delete entity.restaurantId;
+          const record = entity as unknown as Record<string, unknown>;
+          if (record['restaurantId']) {
+            delete record['restaurantId'];
             try {
-              const { restaurantId, ...entityWithoutRestaurantId } = entity;
-              await this.db.update(collectionName as any, entity.id, entityWithoutRestaurantId);
-            } catch (err) {
-              console.warn(`Failed to rollback ${collectionName} entity ${entity.id}:`, err);
+              const { ...entityWithoutRestaurantId } = record;
+              delete entityWithoutRestaurantId['restaurantId'];
+              await this.db.update(collectionName, entity.id, entityWithoutRestaurantId as Partial<BaseEntity>);
+            } catch (err: unknown) {
+              logger.warn(`Failed to rollback ${collectionName} entity ${entity.id}:`, err);
             }
           }
         }
       }
 
-      // Delete companies and restaurants
-      const companies = await this.companyService.getCompanies();
-      for (const company of companies) {
-        await this.companyService.deleteCompany(company.id);
-      }
-
-      const restaurants = await this.restaurantService.getRestaurants();
+      // Delete (deactivate) restaurants
+      const restaurants = this.restaurantService.getAllRestaurants();
       for (const restaurant of restaurants) {
-        await this.restaurantService.deleteRestaurant(restaurant.id);
+        await this.restaurantService.deleteRestaurant(String(restaurant.id));
       }
 
       localStorage.removeItem('current_restaurant_id');
 
       return { success: true };
-    } catch (error) {
-      console.error('Rollback error:', error);
+    } catch (error: unknown) {
+      logger.error('Rollback error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -226,18 +224,18 @@ export async function runMigrationIfNeeded(db: DatabaseService): Promise<void> {
   const migration = new DataMigration(db);
 
   if (!(await migration.isMigrated())) {
-    console.log('Running data migration...');
+    logger.info('Running data migration...');
     const result = await migration.migrate();
 
     if (result.success) {
-      console.log('Migration completed successfully', {
+      logger.info('Migration completed successfully', {
         companyId: result.companyId,
         restaurantId: result.restaurantId,
       });
     } else {
-      console.error('Migration failed:', result.error);
+      logger.error('Migration failed:', result.error);
     }
   } else {
-    console.log('Data already migrated');
+    logger.info('Data already migrated');
   }
 }

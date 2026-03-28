@@ -1,5 +1,5 @@
 import { DatabaseService } from './DatabaseService';
-import type { BaseEntity } from '@types';
+import type { BaseEntity, Datafono } from '@types';
 
 export interface Familia extends BaseEntity {
     nombre: string;
@@ -33,6 +33,21 @@ export interface Persona extends BaseEntity {
     activo: boolean;
 }
 
+/**
+ * Type-safe accessor for dynamic collections on DatabaseService.
+ * These collections (familias, subfamilias, etc.) are not declared on
+ * DatabaseService's type but are created at runtime by ItemsService.
+ */
+function getDbStore<T>(db: DatabaseService, key: string): T[] {
+    const record = db as unknown as Record<string, unknown>;
+    return (record[key] as T[] | undefined) || [];
+}
+
+function setDbStore<T>(db: DatabaseService, key: string, value: T[]): void {
+    const record = db as unknown as Record<string, unknown>;
+    record[key] = value;
+}
+
 
 export class ItemsService {
     constructor(private db: DatabaseService) { }
@@ -46,7 +61,7 @@ export class ItemsService {
         );
 
         // Get from stored familias if exists
-        const storedFamilias = (this.db as any).familias || [];
+        const storedFamilias = getDbStore<Familia>(this.db, 'familias');
 
         // Combine and deduplicate
         const allFamilias = new Map<string | number, Familia>();
@@ -75,10 +90,9 @@ export class ItemsService {
             createdAt: new Date().toISOString(),
         };
 
-        if (!(this.db as any).familias) {
-            (this.db as any).familias = [];
-        }
-        (this.db as any).familias.push(nueva);
+        const current = getDbStore<Familia>(this.db, 'familias');
+        current.push(nueva);
+        setDbStore(this.db, 'familias', current);
         return nueva;
     }
 
@@ -105,7 +119,7 @@ export class ItemsService {
             );
         }
 
-        const storedSubfamilias = ((this.db as any).subfamilias || []) as Subfamilia[];
+        const storedSubfamilias = getDbStore<Subfamilia>(this.db, 'subfamilias');
         const filtered = familiaId
             ? storedSubfamilias.filter(sf => sf.familiaId === familiaId)
             : storedSubfamilias;
@@ -135,10 +149,9 @@ export class ItemsService {
             createdAt: new Date().toISOString(),
         };
 
-        if (!(this.db as any).subfamilias) {
-            (this.db as any).subfamilias = [];
-        }
-        (this.db as any).subfamilias.push(nueva);
+        const current = getDbStore<Subfamilia>(this.db, 'subfamilias');
+        current.push(nueva);
+        setDbStore(this.db, 'subfamilias', current);
         return nueva;
     }
 
@@ -148,12 +161,12 @@ export class ItemsService {
         const terminalesFromCierres = Array.from(
             new Set(
                 cierres
-                    .flatMap(c => (c.datafonos || []).map((d: any) => d.terminal))
+                    .flatMap(c => (c.datafonos || []).map((d: Datafono) => d.terminal))
                     .filter(Boolean)
             )
         );
 
-        const stored = ((this.db as any).terminales || []) as Terminal[];
+        const stored = getDbStore<Terminal>(this.db, 'terminales');
         const all = new Map<string | number, Terminal>();
         stored.forEach(t => all.set(t.id, t));
 
@@ -177,17 +190,16 @@ export class ItemsService {
             createdAt: new Date().toISOString(),
         };
 
-        if (!(this.db as any).terminales) {
-            (this.db as any).terminales = [];
-        }
-        (this.db as any).terminales.push(nuevo);
+        const current = getDbStore<Terminal>(this.db, 'terminales');
+        current.push(nuevo);
+        setDbStore(this.db, 'terminales', current);
         return nuevo;
     }
 
     // Medios de Pago
     getMediosPago(): MedioPago[] {
         const defaults = ['Transferencia', 'Bizum', 'Ticket Restaurant', 'Sodexo'];
-        const stored = ((this.db as any).mediosPago || []) as MedioPago[];
+        const stored = getDbStore<MedioPago>(this.db, 'mediosPago');
         const all = new Map<string | number, MedioPago>();
 
         stored.forEach(m => all.set(m.id, m));
@@ -211,17 +223,16 @@ export class ItemsService {
             createdAt: new Date().toISOString(),
         };
 
-        if (!(this.db as any).mediosPago) {
-            (this.db as any).mediosPago = [];
-        }
-        (this.db as any).mediosPago.push(nuevo);
+        const current = getDbStore<MedioPago>(this.db, 'mediosPago');
+        current.push(nuevo);
+        setDbStore(this.db, 'mediosPago', current);
         return nuevo;
     }
 
     // Plataformas Delivery
     getPlataformasDelivery(): PlataformaDelivery[] {
         const defaults = ['Uber Eats', 'Glovo', 'Just Eat', 'Bolt'];
-        const stored = ((this.db as any).plataformasDelivery || []) as PlataformaDelivery[];
+        const stored = getDbStore<PlataformaDelivery>(this.db, 'plataformasDelivery');
         const all = new Map<string | number, PlataformaDelivery>();
 
         stored.forEach(p => all.set(p.id, p));
@@ -245,10 +256,9 @@ export class ItemsService {
             createdAt: new Date().toISOString(),
         };
 
-        if (!(this.db as any).plataformasDelivery) {
-            (this.db as any).plataformasDelivery = [];
-        }
-        (this.db as any).plataformasDelivery.push(nueva);
+        const current = getDbStore<PlataformaDelivery>(this.db, 'plataformasDelivery');
+        current.push(nueva);
+        setDbStore(this.db, 'plataformasDelivery', current);
         return nueva;
     }
 
@@ -259,7 +269,7 @@ export class ItemsService {
             new Set(inventarios.map(inv => inv.persona).filter(Boolean))
         );
 
-        const stored = ((this.db as any).personas || []) as Persona[];
+        const stored = getDbStore<Persona>(this.db, 'personas');
         const all = new Map<string | number, Persona>();
         stored.forEach(p => all.set(p.id, p));
 
@@ -285,10 +295,9 @@ export class ItemsService {
             createdAt: new Date().toISOString(),
         };
 
-        if (!(this.db as any).personas) {
-            (this.db as any).personas = [];
-        }
-        (this.db as any).personas.push(nueva);
+        const current = getDbStore<Persona>(this.db, 'personas');
+        current.push(nueva);
+        setDbStore(this.db, 'personas', current);
         return nueva;
     }
 }

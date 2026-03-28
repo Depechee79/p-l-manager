@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+import { logger } from '../services/LoggerService';
 import type { Role } from '@types';
 
 export interface User {
@@ -35,8 +37,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       try {
         const userData = JSON.parse(storedUser);
         setUser(userData);
-      } catch (e) {
-        console.error('Failed to parse stored user data', e);
+      } catch (error: unknown) {
+        logger.error('Failed to parse stored user data', error);
         localStorage.removeItem('app_user');
       }
     }

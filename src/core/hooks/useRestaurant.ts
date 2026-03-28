@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+
 import { useDatabase } from './useDatabase';
 import { RestaurantService } from '../services/RestaurantService';
 import { CompanyService } from '../services/CompanyService';
-import type { Restaurant, Company } from '@types';
+import { logger } from '../services/LoggerService';
+import type { Restaurant, Company, AppUser, Role } from '@types';
 
 export const useRestaurant = () => {
   const { db } = useDatabase();
@@ -11,11 +13,21 @@ export const useRestaurant = () => {
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Use useRef to ensure services are created only once per db instance
   const restaurantService = useMemo(() => new RestaurantService(db), [db]);
   const companyService = useMemo(() => new CompanyService(db), [db]);
 
-  // Load data on mount
+  // Track if we've already initialized to prevent duplicate calls from StrictMode
+  const hasInitialized = useRef(false);
+
+  // Load data on mount - use ref to prevent double-loading in StrictMode
   useEffect(() => {
+    // Prevent duplicate initialization (React StrictMode double-mounts in dev)
+    if (hasInitialized.current) {
+      return;
+    }
+    hasInitialized.current = true;
+
     const loadData = async () => {
       setLoading(true);
 
@@ -37,7 +49,6 @@ export const useRestaurant = () => {
 
       // Load Restaurants
       const allRestaurants = restaurantService.getAllRestaurants();
-      console.log('[useRestaurant] Loaded restaurants:', allRestaurants.length);
       setRestaurants(allRestaurants);
 
       // Try to load from localStorage
@@ -60,7 +71,8 @@ export const useRestaurant = () => {
     };
 
     loadData();
-  }, [db, restaurantService, companyService]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const switchRestaurant = useCallback((restaurant: Restaurant) => {
     setCurrentRestaurant(restaurant);
@@ -113,6 +125,18 @@ export const useRestaurant = () => {
     return newRestaurant;
   }, [restaurantService, updateCompany, currentCompany]);
 
+  const deleteRestaurant = useCallback(async (id: string) => {
+    const success = await restaurantService.deleteRestaurant(id);
+    if (success) {
+      setRestaurants(prev => prev.filter(r => String(r.id) !== id));
+      if (String(currentRestaurant?.id) === id) {
+        setCurrentRestaurant(null);
+        localStorage.removeItem('current_restaurant_id');
+      }
+    }
+    return success;
+  }, [restaurantService, currentRestaurant]);
+
   /**
    * Refresh restaurants list from database
    */
@@ -122,34 +146,28 @@ export const useRestaurant = () => {
   }, [restaurantService]);
 
   const hasAccess = useCallback((restaurantId: string): boolean => {
-    // If not authenticated or no user, deny access (or allow if public? No, strictly private)
-    // For development/migration, if AppContext is missing user details, fall back to safe default
-    // But we need the real Logic.
-
-    // We need to get the user from the database or context.
-    // Since useRestaurant doesn't have direct access to "Effective User" with joined Role easily,
-    // we'll rely on a helper or fetch it.
-    // Best approach: Get user from DB matching context email/name.
-
-    // Optimization: In a real app, this would be in the session.
-    // For now, we iterate.
     const appUserString = localStorage.getItem('app_user');
-    if (!appUserString) return true; // Fail safe or deny? For now allow to avoid lockout during dev if no user.
+    if (!appUserString) return false;
 
     try {
-      const userData = JSON.parse(appUserString); // This is basic {name} from login
-      // Find full user in db
-      const fullUser = (db.usuarios || []).find((u: any) => u.nombre === userData.name);
-      if (!fullUser) return true; // Fallback if user not found in DB
+      const userData: { name?: string } = JSON.parse(appUserString);
+      if (!userData.name) return false;
 
-      // Check Role
-      const userRole = (db.roles || []).find((r: any) => r.id === fullUser.rolId);
-      if (userRole?.nombre === 'Director' || !userRole) return true;
+      const usuarios = (db.usuarios ?? []) as AppUser[];
+      const fullUser = usuarios.find((u) => u.nombre === userData.name);
+      if (!fullUser) return false;
 
-      // Check Specific Access
-      return fullUser.restaurantes?.includes(restaurantId) || false;
+      const roles = (db.roles ?? []) as Role[];
+      const userRole = roles.find((r) => String(r.id) === String(fullUser.rolId));
 
-    } catch (e) {
+      if (userRole?.nombre === 'Director' || userRole?.nombre === 'director_operaciones' || userRole?.nombre === 'director_restaurante') {
+        return true;
+      }
+
+      const userRestaurants: string[] = fullUser.restaurantIds ?? fullUser.restaurantes ?? [];
+      return userRestaurants.includes(restaurantId);
+    } catch (error: unknown) {
+      logger.error('Error checking restaurant access', error);
       return false;
     }
   }, [db]);
@@ -164,6 +182,7 @@ export const useRestaurant = () => {
     updateRestaurant,
     updateCompany,
     createRestaurant,
+    deleteRestaurant,
     refreshRestaurants,
     hasAccess,
   };

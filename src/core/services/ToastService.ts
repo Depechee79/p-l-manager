@@ -5,6 +5,8 @@
  * Los componentes React se suscriben a los eventos.
  */
 
+import { logger } from './LoggerService';
+
 export type ToastType = 'success' | 'error' | 'warning' | 'info' | 'loading';
 
 export interface ToastEvent {
@@ -71,13 +73,26 @@ class ToastServiceClass {
 
   /**
    * Mostrar toast de "Guardando..."
+   * Incluye timeout de seguridad de 10 segundos para evitar toasts huérfanos
+   * AUDIT-FIX: Reducido de 30s a 10s (P1.1)
    */
   saving(message: string = 'Guardando...'): string {
-    return this.emit({
+    const id = this.emit({
       type: 'loading',
       message,
-      duration: 0, // No auto-dismiss
+      duration: 0, // No auto-dismiss (se cierra manualmente)
     });
+
+    // Safety timeout: si no se cierra en 10s, cerrar automáticamente
+    // AUDIT-FIX: Reducido de 30s a 10s para mejor UX (P1.1)
+    setTimeout(() => {
+      if (this.activeToasts.has(id)) {
+        logger.warn(`[ToastService] Safety timeout: dismissing orphan toast ${id}`);
+        this.dismiss(id);
+      }
+    }, 10000);
+
+    return id;
   }
 
   /**
@@ -161,7 +176,7 @@ class ToastServiceClass {
       this.dismiss(loadingId);
       this.success(messages.success || 'Guardado correctamente');
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       this.dismiss(loadingId);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       this.error(messages.error || `Error: ${errorMessage}`);

@@ -106,7 +106,7 @@ export class DataIntegrityService {
         const targetCollection = this.db[config.target] as BaseEntity[];
 
         for (const item of collection) {
-          const value = (item as any)[field];
+          const value = (item as unknown as Record<string, unknown>)[field];
 
           if (value === undefined || value === null || value === '') {
             if (config.required) {
@@ -129,7 +129,7 @@ export class DataIntegrityService {
               collection: collectionName as CollectionName,
               id: item.id,
               field,
-              referencedId: value,
+              referencedId: value as number | string,
               referencedCollection: config.target,
             });
           }
@@ -166,19 +166,21 @@ export class DataIntegrityService {
     orphanedRecords: OrphanedRecord[]
   ): void {
     // Validate inventarios.productos[].productoId
-    const inventarios = this.db.inventarios as any[];
+    const inventarios = this.db.inventarios as BaseEntity[];
     const productos = this.db.productos as BaseEntity[];
     const productoIds = new Set(productos.map(p => String(p.id)));
 
     for (const inventario of inventarios) {
-      if (inventario.productos && Array.isArray(inventario.productos)) {
-        for (const producto of inventario.productos) {
-          if (producto.productoId && !productoIds.has(String(producto.productoId))) {
+      const invRecord = inventario as unknown as Record<string, unknown>;
+      const invProductos = invRecord['productos'];
+      if (invProductos && Array.isArray(invProductos)) {
+        for (const producto of invProductos as Record<string, unknown>[]) {
+          if (producto['productoId'] && !productoIds.has(String(producto['productoId']))) {
             orphanedRecords.push({
               collection: 'inventarios',
               id: inventario.id,
               field: 'productos[].productoId',
-              referencedId: producto.productoId,
+              referencedId: producto['productoId'] as number | string,
               referencedCollection: 'productos',
             });
           }
@@ -187,16 +189,18 @@ export class DataIntegrityService {
     }
 
     // Validate escandallos.ingredientes[].productoId
-    const escandallos = this.db.escandallos as any[];
+    const escandallos = this.db.escandallos as BaseEntity[];
     for (const escandallo of escandallos) {
-      if (escandallo.ingredientes && Array.isArray(escandallo.ingredientes)) {
-        for (const ingrediente of escandallo.ingredientes) {
-          if (ingrediente.productoId && !productoIds.has(String(ingrediente.productoId))) {
+      const escRecord = escandallo as unknown as Record<string, unknown>;
+      const ingredientes = escRecord['ingredientes'];
+      if (ingredientes && Array.isArray(ingredientes)) {
+        for (const ingrediente of ingredientes as Record<string, unknown>[]) {
+          if (ingrediente['productoId'] && !productoIds.has(String(ingrediente['productoId']))) {
             orphanedRecords.push({
               collection: 'escandallos',
               id: escandallo.id,
               field: 'ingredientes[].productoId',
-              referencedId: ingrediente.productoId,
+              referencedId: ingrediente['productoId'] as number | string,
               referencedCollection: 'productos',
             });
           }
@@ -205,16 +209,18 @@ export class DataIntegrityService {
     }
 
     // Validate facturas.productos[].productoId (optional)
-    const facturas = this.db.facturas as any[];
+    const facturas = this.db.facturas as BaseEntity[];
     for (const factura of facturas) {
-      if (factura.productos && Array.isArray(factura.productos)) {
-        for (const producto of factura.productos) {
-          if (producto.productoId && !productoIds.has(String(producto.productoId))) {
+      const facRecord = factura as unknown as Record<string, unknown>;
+      const facProductos = facRecord['productos'];
+      if (facProductos && Array.isArray(facProductos)) {
+        for (const producto of facProductos as Record<string, unknown>[]) {
+          if (producto['productoId'] && !productoIds.has(String(producto['productoId']))) {
             orphanedRecords.push({
               collection: 'facturas',
               id: factura.id,
               field: 'productos[].productoId',
-              referencedId: producto.productoId,
+              referencedId: producto['productoId'] as number | string,
               referencedCollection: 'productos',
             });
           }
@@ -223,16 +229,18 @@ export class DataIntegrityService {
     }
 
     // Validate albaranes.productos[].productoId (optional)
-    const albaranes = this.db.albaranes as any[];
+    const albaranes = this.db.albaranes as BaseEntity[];
     for (const albaran of albaranes) {
-      if (albaran.productos && Array.isArray(albaran.productos)) {
-        for (const producto of albaran.productos) {
-          if (producto.productoId && !productoIds.has(String(producto.productoId))) {
+      const albRecord = albaran as unknown as Record<string, unknown>;
+      const albProductos = albRecord['productos'];
+      if (albProductos && Array.isArray(albProductos)) {
+        for (const producto of albProductos as Record<string, unknown>[]) {
+          if (producto['productoId'] && !productoIds.has(String(producto['productoId']))) {
             orphanedRecords.push({
               collection: 'albaranes',
               id: albaran.id,
               field: 'productos[].productoId',
-              referencedId: producto.productoId,
+              referencedId: producto['productoId'] as number | string,
               referencedCollection: 'productos',
             });
           }
@@ -263,15 +271,16 @@ export class DataIntegrityService {
       const collectionData = this.db[rel.collection] as BaseEntity[];
 
       for (const item of collectionData) {
-        const value = (item as any)[rel.field];
+        const itemRecord = item as unknown as Record<string, unknown>;
+        const value = itemRecord[rel.field];
 
         // Handle nested references
         if (rel.field.includes('[]')) {
           const [parentField, nestedField] = rel.field.split('[]');
-          const array = (item as any)[parentField];
+          const array = itemRecord[parentField];
 
           if (Array.isArray(array)) {
-            for (const element of array) {
+            for (const element of array as Record<string, unknown>[]) {
               const nestedValue = element[nestedField.replace('.', '')];
               if (nestedValue !== undefined && String(nestedValue) === String(id)) {
                 blockingReferences.push({
