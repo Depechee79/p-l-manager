@@ -1,15 +1,14 @@
 /**
  * PnLPage - Complete P&L Statement (Cuenta de Explotación)
- * 
- * Shows full profit & loss structure including:
- * - 1. Revenue (Local + Delivery)
- * - 2. Cost of Goods Sold (COGS)
- * - 3. Personnel Costs (Labor)
- * - 4. Operating Expenses (OPEX)
- * - 5. Results (EBITDA, Net Profit)
- * 
+ *
+ * Session 007: Updated with V2 design system
+ * - Removed StickyPageHeader (title shown in topbar breadcrumb)
+ * - Using PageLayoutV2 for sticky tabs/filters
+ * - ActionHeaderV2 with tabs
+ *
+ * Tabs: Resultados | Gastos Fijos
  * KPIs: Food Cost %, Labor Cost %, Prime Cost %, EBITDA %
- * 
+ *
  * @audit AUDIT-01 - Completed full P&L structure
  */
 import React, { useState, useEffect, useMemo } from 'react';
@@ -21,23 +20,40 @@ import {
   Users,
   Building,
   DollarSign,
-  Plus
+  Plus,
+  FileText
 } from 'lucide-react';
 import {
   Button,
   Card,
   FormSection,
   Table,
-  PageHeader,
+  PageContainer,
+  PageLayoutV2,
+  ActionHeaderV2,
+  ButtonV2,
   Select,
   Input,
-  Modal
+  Modal,
+  type TabV2
 } from '@shared/components';
 import { useDatabase, useRestaurant } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useToast } from '../utils/toast';
-import type { PnLPeriod, PnLData, PnLComparison, RestaurantKPI } from '../types/pnl.types';
+import type { PnLPeriod, PnLData, PnLComparison, RestaurantKPI, PnLManualEntry, PnLAdjustmentCategory } from '../types/pnl.types';
 import { PnLService } from '../services/pnl-service';
 import { formatCurrency } from '../utils/formatters';
+
+// Import GastosFijosPage for embedding
+import { GastosFijosPage } from './GastosFijosPage';
+
+// Tab configuration
+type PnLTabId = 'resultados' | 'gastos-fijos';
+
+const PNL_TABS: TabV2[] = [
+  { id: 'resultados', label: 'Resultados', icon: <BarChart3 size={16} /> },
+  { id: 'gastos-fijos', label: 'Gastos Fijos', icon: <FileText size={16} /> },
+];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS - KPI Thresholds
@@ -111,6 +127,9 @@ export const PnLPage: React.FC = () => {
   const { showToast } = useToast();
   const currentDate = new Date();
 
+  // Session 004: Tab state for P&L with integrated Gastos Fijos
+  const [activeTab, setActiveTab] = useState<PnLTabId>('resultados');
+
   const [period, setPeriod] = useState<PnLPeriod>({
     month: currentDate.getMonth(),
     year: currentDate.getFullYear(),
@@ -180,7 +199,7 @@ export const PnLPage: React.FC = () => {
         const rid = selectedRestaurantId === 'all' ? undefined : selectedRestaurantId;
         const res = restaurants.find(r => String(r.id) === String(selectedRestaurantId));
 
-        const data = PnLService.calculatePnL(period, cierres, facturas, delivery, (db.pnl_adjustments || []) as any[], rid);
+        const data = PnLService.calculatePnL(period, cierres, facturas, delivery, db.pnl_adjustments as PnLManualEntry[], rid);
 
         setPnlData({
           ...data,
@@ -193,7 +212,7 @@ export const PnLPage: React.FC = () => {
         const comparison: PnLComparison = {
           period,
           restaurants: restaurants.map(r => {
-            const data = PnLService.calculatePnL(period, cierres, facturas, delivery, (db.pnl_adjustments || []) as any[], r.id);
+            const data = PnLService.calculatePnL(period, cierres, facturas, delivery, db.pnl_adjustments as PnLManualEntry[], r.id);
             const kpis = PnLService.extractKPIs(data);
             return {
               ...kpis,
@@ -205,7 +224,8 @@ export const PnLPage: React.FC = () => {
         setComparisonData(comparison);
         setPnlData(null);
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Error calculating P&L', error);
       showToast({
         type: 'error',
         title: 'Error de cálculo',
@@ -345,7 +365,7 @@ export const PnLPage: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════════════════════
 
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
-  const [manualEntry, setManualEntry] = useState<Partial<import('../types/pnl.types').PnLManualEntry>>({
+  const [manualEntry, setManualEntry] = useState<Partial<PnLManualEntry>>({
     category: 'opex',
     concept: '',
     amount: 0,
@@ -362,54 +382,68 @@ export const PnLPage: React.FC = () => {
       : selectedRestaurantId;
 
     if (!targetRestaurantId) {
-      console.error('No restaurant selected for manual adjustment');
+      logger.error('No restaurant selected for manual adjustment');
       showToast({ type: 'error', title: 'Error', message: 'Selecciona un restaurante (o crea uno primero)' });
       return;
     }
 
     try {
-      db.add('pnl_adjustments', {
+      db.add<PnLManualEntry>('pnl_adjustments', {
         restaurantId: targetRestaurantId,
         period: `${period.year}-${period.month}`,
-        category: manualEntry.category,
-        concept: manualEntry.concept,
+        category: manualEntry.category as PnLAdjustmentCategory,
+        concept: manualEntry.concept || '',
         amount: Number(manualEntry.amount),
         createdAt: new Date().toISOString(),
-      } as any);
+      });
 
       showToast({ type: 'success', title: 'Guardado', message: 'Ajuste añadido correctamente' });
       setIsManualModalOpen(false);
       handleCalculate(); // Recalculate P&L
-    } catch (error) {
-      console.error(error);
+    } catch (error: unknown) {
+      logger.error('Error saving manual P&L adjustment', error);
       showToast({ type: 'error', title: 'Error', message: 'No se pudo guardar el ajuste' });
     }
   };
 
   return (
-    <div style={{ padding: 'var(--spacing-lg)' }}>
-      <PageHeader
-        title="Cuenta de Explotación (P&L)"
-        icon={<BarChart3 size={28} />}
-        action={
-          <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
-            <Button onClick={() => setIsManualModalOpen(true)} variant="outline">
-              <Plus size={16} /> Añadir Ajuste Manual
-            </Button>
-            {pnlData && (
-              <Button onClick={handleExport} variant="secondary">
-                <Download size={16} /> Exportar
-              </Button>
-            )}
-            <Button onClick={handleCalculate} variant="primary">
-              <Calendar size={16} /> Actualizar
-            </Button>
-          </div>
+    <PageContainer>
+      <PageLayoutV2
+        header={
+          <ActionHeaderV2
+            tabs={PNL_TABS}
+            activeTab={activeTab}
+            onTabChange={(tabId) => setActiveTab(tabId as PnLTabId)}
+            actions={activeTab === 'resultados' ? (
+              <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
+                <ButtonV2 variant="secondary" icon={<Plus size={16} />} onClick={() => setIsManualModalOpen(true)}>
+                  Ajuste Manual
+                </ButtonV2>
+                {pnlData && (
+                  <ButtonV2 variant="secondary" icon={<Download size={16} />} onClick={handleExport}>
+                    Exportar
+                  </ButtonV2>
+                )}
+                <ButtonV2 variant="primary" icon={<Calendar size={16} />} onClick={handleCalculate}>
+                  Actualizar
+                </ButtonV2>
+              </div>
+            ) : undefined}
+          />
         }
-      />
+      >
+        {/* Gastos Fijos Tab Content */}
+        {activeTab === 'gastos-fijos' && (
+          <div style={{ margin: 'calc(-1 * var(--spacing-md))' }}>
+            <GastosFijosPage />
+          </div>
+        )}
 
-      {/* Manual Entry Modal - Using Standard Components */}
-      {/* Manual Entry Modal - Using Standard Components */}
+        {/* Resultados Tab Content */}
+        {activeTab === 'resultados' && (
+          <>
+
+      {/* Manual Entry Modal */}
       <Modal
         open={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
@@ -426,7 +460,7 @@ export const PnLPage: React.FC = () => {
           <Select
             label="Categoría"
             value={manualEntry.category || 'opex'}
-            onChange={(val) => setManualEntry(prev => ({ ...prev, category: val as any }))}
+            onChange={(val) => setManualEntry(prev => ({ ...prev, category: val as PnLAdjustmentCategory }))}
             options={[
               { value: 'revenue', label: 'Ingresos (Corrección)' },
               { value: 'cogs', label: 'COGS (Compras Extra)' },
@@ -465,7 +499,7 @@ export const PnLPage: React.FC = () => {
         <Select
           label="Modo de Visualización"
           value={viewType}
-          onChange={(val) => setViewType(val as any)}
+          onChange={(val) => setViewType(val as 'single' | 'comparison')}
           options={viewOptions}
           fullWidth
         />
@@ -624,7 +658,7 @@ export const PnLPage: React.FC = () => {
       {viewType === 'comparison' && comparisonData && (
         <Card title="Comparativa Interactiva de Unidades">
           <div style={{ overflowX: 'auto' }}>
-            <Table<any>
+            <Table<Record<string, React.ReactNode>>
               columns={[
                 { key: 'nombre', header: 'Restaurante' },
                 { key: 'ingresos', header: 'Ventas' },
@@ -679,6 +713,9 @@ export const PnLPage: React.FC = () => {
           <Button onClick={handleCalculate} variant="primary">Intentar Calcular</Button>
         </Card>
       )}
-    </div>
+        </>
+      )}
+      </PageLayoutV2>
+    </PageContainer>
   );
 };

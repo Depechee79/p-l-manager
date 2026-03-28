@@ -1,4 +1,4 @@
-import type { PnLData, PnLPeriod, PnLKPIs } from '../types/pnl.types';
+import type { PnLData, PnLPeriod, PnLKPIs, PnLManualEntry, PnLAdjustmentCategory } from '../types/pnl.types';
 import type { Cierre, Invoice, DeliveryRecord } from '../types';
 import type { Nomina } from '../types/personal.types';
 import type { GastoFijo } from '../types/gastos.types';
@@ -21,12 +21,11 @@ export class PnLService {
     cierres: Cierre[],
     facturas: Invoice[],
     delivery: DeliveryRecord[],
-    adjustments: import('../types/pnl.types').PnLManualEntry[],
+    adjustments: PnLManualEntry[],
     restaurantId?: string | number,
     nominas: Nomina[] = [],
     gastosFijos: GastoFijo[] = []
   ): PnLData {
-    // 0. Filter by Restaurant
     // 0. Filter by Restaurant
 
     const filteredCierres = restaurantId ? cierres.filter(c => String(c.restaurantId) === String(restaurantId)) : cierres;
@@ -51,7 +50,7 @@ export class PnLService {
     };
 
     // Helper: Get Adjustments
-    const getAdj = (cat: import('../types/pnl.types').PnLAdjustmentCategory) =>
+    const getAdj = (cat: PnLAdjustmentCategory) =>
       filteredAdjustments.filter(a => a.category === cat).reduce((sum, a) => sum + a.amount, 0);
 
     // 1. INGRESOS

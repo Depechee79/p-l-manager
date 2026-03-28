@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Select, Table, Card, FormSection, DatePicker } from '@shared/components';
 import { useDatabase, useRestaurant } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { useToast } from '../utils/toast';
 import { formatCurrency } from '../utils/formatters';
 import type { GastoFijo, GastoFijoTipo } from '../types';
@@ -43,8 +44,8 @@ export const GastosFijosPage: React.FC = () => {
         const loadData = async () => {
             try {
                 await db.ensureLoaded('gastosFijos');
-            } catch (error) {
-                console.error("Error loading GastosFijosPage data:", error);
+            } catch (error: unknown) {
+                logger.error('Error loading GastosFijosPage data', error);
             }
         };
         loadData();
@@ -75,8 +76,8 @@ export const GastosFijosPage: React.FC = () => {
         activo: true,
     });
 
-    // Get gastos from database (or empty array if collection doesn't exist yet)
-    const gastosFijos = ((db as any).gastosFijos || []) as GastoFijo[];
+    // Get gastos from database
+    const gastosFijos = db.gastosFijos as GastoFijo[];
 
     // Filter by current restaurant and search query
     const filteredGastos = useMemo(() => {
@@ -185,7 +186,8 @@ export const GastosFijosPage: React.FC = () => {
                 });
             }
             setViewMode('list');
-        } catch (error) {
+        } catch (error: unknown) {
+            logger.error('Error saving gasto fijo', error);
             showToast({
                 type: 'error',
                 title: 'Error',
@@ -204,7 +206,8 @@ export const GastosFijosPage: React.FC = () => {
                     title: 'Gasto eliminado',
                     message: 'El gasto fijo ha sido eliminado'
                 });
-            } catch (error) {
+            } catch (error: unknown) {
+                logger.error('Error deleting gasto fijo', error);
                 showToast({
                     type: 'error',
                     title: 'Error',
@@ -217,13 +220,14 @@ export const GastosFijosPage: React.FC = () => {
     // Toggle active status
     const handleToggleActive = (gasto: GastoFijo) => {
         try {
-            db.update('gastosFijos' as any, gasto.id, { activo: !gasto.activo } as any);
+            db.update<GastoFijo>('gastosFijos', gasto.id, { activo: !gasto.activo });
             showToast({
                 type: 'info',
                 title: gasto.activo ? 'Gasto desactivado' : 'Gasto activado',
                 message: `"${gasto.descripcion}" ${gasto.activo ? 'ya no se incluirá' : 'se incluirá'} en el P&L`
             });
-        } catch (error) {
+        } catch (error: unknown) {
+            logger.error('Error toggling gasto fijo status', error);
             showToast({ type: 'error', title: 'Error', message: 'No se pudo actualizar el estado' });
         }
     };
@@ -292,7 +296,7 @@ export const GastosFijosPage: React.FC = () => {
                                     : 'No se encontraron gastos con los filtros actuales.'}
                             </div>
                         ) : (
-                            <Table<any>
+                            <Table<Record<string, React.ReactNode>>
                                 columns={[
                                     { key: 'tipo', header: 'Tipo' },
                                     { key: 'descripcion', header: 'Descripción' },
@@ -471,5 +475,3 @@ export const GastosFijosPage: React.FC = () => {
         </div>
     );
 };
-
-export default GastosFijosPage;
