@@ -3,6 +3,7 @@ import {
     Card,
     Button,
     PageHeader,
+    PageContainer,
     Modal,
     Input,
     FormSection,
@@ -10,8 +11,10 @@ import {
 } from '@shared/components';
 import { Save, Shield, Lock, Plus } from 'lucide-react';
 import { useDatabase } from '@core';
-import { PERMISSION_GROUPS, PREDEFINED_ROLES } from '@shared/config';
+import { PERMISSION_GROUPS } from '@shared/config';
+import { getAllSystemRoles } from '@shared/config/systemRoles';
 import { useToast } from '@utils/toast';
+import { logger } from '@core/services/LoggerService';
 import type { Role, Permission } from '@types';
 
 /**
@@ -29,8 +32,8 @@ export const RolesAdminPage: React.FC = () => {
         const loadData = async () => {
             try {
                 await db.ensureLoaded('roles');
-            } catch (error) {
-                console.error("Error loading RolesAdminPage data:", error);
+            } catch (error: unknown) {
+                logger.error("Error loading RolesAdminPage data", error instanceof Error ? error.message : String(error));
             }
         };
         loadData();
@@ -45,23 +48,35 @@ export const RolesAdminPage: React.FC = () => {
     const [isNewRoleModalOpen, setIsNewRoleModalOpen] = useState(false);
     const [newRoleName, setNewRoleName] = useState('');
 
-    // Load roles
+    // Valid system role names (canonical)
+    const VALID_ROLE_NAMES = [
+        'Director de Operaciones',
+        'Director de Restaurante',
+        'Encargado',
+        'Jefe de Cocina',
+        'Camarero',
+        'Cocinero'
+    ];
+
+    // Load roles - filter only valid roles and de-duplicate by name
     useEffect(() => {
         const loadedRoles = (db.roles || []) as Role[];
 
         // Only initialize basic roles if the collection is COMPLETELY empty
         if (loadedRoles.length === 0) {
-            const initialRoles = PREDEFINED_ROLES.map(r => ({
+            const initialRoles = getAllSystemRoles().map(r => ({
                 ...r,
-                id: Math.random().toString(36).substr(2, 9),
                 createdAt: new Date().toISOString()
             } as Role));
 
             initialRoles.forEach(role => db.add('roles', role));
             setRoles(initialRoles);
         } else {
-            // Strict de-duplication: Ensure we don't show duplicates by name
-            const uniqueRoles = Array.from(new Map(loadedRoles.map(item => [item.nombre, item])).values());
+            // Filter to only valid role names (removes "Director", "Bartender", etc.)
+            const validRoles = loadedRoles.filter(r => VALID_ROLE_NAMES.includes(r.nombre));
+
+            // De-duplicate by name (keep first occurrence)
+            const uniqueRoles = Array.from(new Map(validRoles.map(item => [item.nombre, item])).values());
             setRoles(uniqueRoles);
         }
     }, [db.roles]); // Depend only on db.roles to avoid loops
@@ -84,7 +99,7 @@ export const RolesAdminPage: React.FC = () => {
             return;
         }
 
-        const newRole: any = {
+        const newRole: Omit<Role, 'id'> = {
             nombre: newRoleName.trim(),
             descripcion: 'Rol personalizado',
             permisos: [],
@@ -102,7 +117,8 @@ export const RolesAdminPage: React.FC = () => {
                 title: 'Rol creado',
                 message: `El rol "${created.nombre}" ha sido creado correctamente`
             });
-        } catch (err) {
+        } catch (error: unknown) {
+            logger.error('Error creando rol', error instanceof Error ? error.message : String(error));
             showToast({
                 type: 'error',
                 title: 'Error',
@@ -119,12 +135,12 @@ export const RolesAdminPage: React.FC = () => {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedRole) return;
 
         setIsSaving(true);
         try {
-            (db as any).update('roles', selectedRole.id, { permisos: editedPermissions });
+            await db.update('roles', selectedRole.id, { permisos: editedPermissions } as Partial<Role>);
 
             // Update local state
             setRoles(prev => prev.map(r =>
@@ -137,7 +153,8 @@ export const RolesAdminPage: React.FC = () => {
                 title: 'Permisos guardados',
                 message: `Los permisos del rol "${selectedRole.nombre}" han sido actualizados`
             });
-        } catch {
+        } catch (error: unknown) {
+            logger.error('Error guardando permisos', error instanceof Error ? error.message : String(error));
             showToast({
                 type: 'error',
                 title: 'Error',
@@ -153,7 +170,7 @@ export const RolesAdminPage: React.FC = () => {
         JSON.stringify([...selectedRole.permisos].sort());
 
     return (
-        <div style={{ padding: 'var(--spacing-md)' }}>
+        <PageContainer>
             <PageHeader
                 title="Administración de Roles"
                 description="Configura los permisos de cada rol de equipo"
@@ -205,22 +222,8 @@ export const RolesAdminPage: React.FC = () => {
                                     transition: 'background-color 0.2s'
                                 }}
                             >
-                                <div>
-                                    <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 'var(--font-size-sm)' }}>
-                                        {role.nombre}
-                                    </div>
-                                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                                        {role.descripcion?.substring(0, 30)}...
-                                    </div>
-                                </div>
-                                <div style={{
-                                    fontSize: '11px',
-                                    padding: '2px 8px',
-                                    borderRadius: '10px',
-                                    background: 'var(--surface-muted)',
-                                    color: 'var(--text-secondary)'
-                                }}>
-                                    {role.permisos.length}
+                                <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 'var(--font-size-sm)' }}>
+                                    {role.nombre}
                                 </div>
                             </div>
                         ))}
@@ -350,8 +353,6 @@ export const RolesAdminPage: React.FC = () => {
                     </FormSection>
                 </div>
             </Modal>
-        </div>
+        </PageContainer>
     );
 };
-
-export default RolesAdminPage;

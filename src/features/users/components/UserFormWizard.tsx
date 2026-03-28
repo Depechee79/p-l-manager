@@ -5,10 +5,20 @@ import type { AppUser, Role, Permission } from '../users.types';
 import { PERMISSION_GROUPS } from '@shared/config';
 import { useToast } from '@utils/toast';
 
-interface UserFormWizardProps {
+interface UserFormData {
+    nombre: string;
+    email: string;
+    telefono: string;
+    rolId: string | number;
+    activo: boolean;
+    fechaCreacion: string;
+    ultimoAcceso: string;
+}
+
+export interface UserFormWizardProps {
     initialData?: AppUser | null;
     roles: Role[];
-    onSave: (data: any) => void;
+    onSave: (data: UserFormData) => void;
     onCancel: () => void;
     getRoleName: (rolId: string | number) => string;
     getRolePermissions: (rolId: string | number) => Permission[];
