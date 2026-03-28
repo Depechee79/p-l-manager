@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DatabaseService } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { ProviderService, ProviderData } from '@/features/providers/services/ProviderService';
 import type { Provider } from '../types';
 
@@ -52,7 +53,8 @@ export const useProviders = (db: DatabaseService) => {
         } else {
           setError(result.error || 'Failed to create provider');
         }
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error creating provider', error);
         setError('An error occurred while creating provider');
       } finally {
         setLoading(false);
@@ -74,7 +76,8 @@ export const useProviders = (db: DatabaseService) => {
         } else {
           setError(result.error || 'Failed to update provider');
         }
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error updating provider', error);
         setError('An error occurred while updating provider');
       } finally {
         setLoading(false);
@@ -92,7 +95,8 @@ export const useProviders = (db: DatabaseService) => {
       try {
         providerService.delete(id);
         refreshProviders();
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error deleting provider', error);
         setError('An error occurred while deleting provider');
       } finally {
         setLoading(false);

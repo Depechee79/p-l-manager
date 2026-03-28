@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DatabaseService } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { InventoryService } from '@/features/inventarios/services/InventoryService';
 import type { Product, InventoryItem } from '../types';
 import { filterByRestaurant, getCurrentRestaurantId } from '../utils/restaurantFilter';
@@ -78,7 +79,8 @@ export const useInventory = (db: DatabaseService) => {
 
       try {
         inventory.setProductCount(productId, quantity);
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error recording inventory count', error);
         setError('Error recording count');
       }
     },
@@ -107,7 +109,8 @@ export const useInventory = (db: DatabaseService) => {
       // Refresh inventory history
       const loadedInventories = db.inventarios as InventoryItem[];
       setInventoryHistory(loadedInventories);
-    } catch (err) {
+    } catch (error: unknown) {
+      logger.error('Error saving inventory', error);
       setError('Error saving inventory');
     }
   }, [inventory, db]);

@@ -3,7 +3,7 @@ import { Button, Input, Card, FormSection, StepIndicator } from '@components';
 import { X, ArrowRight, ArrowLeft, Save } from 'lucide-react';
 import type { AppUser, Role, Permission } from '../users.types';
 import { PERMISSION_GROUPS } from '@shared/config';
-import { useToast } from '@hooks/useToast';
+import { useToast } from '@utils/toast';
 
 interface UserFormWizardProps {
     initialData?: AppUser | null;
@@ -29,7 +29,13 @@ export const UserFormWizard: React.FC<UserFormWizardProps> = ({
 }) => {
     const { showToast } = useToast();
     const [wizardStep, setWizardStep] = useState(1);
-    const [formData, setFormData] = useState<Omit<AppUser, 'id' | 'createdAt' | 'updatedAt'>>({
+    const [formData, setFormData] = useState<{
+        nombre: string;
+        email: string;
+        telefono: string;
+        rolId: string | number;
+        activo: boolean;
+    }>({
         nombre: '',
         email: '',
         telefono: '',

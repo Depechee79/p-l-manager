@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Input, Select, Card } from '@shared/components';
 import { Plus, Search } from 'lucide-react';
 import { useDatabase } from '@core';
-import { useToast } from '@hooks/useToast';
+import { useToast } from '@utils/toast';
 import { useOrders, OrderForm, OrdersList } from '@/features/orders';
 import type { Order, OrderFormData } from '@/features/orders';
 import type { Product, Provider } from '@types';

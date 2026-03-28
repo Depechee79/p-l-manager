@@ -6,6 +6,7 @@ import type {
   OtroMedio,
 } from '../types';
 import { DatabaseService } from '@core';
+import { logger } from '@core/services/LoggerService';
 
 /**
  * Input data for saving a closing
@@ -177,7 +178,8 @@ export class FinanceService {
     try {
       this.db.delete('cierres', id);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Failed to delete closing', error);
       return false;
     }
   }

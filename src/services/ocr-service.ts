@@ -1,7 +1,9 @@
 import { createWorker } from 'tesseract.js';
+import type { PSM as TesseractPSM } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { OCRResult, PDFZone, ExtractedData, ConfidenceLevel, OCRDocumentType } from '../types/ocr.types';
 import { OCR_CONFIG } from '@shared/config';
+import { logger } from '@core/services/LoggerService';
 
 // Configure PDF.js worker
 try {
@@ -11,8 +13,8 @@ try {
       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
     }
   }
-} catch (e) {
-  console.warn('Failed to configure PDF.js worker:', e);
+} catch (error: unknown) {
+  logger.warn('Failed to configure PDF.js worker:', error instanceof Error ? error.message : String(error));
 }
 
 export class OCRService {
@@ -65,7 +67,7 @@ export class OCRService {
         }, 'image/png');
       };
       img.onerror = (e) => {
-        console.warn("Image preprocessing failed, using original", e);
+        logger.warn("Image preprocessing failed, using original", e instanceof Event ? 'image load error' : String(e));
         resolve(file instanceof File ? file : new Blob([file]));
       };
       img.src = URL.createObjectURL(file);
@@ -81,7 +83,7 @@ export class OCRService {
 
     // Initialize worker with languages from config
     const worker = await createWorker(OCR_CONFIG.languages, 1, {
-      logger: (m: any) => {
+      logger: (m: { status: string; progress: number }) => {
         if (m.status === 'recognizing text' && onProgress) {
           onProgress(Math.round(m.progress * 100));
         }
@@ -90,7 +92,7 @@ export class OCRService {
 
     // Set parameters for better accuracy (using config values)
     await worker.setParameters({
-      tessedit_pageseg_mode: OCR_CONFIG.pageSegMode as any,
+      tessedit_pageseg_mode: String(OCR_CONFIG.pageSegMode) as TesseractPSM,
       preserve_interword_spaces: '1',
       tessedit_char_whitelist: OCR_CONFIG.charWhitelist,
     });
@@ -98,14 +100,17 @@ export class OCRService {
     const result = await worker.recognize(processedImage);
     await worker.terminate();
 
+    const dataRecord = result.data as unknown as Record<string, unknown>;
+    const rawWords = Array.isArray(dataRecord.words) ? dataRecord.words : undefined;
+
     return {
       text: result.data.text,
       confidence: result.data.confidence,
-      words: (result.data as any).words ? (result.data as any).words.map((w: any) => ({
-        text: w.text,
-        confidence: w.confidence,
-        bbox: w.bbox,
-      })) : undefined,
+      words: rawWords?.map((w: Record<string, unknown>) => ({
+        text: String(w.text ?? ''),
+        confidence: Number(w.confidence ?? 0),
+        bbox: w.bbox as { x0: number; y0: number; x1: number; y1: number },
+      })),
     };
   }
 
@@ -121,11 +126,11 @@ export class OCRService {
     const viewport = page.getViewport({ scale: 1 });
 
     // Check if we have a usable text layer
-    const rawText = textContent.items.map((item: any) => item.str).join(' ');
+    const rawText = textContent.items.map((item: unknown) => (item as { str?: string }).str || '').join(' ');
     const hasTextLayer = rawText.length > 50; // Threshold for "enough text"
 
     if (!hasTextLayer) {
-      console.log("PDF appears to be scanned (no text layer). Falling back to OCR...");
+      logger.info("PDF appears to be scanned (no text layer). Falling back to OCR...");
 
       // Render to canvas for OCR (using config scale)
       const scale = OCR_CONFIG.pdfScale;
@@ -158,17 +163,18 @@ export class OCRService {
 
     let fullText = '';
 
-    textContent.items.forEach((item: any) => {
-      if (!item.str || item.str.trim() === '') return;
+    textContent.items.forEach((item: unknown) => {
+      const textItem = item as { str?: string; transform?: number[] };
+      if (!textItem.str || textItem.str.trim() === '' || !textItem.transform) return;
 
-      fullText += item.str + ' ';
+      fullText += textItem.str + ' ';
 
-      const x = item.transform[4];
-      const y = item.transform[5];
+      const x = textItem.transform[4];
+      const y = textItem.transform[5];
       const normalX = x / viewport.width;
       const normalY = y / viewport.height;
 
-      const text = item.str.trim();
+      const text = textItem.str.trim();
 
       // Classify by zone
       if (normalY > 0.7) {

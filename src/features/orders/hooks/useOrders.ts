@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDatabase, useRestaurant } from '@core';
 
 import type { Order } from '../orders.types';
-import { useToast } from '@hooks/useToast';
+import { useToast } from '@utils/toast';
 
 export const useOrders = () => {
     const { db } = useDatabase();

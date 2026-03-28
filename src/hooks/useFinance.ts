@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { DatabaseService } from '@core';
+import { logger } from '@core/services/LoggerService';
 import { FinanceService, ClosingData } from '../services/FinanceService';
 import type { Cierre, CashBreakdown } from '../types';
 import { filterByRestaurant, getCurrentRestaurantId } from '../utils/restaurantFilter';
@@ -79,7 +80,8 @@ export const useFinance = (db: DatabaseService) => {
         } else {
           setError(result.error || 'Failed to create closing');
         }
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error creating closing', error);
         setError('An error occurred while creating closing');
       } finally {
         setLoading(false);
@@ -101,7 +103,8 @@ export const useFinance = (db: DatabaseService) => {
         } else {
           setError(result.error || 'Failed to update closing');
         }
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error updating closing', error);
         setError('An error occurred while updating closing');
       } finally {
         setLoading(false);
@@ -119,7 +122,8 @@ export const useFinance = (db: DatabaseService) => {
       try {
         financeService.deleteClosing(id);
         refreshClosings();
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error deleting closing', error);
         setError('An error occurred while deleting closing');
       } finally {
         setLoading(false);

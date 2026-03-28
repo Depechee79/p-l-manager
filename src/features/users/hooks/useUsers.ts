@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DatabaseService } from '@core';
-import { useToast } from '@hooks/useToast';
+import { useToast } from '@utils/toast';
 import type { AppUser, Role } from '../users.types';
-import { PREDEFINED_ROLES } from '@shared/config';
+import { getAllSystemRoles } from '@shared/config/systemRoles';
 
 export const useUsers = (db: DatabaseService) => {
     const { showToast } = useToast();
@@ -26,9 +26,9 @@ export const useUsers = (db: DatabaseService) => {
     }, [refreshData]);
 
     useEffect(() => {
-        // Initialize roles if empty
+        // Initialize roles if empty using SYSTEM_ROLES
         if (db.roles && db.roles.length === 0) {
-            PREDEFINED_ROLES.forEach((role) => {
+            getAllSystemRoles().forEach((role) => {
                 db.add('roles', role);
             });
             refreshData();

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { DatabaseService } from '@core';
+import { logger } from '@core/services/LoggerService';
 import type { Invoice } from '../types';
 import { filterByRestaurant, getCurrentRestaurantId } from '../utils/restaurantFilter';
 
@@ -75,9 +76,10 @@ export const useInvoices = (db: DatabaseService) => {
       setError(null);
 
       try {
-        db.add('facturas', data as any);
+        db.add<Invoice>('facturas', data);
         refreshInvoices();
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error creating invoice', error);
         setError('An error occurred while creating invoice');
       } finally {
         setLoading(false);
@@ -93,9 +95,10 @@ export const useInvoices = (db: DatabaseService) => {
       setError(null);
 
       try {
-        db.update('facturas', id, data as any);
+        db.update<Invoice>('facturas', id, data);
         refreshInvoices();
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error updating invoice', error);
         setError('An error occurred while updating invoice');
       } finally {
         setLoading(false);
@@ -113,7 +116,8 @@ export const useInvoices = (db: DatabaseService) => {
       try {
         db.delete('facturas', id);
         refreshInvoices();
-      } catch (err) {
+      } catch (error: unknown) {
+        logger.error('Error deleting invoice', error);
         setError('An error occurred while deleting invoice');
       } finally {
         setLoading(false);
