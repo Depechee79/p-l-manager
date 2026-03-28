@@ -1,4 +1,5 @@
 import type { ComponentBaseProps, ComponentSize } from '../types';
+import { OVERLAY_BACKDROP, OVERLAY_SPINNER_TRACK, SURFACE } from '@shared/tokens/colors';
 
 /**
  * LoadingState - Flexible loading indicators
@@ -137,12 +138,12 @@ export const LoadingState = ({
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    backgroundColor: OVERLAY_BACKDROP,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    zIndex: 9999,
+                    zIndex: 'var(--z-toast)',
                     ...style,
                 }}
                 id={id}
@@ -159,12 +160,12 @@ export const LoadingState = ({
                         cx="12"
                         cy="12"
                         r="10"
-                        stroke="rgba(255,255,255,0.3)"
+                        stroke={OVERLAY_SPINNER_TRACK}
                         strokeWidth="3"
                     />
                     <path
                         d="M12 2C6.47715 2 2 6.47715 2 12"
-                        stroke="white"
+                        stroke={SURFACE}
                         strokeWidth="3"
                         strokeLinecap="round"
                     />
@@ -173,7 +174,7 @@ export const LoadingState = ({
                     <span
                         style={{
                             marginTop: 'var(--spacing-md)',
-                            color: 'white',
+                            color: SURFACE,
                             fontSize: 'var(--font-size-base)',
                             fontWeight: 500,
                         }}

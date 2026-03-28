@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { Sparkles } from 'lucide-react';
+import { ACCENT_SHADOW } from '@shared/tokens/colors';
 
 export interface BrandHeaderProps {
     compact?: boolean;
@@ -29,7 +30,7 @@ export const BrandHeader: React.FC<BrandHeaderProps> = ({ compact = false }) => 
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: compact ? 'none' : '0 4px 12px rgba(225, 29, 72, 0.3)',
+                    boxShadow: compact ? 'none' : `0 4px 12px ${ACCENT_SHADOW}`,
                 }}
             >
                 <Sparkles size={compact ? 16 : 20} color="var(--surface)" strokeWidth={2.5} />

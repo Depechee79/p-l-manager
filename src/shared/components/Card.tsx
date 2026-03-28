@@ -8,6 +8,7 @@ export interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'>
   variant?: 'default' | 'elevated' | 'outlined';
   clickable?: boolean;
   padding?: PaddingSize;
+  bodyStyle?: React.CSSProperties;
 }
 
 // Map new padding values to CSS classes
@@ -26,6 +27,7 @@ export const Card = ({
   variant = 'default',
   clickable = false,
   padding = 'md',
+  bodyStyle,
   className = '',
   ...props
 }: CardProps) => {
@@ -40,7 +42,7 @@ export const Card = ({
   return (
     <div className={classes} {...props}>
       {title && <div className="card-header">{title}</div>}
-      <div className="card-body">{children}</div>
+      <div className="card-body" style={bodyStyle}>{children}</div>
       {footer && <div className="card-footer">{footer}</div>}
     </div>
   );

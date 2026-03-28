@@ -5,7 +5,7 @@
  */
 
 export {
-    PREDEFINED_ROLES,
+    // PREDEFINED_ROLES removed - use SYSTEM_ROLES instead
     PERMISSION_GROUPS,
     hasPermission,
     hasAnyPermission,
@@ -14,6 +14,17 @@ export {
 } from './roles';
 
 export type { PermissionGroup } from './roles';
+
+export {
+    SYSTEM_ROLES,
+    ALL_PERMISSIONS,
+    getSystemRole,
+    getAllSystemRoles,
+    canManageRole,
+    getInvitableRoles,
+    isValidPermission,
+    roleHasPermission,
+} from './systemRoles';
 
 export {
     OCR_CONFIG,
@@ -26,3 +37,7 @@ export {
     TOTAL_PATTERNS,
     CONFIDENCE_THRESHOLDS,
 } from './ocr.config';
+
+// Route Metadata for AppShellV2
+export { routeMeta, getRouteMeta } from './routeMeta';
+export type { RouteMeta } from './routeMeta';

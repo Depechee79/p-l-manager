@@ -1,8 +1,8 @@
 /**
  * PageContainer - Standardized page container with consistent padding
- * 
+ *
  * Wraps all page content to ensure uniform spacing per R-13.
- * 
+ *
  * @example
  * <PageContainer maxWidth="1400px">
  *   <PageHeader title="..." />
@@ -24,14 +24,17 @@ export interface PageContainerProps {
 
 export const PageContainer: React.FC<PageContainerProps> = ({
     children,
-    maxWidth = '1400px',
+    maxWidth,
     style,
 }) => {
     return (
         <div style={{
-            padding: 'var(--spacing-3)',
-            maxWidth,
-            margin: '0 auto',
+            // Only apply maxWidth if explicitly provided
+            ...(maxWidth ? { maxWidth, margin: '0 auto' } : {}),
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             ...style,
         }}>
             {children}

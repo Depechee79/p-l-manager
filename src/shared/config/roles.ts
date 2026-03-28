@@ -21,7 +21,8 @@ import type { Role, Permission } from '@types';
 export const PREDEFINED_ROLES: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
         nombre: 'Director',
-        descripcion: 'Acceso completo a todas las funcionalidades y configuración',
+        descripcion: 'Acceso completo a todas las funcionalidades y configuracion',
+        nivel: 1,
         permisos: [
             'dashboard.view',
             'ocr.view', 'ocr.create', 'ocr.edit', 'ocr.delete',
@@ -32,11 +33,13 @@ export const PREDEFINED_ROLES: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>[] = 
             'escandallos.view', 'escandallos.create', 'escandallos.edit', 'escandallos.delete',
             'pnl.view', 'pnl.export',
             'usuarios.view', 'usuarios.create', 'usuarios.edit', 'usuarios.delete',
+            'configuracion.view', 'configuracion.edit',
         ],
     },
     {
         nombre: 'Encargado',
         descripcion: 'Gestión operativa: cierres, inventarios y escandallos',
+        nivel: 3,
         permisos: [
             'dashboard.view',
             'cierres.view', 'cierres.create', 'cierres.edit',
@@ -48,6 +51,7 @@ export const PREDEFINED_ROLES: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>[] = 
     {
         nombre: 'Cocinero',
         descripcion: 'Inventarios de cocina y cámara, escandallos',
+        nivel: 5,
         permisos: [
             'dashboard.view',
             'inventarios.view', 'inventarios.create', 'inventarios.edit',
@@ -59,6 +63,7 @@ export const PREDEFINED_ROLES: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>[] = 
     {
         nombre: 'Bartender',
         descripcion: 'Inventarios de barra y bebidas',
+        nivel: 4,
         permisos: [
             'dashboard.view',
             'inventarios.view', 'inventarios.create', 'inventarios.edit',
@@ -69,6 +74,7 @@ export const PREDEFINED_ROLES: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>[] = 
     {
         nombre: 'Camarero',
         descripcion: 'Inventarios básicos de barra',
+        nivel: 4,
         permisos: [
             'dashboard.view',
             'inventarios.view', 'inventarios.create', 'inventarios.edit',
@@ -96,7 +102,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
         permissions: ['dashboard.view'],
     },
     {
-        label: 'Escáner OCR',
+        label: 'Escaner OCR',
         permissions: ['ocr.view', 'ocr.create', 'ocr.edit', 'ocr.delete'],
     },
     {
@@ -108,7 +114,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
         permissions: ['proveedores.view', 'proveedores.create', 'proveedores.edit', 'proveedores.delete'],
     },
     {
-        label: 'Almacén',
+        label: 'Almacen',
         permissions: ['almacen.view', 'almacen.create', 'almacen.edit', 'almacen.delete'],
     },
     {
@@ -126,6 +132,42 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     {
         label: 'Usuarios',
         permissions: ['usuarios.view', 'usuarios.create', 'usuarios.edit', 'usuarios.delete'],
+    },
+    {
+        label: 'Configuracion',
+        permissions: ['configuracion.view', 'configuracion.edit'],
+    },
+    {
+        label: 'Personal',
+        permissions: ['personal.view', 'personal.edit'],
+    },
+    {
+        label: 'Nominas',
+        permissions: ['nominas.view', 'nominas.create', 'nominas.edit', 'nominas.delete'],
+    },
+    {
+        label: 'Gastos Fijos',
+        permissions: ['gastos.view', 'gastos.create', 'gastos.edit', 'gastos.delete'],
+    },
+    {
+        label: 'Mermas',
+        permissions: ['mermas.view', 'mermas.create', 'mermas.edit', 'mermas.delete'],
+    },
+    {
+        label: 'Pedidos',
+        permissions: ['pedidos.view', 'pedidos.create', 'pedidos.edit', 'pedidos.delete'],
+    },
+    {
+        label: 'Traspasos',
+        permissions: ['transferencias.view', 'transferencias.create', 'transferencias.edit', 'transferencias.delete'],
+    },
+    {
+        label: 'Invitaciones',
+        permissions: ['invitaciones.view', 'invitaciones.create', 'invitaciones.delete'],
+    },
+    {
+        label: 'Restaurantes',
+        permissions: ['restaurantes.view', 'restaurantes.create', 'restaurantes.edit', 'restaurantes.delete'],
     },
 ];
 

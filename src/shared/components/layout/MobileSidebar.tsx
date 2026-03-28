@@ -4,13 +4,14 @@
  */
 import React from 'react';
 import { X } from 'lucide-react';
+import { OVERLAY_BACKDROP } from '@shared/tokens/colors';
+import type { AppUser } from '@types';
 import { NavLink } from './NavLink';
 import { UserSection } from './UserSection';
 import { navigation } from './navConfig';
-import type { User } from '@/core';
 
 export interface MobileSidebarProps {
-    user?: User | null;
+    user?: AppUser | null;
     onLogout?: () => void;
     onClose: () => void;
 }
@@ -28,9 +29,9 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                 style={{
                     position: 'fixed',
                     inset: 0,
-                    background: 'rgba(0, 0, 0, 0.5)',
+                    background: OVERLAY_BACKDROP,
                     backdropFilter: 'blur(4px)',
-                    zIndex: 200,
+                    zIndex: 'var(--z-modal-backdrop)',
                 }}
             />
 
@@ -47,7 +48,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                     padding: '80px 0 0',
                     display: 'flex',
                     flexDirection: 'column',
-                    zIndex: 300,
+                    zIndex: 'var(--z-modal)',
                     boxShadow: 'var(--shadow-lg)',
                 }}
             >
@@ -109,7 +110,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                 </nav>
 
                 {/* User Section */}
-                {user && <UserSection user={user} onLogout={onLogout} />}
+                {user && <UserSection user={{ name: user.nombre }} onLogout={onLogout} />}
             </aside>
         </>
     );

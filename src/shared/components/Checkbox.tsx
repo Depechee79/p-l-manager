@@ -1,11 +1,12 @@
 import React from 'react';
+import { Check } from 'lucide-react';
 
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     description?: string;
 }
 
-export const Checkbox: React.FC<CheckboxProps> = ({ label, description, className, style, ...props }) => {
+export const Checkbox: React.FC<CheckboxProps> = ({ label, description, className, style, checked, onChange, ...props }) => {
     return (
         <label
             style={{
@@ -18,49 +19,46 @@ export const Checkbox: React.FC<CheckboxProps> = ({ label, description, classNam
             }}
             className={className}
         >
+            {/* Hidden native checkbox for accessibility */}
             <input
                 type="checkbox"
+                checked={checked}
+                onChange={onChange}
                 style={{
-                    appearance: 'none',
-                    width: '18px',
-                    height: '18px',
-                    border: '1px solid var(--border)',
-                    borderRadius: '4px',
-                    backgroundColor: 'var(--surface)',
-                    marginTop: '2px', // Align with first line of text
-                    cursor: 'pointer',
-                    display: 'grid',
-                    placeContent: 'center',
+                    position: 'absolute',
+                    opacity: 0,
+                    width: 0,
+                    height: 0,
                 }}
-                className="custom-checkbox"
                 {...props}
             />
-            {/* We ideally need CSS for the checkmark, or inline SVG background */}
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .custom-checkbox:checked {
-                    background-color: var(--primary);
-                    border-color: var(--primary);
-                }
-                .custom-checkbox:checked::before {
-                    content: "";
-                    width: 10px;
-                    height: 10px;
-                    box-shadow: inset 1em 1em white;
-                    transform-origin: center;
-                    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
-                }
-                .custom-checkbox:focus {
-                    outline: 2px solid var(--primary-light);
-                    outline-offset: 1px;
-                }
-            `}} />
+
+            {/* Visual checkbox */}
+            <div
+                style={{
+                    width: '18px',
+                    height: '18px',
+                    minWidth: '18px',
+                    border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    borderRadius: '4px',
+                    backgroundColor: checked ? 'var(--primary)' : 'var(--surface)',
+                    marginTop: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.15s ease',
+                }}
+            >
+                {checked && (
+                    <Check size={12} color="var(--surface)" strokeWidth={3} />
+                )}
+            </div>
 
             {(label || description) && (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {label && (
                         <span style={{
-                            fontSize: 'var(--font-size-base)',
+                            fontSize: 'var(--font-size-sm)',
                             fontWeight: 500,
                             color: 'var(--text-main)'
                         }}>
@@ -69,7 +67,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({ label, description, classNam
                     )}
                     {description && (
                         <span style={{
-                            fontSize: 'var(--font-size-sm)',
+                            fontSize: 'var(--font-size-xs)',
                             color: 'var(--text-secondary)'
                         }}>
                             {description}

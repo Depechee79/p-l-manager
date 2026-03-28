@@ -1,9 +1,14 @@
 /**
  * PageHeader - Standardized page header component
- * 
+ *
  * Ensures consistent layout across all pages per R-13 rule.
  * All pages should use this component for their header section.
- * 
+ *
+ * AUDIT-FIX: P3.3 - This component renders the only H1 on the page.
+ * Content sections should use h2, h3, etc.
+ *
+ * @deprecated Prefer StickyPageHeader for better UX on scrollable content
+ *
  * @example
  * <PageHeader
  *   title="Pedidos"
@@ -33,32 +38,33 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
     return (
         <div style={{
+            backgroundColor: 'var(--background)',
+            paddingTop: 'var(--spacing-xs)',
+            paddingBottom: 'var(--spacing-xs)',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            flexWrap: 'wrap',
-            gap: 'var(--spacing-2)',
-            marginBottom: 'var(--spacing-3)',
+            alignItems: 'center',
+            gap: 'var(--spacing-sm)',
         }}>
             <div>
                 <h1 style={{
                     margin: 0,
-                    fontSize: 'var(--font-size-3xl)',
+                    fontSize: 'var(--font-size-xl)',
                     fontWeight: '700',
                     color: 'var(--text-main)',
                     fontFamily: 'var(--font-heading)',
                     display: icon ? 'flex' : 'block',
                     alignItems: 'center',
-                    gap: 'var(--spacing-sm)',
+                    gap: 'var(--spacing-xs)',
                 }}>
                     {icon}
                     {title}
                 </h1>
                 {description && (
                     <p style={{
-                        margin: 'var(--spacing-xs) 0 0',
+                        margin: '4px 0 0',
                         color: 'var(--text-secondary)',
-                        fontSize: 'var(--font-size-base)',
+                        fontSize: 'var(--font-size-sm)',
                     }}>
                         {description}
                     </p>

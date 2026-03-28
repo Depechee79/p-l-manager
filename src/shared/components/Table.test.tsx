@@ -111,7 +111,7 @@ describe('Table', () => {
       {
         key: 'actions',
         header: 'Actions',
-        render: (_: any, row: TestData) => (
+        render: (_: unknown, row: TestData) => (
           <div>
             <button onClick={() => handleEdit(row)}>Edit</button>
             <button onClick={() => handleDelete(row)}>Delete</button>

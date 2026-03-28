@@ -75,6 +75,19 @@ export const ACCENT_SHADOW = 'rgba(225, 29, 72, 0.3)';
 export const ACCENT_FOCUS_RING = 'rgba(225, 29, 72, 0.1)';
 
 // =============================================================================
+// OVERLAYS
+// =============================================================================
+
+/** Overlay backdrop - negro semitransparente */
+export const OVERLAY_BACKDROP = 'rgba(0, 0, 0, 0.5)';
+
+/** Overlay spinner track - blanco semitransparente */
+export const OVERLAY_SPINNER_TRACK = 'rgba(255, 255, 255, 0.3)';
+
+/** Switch knob shadow */
+export const SWITCH_SHADOW = '0 1px 3px rgba(0, 0, 0, 0.2)';
+
+// =============================================================================
 // SEMANTIC (Estados)
 // =============================================================================
 
@@ -150,6 +163,11 @@ export const colors = {
     accentHover: ACCENT_HOVER,
     accentShadow: ACCENT_SHADOW,
     accentFocusRing: ACCENT_FOCUS_RING,
+
+    // Overlays
+    overlayBackdrop: OVERLAY_BACKDROP,
+    overlaySpinnerTrack: OVERLAY_SPINNER_TRACK,
+    switchShadow: SWITCH_SHADOW,
 
     // Semantic
     success: SUCCESS,

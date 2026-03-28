@@ -1,14 +1,16 @@
 /**
  * Sidebar - Desktop sidebar navigation
- * Extracted from Layout.tsx (~260 líneas → ~120 líneas)
+ *
+ * Updated: Session 004 - Removed section titles (all labels now empty)
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Store } from 'lucide-react';
 import { Select } from '../Select';
 import { BrandHeader } from './BrandHeader';
 import { NavLink } from './NavLink';
 import { UserSection } from './UserSection';
-import { navigation } from './navConfig';
+import { filterNavigationByPermissions } from './navConfig';
+import { useUserPermissions } from '@shared/hooks';
 import type { AppUser } from '@types';
 import type { Restaurant } from '@/types';
 
@@ -28,6 +30,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     currentRestaurant,
     onSwitchRestaurant,
 }) => {
+    const { permissions } = useUserPermissions();
+
+    // Filter navigation based on user permissions
+    const filteredNavigation = useMemo(() => {
+        return filterNavigationByPermissions(permissions);
+    }, [permissions]);
+
     return (
         <aside
             style={{
@@ -42,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 position: 'sticky',
                 top: 0,
                 height: '100vh',
-                zIndex: 10,
+                zIndex: 'var(--z-sticky)',
             }}
         >
             {/* Logo/Brand */}
@@ -111,32 +120,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
             )}
 
-            {/* Navigation */}
+            {/* Navigation - filtered by permissions */}
             <nav
                 style={{
                     flex: 1,
                     padding: '0 var(--spacing-sm)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 'var(--spacing-md)',
+                    gap: 'var(--spacing-xs)',
                     paddingBottom: 'var(--spacing-xl)',
                 }}
             >
-                {navigation.map((category) => (
+                {filteredNavigation.map((category) => (
                     <div key={category.id} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
-                        <div
-                            style={{
-                                fontSize: '10px',
-                                fontWeight: '700',
-                                color: 'var(--text-light)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                paddingLeft: '12px',
-                                marginBottom: '4px',
-                            }}
-                        >
-                            {category.label}
-                        </div>
+                        {/* Session 004: Only render label if not empty */}
+                        {category.label && (
+                            <div
+                                style={{
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    color: 'var(--text-light)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    paddingLeft: '12px',
+                                    marginBottom: '4px',
+                                    marginTop: 'var(--spacing-sm)',
+                                }}
+                            >
+                                {category.label}
+                            </div>
+                        )}
                         {category.items.map((item) => (
                             <NavLink key={item.path} {...item} />
                         ))}
@@ -145,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </nav>
 
             {/* User Section */}
-            {user && <UserSection user={{ ...user, name: user.nombre } as any} onLogout={onLogout} />}
+            {user && <UserSection user={{ name: user.nombre }} onLogout={onLogout} />}
         </aside>
     );
 };

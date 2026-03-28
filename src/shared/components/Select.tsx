@@ -96,14 +96,14 @@ export const Select: React.FC<SelectProps> = ({
             ? '1px solid var(--danger)'
             : isOpen
               ? '1px solid var(--accent)'
-              : '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
-          padding: '8px 14px',
+              : 'none',
+          borderRadius: 'var(--app-interactive-radius)',
+          padding: '0 12px',
           boxShadow: isOpen
-            ? 'var(--shadow-accent-intense)'
+            ? '0 0 0 1px var(--accent), 0 0 0 3px rgba(225, 29, 72, 0.1)'
             : 'none',
-          transition: 'all 200ms ease',
-          height: 'var(--height-input)',
+          transition: 'all 0.15s ease',
+          height: 'var(--app-interactive-h)',
           boxSizing: 'border-box',
           opacity: disabled ? 0.6 : 1,
         }}
@@ -145,31 +145,30 @@ export const Select: React.FC<SelectProps> = ({
           top: '100%',
           left: 0,
           right: 0,
-          marginTop: 'var(--spacing-xs)',
+          marginTop: '4px',
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
           boxShadow: 'var(--shadow-lg)',
-          zIndex: 1000,
+          zIndex: 1200,
           maxHeight: '300px',
           overflowY: 'auto',
-          padding: 'var(--spacing-xs)',
+          padding: '4px',
         }}>
           {options.map((option) => (
             <div
               key={option.value}
               onClick={() => handleSelect(option.value)}
               style={{
-                padding: 'var(--spacing-xs) var(--spacing-sm)',
-                borderRadius: 'var(--radius-sm)',
+                padding: '8px 12px',
+                borderRadius: '6px',
                 cursor: 'pointer',
                 color: option.value === value ? 'var(--accent)' : 'var(--text-main)',
                 background: option.value === value
                   ? 'var(--surface-muted)'
                   : 'transparent',
                 fontWeight: option.value === value ? '600' : '500',
-                fontSize: 'var(--font-size-sm)',
-                transition: 'all 150ms',
+                fontSize: 'var(--app-filter-input-size)',
+                transition: 'background-color 0.15s',
                 marginBottom: '2px',
               }}
               onMouseEnter={(e) => {

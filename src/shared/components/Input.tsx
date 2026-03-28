@@ -66,7 +66,7 @@ export const Input = ({
                 : '1px solid var(--border)',
             borderRadius: 'var(--radius)',
             color: 'var(--text-main)',
-            fontSize: 'var(--font-size-base)',
+            fontSize: 'var(--font-size-sm)', // 12px - Unified scale
             fontFamily: 'var(--font-body)',
             height: 'var(--height-input)',
             boxSizing: 'border-box',

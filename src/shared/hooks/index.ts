@@ -8,24 +8,41 @@
  * dependen de lógica de negocio específica.
  * 
  * @example
- * import { useLocalStorage, useMediaQuery } from '@/shared/hooks';
+ * import { useResponsive, useMediaQuery } from '@/shared/hooks';
  * 
- * @version 1.0.0
+ * @version 1.1.0
  * @date 2025-12-30
  */
 
 // =============================================================================
-// HOOKS COMPARTIDOS
+// RESPONSIVE HOOKS
 // =============================================================================
 
-export { useMediaQuery, useIsMobile } from './useMediaQuery';
+export {
+    // Primary responsive hook - use this for new code
+    useResponsive,
+    type ResponsiveState,
+    type DeviceType,
+    
+    // Base media query hook
+    useMediaQuery,
+    
+    // Convenience hooks for specific breakpoints
+    useIsMobile,
+    useIsTablet,
+    useIsDesktop,
+    useBreakpoint,
+    useViewport,
+} from './useMediaQuery';
 
 // =============================================================================
-// PLACEHOLDER EXPORT
+// PERMISSION HOOKS
 // =============================================================================
 
-/**
- * Constante placeholder para evitar error de módulo vacío.
- * Se eliminará cuando se añada el primer hook.
- */
-export const SHARED_HOOKS_VERSION = '1.0.0';
+export { useUserPermissions, type UseUserPermissionsResult } from './useUserPermissions';
+
+// =============================================================================
+// VERSION
+// =============================================================================
+
+export const SHARED_HOOKS_VERSION = '1.1.0';
