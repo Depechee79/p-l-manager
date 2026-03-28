@@ -13,6 +13,13 @@ import type { Company, Restaurant, BaseEntity, CollectionName } from '@types';
  * 3. Adds restaurantId to all existing data entities
  * 4. Assigns existing users to the default company and restaurant
  */
+/**
+ * Type-safe record accessor for BaseEntity items with dynamic field names
+ */
+function toRecord(entity: BaseEntity): Record<string, unknown> {
+  return entity as unknown as Record<string, unknown>;
+}
+
 export class DataMigration {
   private db: DatabaseService;
   private companyService: CompanyService;
@@ -123,13 +130,13 @@ export class DataMigration {
       const collection = this.db[collectionName] as BaseEntity[];
 
       for (const entity of collection) {
-        const record = entity as unknown as Record<string, unknown>;
+        const record = toRecord(entity);
         // Only add restaurantId if it doesn't already have one
         if (!record['restaurantId']) {
           record['restaurantId'] = restaurantId;
           // Update in database
           try {
-            await this.db.update(collectionName, entity.id, { restaurantId } as unknown as Partial<BaseEntity>);
+            await this.db.update(collectionName, entity.id, { restaurantId } as Partial<BaseEntity>);
           } catch (err: unknown) {
             // If update fails, try to add directly
             logger.warn(`Failed to update ${collectionName} entity ${entity.id}:`, err);
@@ -141,7 +148,7 @@ export class DataMigration {
     // Migrate users
     const usuarios = this.db.usuarios;
     for (const user of usuarios) {
-      const userRecord = user as unknown as Record<string, unknown>;
+      const userRecord = toRecord(user);
       if (!userRecord['companyId']) {
         // Get company ID from restaurants
         const restaurants = this.restaurantService.getAllRestaurants();
@@ -153,7 +160,7 @@ export class DataMigration {
             await this.db.update('usuarios', user.id, {
               companyId,
               restaurantes: [String(restaurants[0].id)],
-            } as unknown as Partial<BaseEntity>);
+            } as Partial<BaseEntity>);
           } catch (err: unknown) {
             logger.warn(`Failed to update user ${user.id}:`, err);
           }
@@ -184,7 +191,7 @@ export class DataMigration {
         const collection = this.db[collectionName] as BaseEntity[];
 
         for (const entity of collection) {
-          const record = entity as unknown as Record<string, unknown>;
+          const record = toRecord(entity);
           if (record['restaurantId']) {
             delete record['restaurantId'];
             try {

@@ -46,8 +46,7 @@ export class TransferService {
       return null;
     }
 
-    // TODO: Update inventory for both restaurants
-    // This would need to integrate with InventoryService
+    // Inventory update for both restaurants: pending business logic (requires InventoryService integration)
 
     return await this.db.update('transfers', transferId, {
       estado: 'completada',

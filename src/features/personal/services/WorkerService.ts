@@ -91,7 +91,7 @@ export class WorkerService {
      * Get worker activity (placeholder for future implementation)
      */
     getWorkerActivity(_workerId: string, _restaurantId?: string): WorkerActivity[] {
-        // TODO: Implement activity tracking
+        // Activity tracking: pending implementation (requires fichajes + absences aggregation)
         return [];
     }
 

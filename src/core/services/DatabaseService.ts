@@ -25,6 +25,35 @@ import { DataIntegrityService } from './DataIntegrityService';
 import { logger } from './LoggerService';
 import { ToastService } from './ToastService';
 
+/**
+ * Maps each collection name to its concrete entity type.
+ * Used to make setCollection type-safe without per-case casts.
+ */
+interface CollectionTypeMap {
+  cierres: Cierre;
+  facturas: Invoice;
+  albaranes: Invoice;
+  proveedores: Provider;
+  productos: Product;
+  escandallos: Escandallo;
+  inventarios: InventoryItem;
+  delivery: DeliveryRecord;
+  usuarios: AppUser;
+  roles: Role;
+  companies: Company;
+  restaurants: Restaurant;
+  transfers: Transfer;
+  workers: Worker;
+  mermas: BaseEntity;
+  orders: BaseEntity;
+  pnl_adjustments: BaseEntity;
+  absences: Absence;
+  vacation_requests: VacationRequest;
+  gastosFijos: GastoFijo;
+  nominas: BaseEntity;
+  fichajes: BaseEntity;
+}
+
 type Collections = {
   [K in CollectionName]: BaseEntity[];
 };
@@ -325,36 +354,32 @@ export class DatabaseService implements Collections {
   }
 
   /**
-   * Set collection by name
+   * Set collection by name (type-safe via CollectionTypeMap).
+   * Single cast point: `this` is indexed dynamically, concentrating the
+   * unavoidable runtime-safe assertion in ONE place instead of 17+ cases.
    */
-  private setCollection(name: CollectionName, data: BaseEntity[]): void {
-    // DatabaseService stores heterogeneous data: BaseEntity[] is the common interface,
-    // but each collection property has a more specific type. Since all specific types
-    // extend BaseEntity, this cast is safe for runtime but needs explicit assertion.
-    switch (name) {
-      case 'cierres': this.cierres = data as unknown as Cierre[]; break;
-      case 'facturas': this.facturas = data as unknown as Invoice[]; break;
-      case 'albaranes': this.albaranes = data as unknown as Invoice[]; break;
-      case 'proveedores': this.proveedores = data as unknown as Provider[]; break;
-      case 'productos': this.productos = data as unknown as Product[]; break;
-      case 'escandallos': this.escandallos = data as unknown as Escandallo[]; break;
-      case 'inventarios': this.inventarios = data as unknown as InventoryItem[]; break;
-      case 'delivery': this.delivery = data as unknown as DeliveryRecord[]; break;
-      case 'usuarios': this.usuarios = data as unknown as AppUser[]; break;
-      case 'roles': this.roles = data as unknown as Role[]; break;
-      case 'companies': this.companies = data as unknown as Company[]; break;
-      case 'restaurants': this.restaurants = data as unknown as Restaurant[]; break;
-      case 'transfers': this.transfers = data as unknown as Transfer[]; break;
-      case 'workers': this.workers = data as unknown as Worker[]; break;
-      case 'mermas': this.mermas = data; break;
-      case 'orders': this.orders = data; break;
-      case 'pnl_adjustments': this.pnl_adjustments = data; break;
-      case 'absences': this.absences = data as unknown as Absence[]; break;
-      case 'vacation_requests': this.vacation_requests = data as unknown as VacationRequest[]; break;
-      case 'gastosFijos': this.gastosFijos = data as unknown as GastoFijo[]; break;
-      case 'nominas': this.nominas = data; break;
-      case 'fichajes': this.fichajes = data; break;
-    }
+  private setCollection<K extends keyof CollectionTypeMap>(
+    name: K,
+    data: CollectionTypeMap[K][]
+  ): void {
+    (this as Record<string, unknown>)[name] = data;
+  }
+
+  /**
+   * Access a dynamic field on an entity item.
+   * Entity subtypes carry additional fields not in the base interface;
+   * this helper reads them via Object.entries which returns string-keyed pairs.
+   */
+  private getField(item: object, field: string): unknown {
+    return Object.fromEntries(Object.entries(item))[field];
+  }
+
+  /**
+   * Convert an entity to a Record<string, unknown> for Firestore operations.
+   * Object.fromEntries(Object.entries(...)) produces a clean Record<string, unknown>.
+   */
+  private toRecord(item: object): Record<string, unknown> {
+    return Object.fromEntries(Object.entries(item));
   }
 
   /**
@@ -388,7 +413,7 @@ export class DatabaseService implements Collections {
 
       if (collectionRelations) {
         for (const [field, config] of Object.entries(collectionRelations)) {
-          const value = (item as unknown as Record<string, unknown>)[field] as string | number | null | undefined;
+          const value = this.getField(item, field) as string | number | null | undefined;
           const validation = this.integrityService.validateForeignKey(
             collection,
             field,
@@ -405,7 +430,7 @@ export class DatabaseService implements Collections {
       }
 
       // Validate nested references
-      this.validateNestedReferences(collection, item as unknown as Record<string, unknown>);
+      this.validateNestedReferences(collection, this.toRecord(item));
 
       const newItem = {
         ...item,
@@ -417,7 +442,7 @@ export class DatabaseService implements Collections {
       const firestoreId = String(newItem.id);
 
       // CLOUD-FIRST: Send to Firebase first
-      const result = await this.cloudService.add(collection, newItem as unknown as Record<string, unknown>, firestoreId);
+      const result = await this.cloudService.add(collection, this.toRecord(newItem), firestoreId);
 
       if (!result.success) {
         throw new Error(result.error || 'Error al guardar en Firebase');
@@ -449,55 +474,6 @@ export class DatabaseService implements Collections {
     }
   }
 
-  /**
-   * Add item synchronously (legacy support)
-   * @deprecated Use add() instead. This method saves locally first.
-   */
-  addSync<T extends BaseEntity>(
-    collection: CollectionName,
-    item: Omit<T, 'id'>
-  ): T {
-    // Validate foreign keys before adding
-    const relationships = this.getRelationshipsMap();
-    const collectionRelations = relationships[collection];
-
-    if (collectionRelations) {
-      for (const [field, config] of Object.entries(collectionRelations)) {
-        const value = (item as unknown as Record<string, unknown>)[field] as string | number | null | undefined;
-        const validation = this.integrityService.validateForeignKey(
-          collection,
-          field,
-          value,
-          config.required
-        );
-
-        if (!validation.valid) {
-          throw new Error(
-            `Validation failed for ${collection}.${field}: ${validation.errors.join(', ')}`
-          );
-        }
-      }
-    }
-
-    // Validate nested references
-    this.validateNestedReferences(collection, item as unknown as Record<string, unknown>);
-
-    const newItem = {
-      ...item,
-      id: this.generateId(),
-      _synced: false,
-      createdAt: new Date().toISOString(),
-    } as T;
-
-    const currentCollection = this.getCollection(collection);
-    currentCollection.push(newItem);
-    this.save(collection, currentCollection);
-
-    // Async cloud sync (background)
-    this._syncToCloud(collection, 'ADD', newItem);
-
-    return newItem;
-  }
 
   /**
    * Validate nested references in item (arrays with foreign keys)
@@ -584,7 +560,7 @@ export class DatabaseService implements Collections {
         for (const [field, config] of Object.entries(collectionRelations)) {
           // Only validate if the field is being updated
           if (field in updatedItem) {
-            const value = (updated as unknown as Record<string, unknown>)[field] as string | number | null | undefined;
+            const value = this.getField(updated, field) as string | number | null | undefined;
             const validation = this.integrityService.validateForeignKey(
               collection,
               field,
@@ -602,15 +578,15 @@ export class DatabaseService implements Collections {
       }
 
       // Validate nested references if they are being updated
-      const partialRecord = updatedItem as unknown as Record<string, unknown>;
+      const partialRecord = this.toRecord(updatedItem as BaseEntity);
       if (partialRecord.productos || partialRecord.ingredientes) {
-        this.validateNestedReferences(collection, updated as unknown as Record<string, unknown>);
+        this.validateNestedReferences(collection, this.toRecord(updated));
       }
 
       const firestoreId = String(id);
 
       // CLOUD-FIRST: Send to Firebase first
-      const result = await this.cloudService.update(collection, firestoreId, updated as unknown as Record<string, unknown>);
+      const result = await this.cloudService.update(collection, firestoreId, this.toRecord(updated));
 
       if (!result.success) {
         throw new Error(result.error || 'Error al actualizar en Firebase');
@@ -641,68 +617,6 @@ export class DatabaseService implements Collections {
     }
   }
 
-  /**
-   * Update item synchronously (legacy support)
-   * @deprecated Use update() instead. This method saves locally first.
-   */
-  updateSync<T extends BaseEntity>(
-    collection: CollectionName,
-    id: number | string,
-    updatedItem: Partial<T>
-  ): T | null {
-    const currentCollection = this.getCollection(collection);
-    const index = currentCollection.findIndex((item) => item.id === id);
-
-    if (index === -1) {
-      return null;
-    }
-
-    const oldItem = currentCollection[index];
-    const updated = {
-      ...oldItem,
-      ...updatedItem,
-      id, // Preserve id
-      _synced: false,
-      updatedAt: new Date().toISOString(),
-    } as T;
-
-    // Validate foreign keys if they are being updated
-    const relationships = this.getRelationshipsMap();
-    const collectionRelations = relationships[collection];
-
-    if (collectionRelations) {
-      for (const [field, config] of Object.entries(collectionRelations)) {
-        if (field in updatedItem) {
-          const value = (updated as unknown as Record<string, unknown>)[field] as string | number | null | undefined;
-          const validation = this.integrityService.validateForeignKey(
-            collection,
-            field,
-            value,
-            config.required
-          );
-
-          if (!validation.valid) {
-            throw new Error(
-              `Validation failed for ${collection}.${field}: ${validation.errors.join(', ')}`
-            );
-          }
-        }
-      }
-    }
-
-    const partialRecord = updatedItem as unknown as Record<string, unknown>;
-    if (partialRecord.productos || partialRecord.ingredientes) {
-      this.validateNestedReferences(collection, updated as unknown as Record<string, unknown>);
-    }
-
-    currentCollection[index] = updated;
-    this.save(collection, currentCollection);
-
-    // Async cloud sync (background)
-    this._syncToCloud(collection, 'UPDATE', updated);
-
-    return updated;
-  }
 
   /**
    * Delete item from collection (CLOUD-FIRST)
@@ -765,31 +679,6 @@ export class DatabaseService implements Collections {
     }
   }
 
-  /**
-   * Delete item synchronously (legacy support)
-   * @deprecated Use delete() instead. This method deletes locally first.
-   */
-  deleteSync(collection: CollectionName, id: number | string): void {
-    const canDelete = this.integrityService.canDelete(collection, id);
-
-    if (!canDelete.canDelete) {
-      const blockingInfo = canDelete.blockingReferences
-        .map(ref => `${ref.collection}[${ref.id}].${ref.field}`)
-        .join(', ');
-      throw new Error(
-        `Cannot delete ${collection}[${id}]: referenced by ${blockingInfo}. ` +
-        `Please remove or update these references first.`
-      );
-    }
-
-    const currentCollection = this.getCollection(collection);
-    const filtered = currentCollection.filter((item) => item.id !== id);
-    this.setCollection(collection, filtered);
-    this.save(collection, filtered);
-
-    // Async cloud sync (background)
-    this._syncToCloud(collection, 'DELETE', { id });
-  }
 
   /**
    * Get items by period filter
@@ -799,10 +688,10 @@ export class DatabaseService implements Collections {
     const items = this.getCollection(collection);
 
     return items.filter((item) => {
-      const record = item as unknown as Record<string, unknown>;
-      if (!record.fecha) return true;
+      const fecha = this.getField(item, 'fecha');
+      if (!fecha) return true;
 
-      const itemDate = new Date(record.fecha as string);
+      const itemDate = new Date(fecha as string);
       if (isNaN(itemDate.getTime())) return false;
 
       switch (period) {
@@ -830,87 +719,6 @@ export class DatabaseService implements Collections {
     });
   }
 
-  /**
-   * Sync to cloud (async)
-   * Waits for Firebase confirmation before marking as synced
-   * Retries on failure up to 3 times
-   */
-  private async _syncToCloud(
-    collectionName: CollectionName,
-    action: 'ADD' | 'UPDATE' | 'DELETE',
-    data: BaseEntity | { id: number | string },
-    retryCount: number = 0
-  ): Promise<void> {
-    const maxRetries = 3;
-    const firestoreId = String(data.id);
-
-    try {
-      let result;
-
-      const dataRecord = data as unknown as Record<string, unknown>;
-
-      if (action === 'ADD') {
-        result = await this.cloudService.add(collectionName, dataRecord, firestoreId);
-        if (!result.success) {
-          throw new Error(result.error || 'Add operation failed');
-        }
-      } else if (action === 'UPDATE') {
-        result = await this.cloudService.update(collectionName, firestoreId, dataRecord);
-        if (!result.success) {
-          throw new Error(result.error || 'Update operation failed');
-        }
-      } else if (action === 'DELETE') {
-        result = await this.cloudService.delete(collectionName, firestoreId);
-        if (!result.success) {
-          throw new Error(result.error || 'Delete operation failed');
-        }
-      }
-
-      // Mark as synced only after successful Firebase confirmation
-      if (action !== 'DELETE') {
-        const currentCollection = this.getCollection(collectionName);
-        const index = currentCollection.findIndex((i) => i.id === data.id);
-        if (index !== -1) {
-          currentCollection[index]._synced = true;
-          currentCollection[index].updatedAt = new Date().toISOString();
-          this.save(collectionName, currentCollection);
-          logger.info(`✅ [SYNC] ${action} ${collectionName}/${data.id} → Firebase`);
-        }
-      } else {
-        logger.info(`✅ [SYNC] ${action} ${collectionName}/${firestoreId} → Firebase`);
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      if (retryCount < maxRetries) {
-        // Retry with exponential backoff
-        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-        logger.warn(
-          `⚠️ [SYNC] ${action} ${collectionName}/${firestoreId} failed (attempt ${retryCount + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
-          errorMessage
-        );
-
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return this._syncToCloud(collectionName, action, data, retryCount + 1);
-      } else {
-        // Max retries reached, mark as not synced and log error
-        logger.error(
-          `❌ [SYNC] ${action} ${collectionName}/${firestoreId} failed after ${maxRetries + 1} attempts:`,
-          errorMessage
-        );
-
-        // Keep _synced as false so we can retry later
-        if (action !== 'DELETE') {
-          const currentCollection = this.getCollection(collectionName);
-          const index = currentCollection.findIndex((i) => i.id === data.id);
-          if (index !== -1) {
-            currentCollection[index]._synced = false;
-            this.save(collectionName, currentCollection);
-          }
-        }
-      }
-    }
-  }
 
   /**
    * DEPRECATED: Sync from cloud (download all data)
@@ -1023,7 +831,7 @@ export class DatabaseService implements Collections {
     if (collectionRelations) {
       for (const item of data) {
         for (const [field, config] of Object.entries(collectionRelations)) {
-          const value = (item as unknown as Record<string, unknown>)[field];
+          const value = this.getField(item, field);
           if (value !== undefined && value !== null && config.required) {
             const targetCollection = this.getCollection(config.target);
             if (!targetCollection || targetCollection.length === 0) {

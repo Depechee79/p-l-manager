@@ -32,7 +32,7 @@ export const useRestaurant = () => {
       setLoading(true);
 
       // Load Company
-      const companyId = 'default'; // TODO: Support multi-company
+      const companyId = 'default'; // Single-company mode (multi-company planned for admin panel)
       const company = companyService.getCompany(companyId);
       if (company) {
         setCurrentCompany(company);

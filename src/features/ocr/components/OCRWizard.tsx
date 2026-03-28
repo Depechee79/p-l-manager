@@ -90,10 +90,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
 
     // --- ACTIONS ---
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (!selectedFile) return;
-
+    const processFile = async (selectedFile: File) => {
         setFile(selectedFile);
         if (selectedFile.type.startsWith('image/') || selectedFile.type === 'application/pdf') {
             setPreviewUrl(URL.createObjectURL(selectedFile));
@@ -112,6 +109,12 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
         } catch (error: unknown) {
             logger.error("Error compressing file", error instanceof Error ? error.message : String(error));
         }
+    };
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0];
+        if (!selectedFile) return;
+        await processFile(selectedFile);
     };
 
     const handleAnalyze = async () => {
@@ -418,10 +421,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                                         e.preventDefault();
                                         const droppedFile = e.dataTransfer.files[0];
                                         if (droppedFile) {
-                                            const eventMock = {
-                                                target: { files: [droppedFile] }
-                                            } as unknown as React.ChangeEvent<HTMLInputElement>;
-                                            handleFileSelect(eventMock);
+                                            processFile(droppedFile);
                                         }
                                     }}
                                 >

@@ -1,6 +1,7 @@
 import type { BaseEntity, CollectionName } from '@types';
 import type { DatabaseService } from '../services/DatabaseService';
-import { DataIntegrityService } from '../services/DataIntegrityService';
+import { DataIntegrityService, type IntegrityReport } from '../services/DataIntegrityService';
+import { logger } from '../services/LoggerService';
 
 export interface DiagnosticReport {
   timestamp: string;
@@ -45,6 +46,13 @@ export interface DeadFieldReport {
 }
 
 /**
+ * Type-safe accessor for dynamic collection names on DatabaseService.
+ */
+function getCollection(db: DatabaseService, name: CollectionName): BaseEntity[] {
+  return (db as unknown as Record<string, BaseEntity[]>)[name] || [];
+}
+
+/**
  * Database Diagnostics Utility
  * Analyzes database health, integrity, and sync status
  */
@@ -61,7 +69,7 @@ export class DatabaseDiagnostics {
    * Run full diagnostic analysis
    */
   async diagnoseDatabase(): Promise<DiagnosticReport> {
-    console.log('🔍 [DIAGNOSTICS] Starting database analysis...');
+    logger.info('[DIAGNOSTICS] Starting database analysis...');
 
     const collections: CollectionDiagnostic[] = [];
     let totalOrphaned = 0;
@@ -116,7 +124,7 @@ export class DatabaseDiagnostics {
    * Analyze a single collection
    */
   private async analyzeCollection(collectionName: CollectionName): Promise<CollectionDiagnostic> {
-    const localData = (this.db as any)[collectionName] as BaseEntity[];
+    const localData = getCollection(this.db, collectionName);
     const localCount = localData.length;
 
     // Count synced vs unsynced
@@ -130,8 +138,8 @@ export class DatabaseDiagnostics {
       if (cloudResponse.success && cloudResponse.data) {
         cloudCount = cloudResponse.data.length;
       }
-    } catch (error) {
-      // Cloud count unavailable
+    } catch (error: unknown) {
+      logger.debug('[DIAGNOSTICS] Cloud count unavailable for ' + collectionName, error);
     }
 
     // Check for orphaned records in this collection
@@ -203,7 +211,7 @@ export class DatabaseDiagnostics {
    */
   private generateSuggestions(
     collections: CollectionDiagnostic[],
-    integrityReport: any,
+    integrityReport: IntegrityReport,
     syncStatus: SyncStatus
   ): string[] {
     const suggestions: string[] = [];
@@ -211,7 +219,7 @@ export class DatabaseDiagnostics {
     // Sync status suggestions
     if (syncStatus.unsyncedItems > 0) {
       suggestions.push(
-        `⚠️ ${syncStatus.unsyncedItems} items are not synced to Firebase. ` +
+        `${syncStatus.unsyncedItems} items are not synced to Firebase. ` +
         `Consider running a manual sync or checking your connection.`
       );
     }
@@ -219,7 +227,7 @@ export class DatabaseDiagnostics {
     // Orphaned records suggestions
     if (integrityReport.orphanedRecords.length > 0) {
       suggestions.push(
-        `🔗 Found ${integrityReport.orphanedRecords.length} orphaned records. ` +
+        `Found ${integrityReport.orphanedRecords.length} orphaned records. ` +
         `These have broken foreign key references. Consider fixing or removing them.`
       );
     }
@@ -227,7 +235,7 @@ export class DatabaseDiagnostics {
     // Missing fields suggestions
     if (integrityReport.missingFields.length > 0) {
       suggestions.push(
-        `📋 Found ${integrityReport.missingFields.length} records with missing required fields. ` +
+        `Found ${integrityReport.missingFields.length} records with missing required fields. ` +
         `These may cause validation errors.`
       );
     }
@@ -236,65 +244,53 @@ export class DatabaseDiagnostics {
     for (const collection of collections) {
       if (collection.issues.length > 0) {
         suggestions.push(
-          `📦 ${collection.name}: ${collection.issues.join(', ')}`
+          `${collection.name}: ${collection.issues.join(', ')}`
         );
       }
     }
 
     // General health check
     if (suggestions.length === 0) {
-      suggestions.push('✅ Database health check passed! No issues detected.');
+      suggestions.push('Database health check passed! No issues detected.');
     }
 
     return suggestions;
   }
 
   /**
-   * Print diagnostic report to console
+   * Print diagnostic report via logger
    */
   private printReport(report: DiagnosticReport): void {
-    console.log('\n📊 [DIAGNOSTICS] Database Health Report');
-    console.log('═'.repeat(60));
-    console.log(`Timestamp: ${new Date(report.timestamp).toLocaleString()}`);
-    console.log(`\n📈 Sync Status:`);
-    console.log(`  Total Items: ${report.syncStatus.totalItems}`);
-    console.log(`  Synced: ${report.syncStatus.syncedItems} (${report.syncStatus.syncPercentage}%)`);
-    console.log(`  Unsynced: ${report.syncStatus.unsyncedItems}`);
+    logger.info('[DIAGNOSTICS] Database Health Report');
+    logger.info(`Timestamp: ${new Date(report.timestamp).toLocaleString()}`);
+    logger.info(`Sync Status: Total=${report.syncStatus.totalItems}, Synced=${report.syncStatus.syncedItems} (${report.syncStatus.syncPercentage}%), Unsynced=${report.syncStatus.unsyncedItems}`);
+    logger.info(`Integrity Issues: Orphaned=${report.orphanedRecords}, Missing=${report.missingFields}, TypeMismatches=${report.typeMismatches}`);
 
-    console.log(`\n🔍 Integrity Issues:`);
-    console.log(`  Orphaned Records: ${report.orphanedRecords}`);
-    console.log(`  Missing Fields: ${report.missingFields}`);
-    console.log(`  Type Mismatches: ${report.typeMismatches}`);
-
-    console.log(`\n📦 Collections:`);
     for (const collection of report.collections) {
-      const status = collection.issues.length === 0 ? '✅' : '⚠️';
-      console.log(
-        `  ${status} ${collection.name}: ` +
+      const status = collection.issues.length === 0 ? 'OK' : 'WARN';
+      logger.info(
+        `  [${status}] ${collection.name}: ` +
         `${collection.localCount} items ` +
         `(${collection.syncedCount} synced, ${collection.unsyncedCount} unsynced)`
       );
       if (collection.issues.length > 0) {
         collection.issues.forEach(issue => {
-          console.log(`     - ${issue}`);
+          logger.warn(`    - ${issue}`);
         });
       }
     }
 
-    console.log(`\n💡 Suggestions:`);
+    logger.info('Suggestions:');
     report.suggestions.forEach((suggestion, index) => {
-      console.log(`  ${index + 1}. ${suggestion}`);
+      logger.info(`  ${index + 1}. ${suggestion}`);
     });
-
-    console.log('═'.repeat(60));
-    console.log('');
   }
 
   /**
    * Detect dead fields (fields defined in types but never used)
    */
   detectDeadFields(): DeadFieldReport {
-    console.log('🔍 [DIAGNOSTICS] Analyzing field usage...');
+    logger.info('[DIAGNOSTICS] Analyzing field usage...');
 
     const deadFields: DeadField[] = [];
     const suspiciousFields: DeadField[] = [];
@@ -332,12 +328,6 @@ export class DatabaseDiagnostics {
     const dead: DeadField[] = [];
     const suspicious: DeadField[] = [];
 
-    // Fields that are defined but rarely/never used
-    // Based on grep analysis, these fields are used:
-    // - nombre, categoria, familia, subfamilia, proveedor, proveedorId, unidadBase, precioCompra, stockActualUnidades, ultimaFechaCompra
-    // - esEmpaquetado, unidadesPorEmpaque (used in some places)
-
-    // Potentially dead or rarely used:
     if (!this.isFieldUsed('productos', 'stockMinimoUnidades')) {
       suspicious.push({
         collection: 'productos',
@@ -365,7 +355,6 @@ export class DatabaseDiagnostics {
       });
     }
 
-    // unidadesPorPack is an alias, check if both are used consistently
     suspicious.push({
       collection: 'productos',
       field: 'unidadesPorPack',
@@ -383,7 +372,6 @@ export class DatabaseDiagnostics {
     const dead: DeadField[] = [];
     const suspicious: DeadField[] = [];
 
-    // Most Provider fields are used, but check optional ones
     if (!this.isFieldUsed('proveedores', 'fechaAlta')) {
       suspicious.push({
         collection: 'proveedores',
@@ -412,7 +400,6 @@ export class DatabaseDiagnostics {
     const dead: DeadField[] = [];
     const suspicious: DeadField[] = [];
 
-    // Check optional fields
     if (!this.isFieldUsed('facturas', 'categoria')) {
       suspicious.push({
         collection: 'facturas',
@@ -438,17 +425,16 @@ export class DatabaseDiagnostics {
    * Check if a field is used in the codebase (simplified check)
    */
   private isFieldUsed(collection: CollectionName, field: string): boolean {
-    // This is a simplified check - in a real implementation, you'd use AST parsing
-    // For now, we check if the field exists in actual data
-    const data = (this.db as any)[collection] as BaseEntity[];
+    const data = getCollection(this.db, collection);
 
     if (data.length === 0) {
-      return false; // Can't determine if field is used
+      return false;
     }
 
     // Check if field exists and has non-null values in at least some records
-    const hasValues = data.some((item: any) => {
-      const value = item[field];
+    const hasValues = data.some((item: BaseEntity) => {
+      const record = item as unknown as Record<string, unknown>;
+      const value = record[field];
       return value !== undefined && value !== null && value !== '';
     });
 
@@ -456,44 +442,36 @@ export class DatabaseDiagnostics {
   }
 
   /**
-   * Print dead fields report
+   * Print dead fields report via logger
    */
   private printDeadFieldsReport(report: DeadFieldReport): void {
-    console.log('\n🔍 [DIAGNOSTICS] Dead Fields Analysis');
-    console.log('═'.repeat(60));
+    logger.info('[DIAGNOSTICS] Dead Fields Analysis');
 
     if (report.deadFields.length === 0 && report.suspiciousFields.length === 0) {
-      console.log('✅ No dead or suspicious fields detected!');
+      logger.info('No dead or suspicious fields detected!');
       return;
     }
 
     if (report.deadFields.length > 0) {
-      console.log(`\n❌ Dead Fields (${report.deadFields.length}):`);
+      logger.warn(`Dead Fields (${report.deadFields.length}):`);
       report.deadFields.forEach(field => {
-        console.log(`  - ${field.collection}.${field.field}`);
-        console.log(`    Reason: ${field.reason}`);
-        console.log(`    Recommendation: ${field.recommendation}`);
+        logger.warn(`  - ${field.collection}.${field.field}: ${field.reason} | ${field.recommendation}`);
       });
     }
 
     if (report.suspiciousFields.length > 0) {
-      console.log(`\n⚠️ Suspicious Fields (${report.suspiciousFields.length}):`);
+      logger.warn(`Suspicious Fields (${report.suspiciousFields.length}):`);
       report.suspiciousFields.forEach(field => {
-        console.log(`  - ${field.collection}.${field.field}`);
-        console.log(`    Reason: ${field.reason}`);
-        console.log(`    Recommendation: ${field.recommendation}`);
+        logger.warn(`  - ${field.collection}.${field.field}: ${field.reason} | ${field.recommendation}`);
       });
     }
-
-    console.log('═'.repeat(60));
-    console.log('');
   }
 
   /**
    * Compare local structure with Firebase structure
    */
   async compareStructures(): Promise<void> {
-    console.log('🔍 [DIAGNOSTICS] Comparing local vs Firebase structures...');
+    logger.info('[DIAGNOSTICS] Comparing local vs Firebase structures...');
 
     const collectionNames: CollectionName[] = [
       'cierres', 'facturas', 'albaranes', 'proveedores',
@@ -502,7 +480,7 @@ export class DatabaseDiagnostics {
     ];
 
     for (const collectionName of collectionNames) {
-      const localData = (this.db as any)[collectionName] as BaseEntity[];
+      const localData = getCollection(this.db, collectionName);
 
       try {
         const cloudResponse = await this.db.cloudService.getAll(collectionName);
@@ -510,33 +488,33 @@ export class DatabaseDiagnostics {
           const cloudData = cloudResponse.data;
 
           if (localData.length !== cloudData.length) {
-            console.warn(
-              `⚠️ [STRUCTURE] ${collectionName}: ` +
+            logger.warn(
+              `[STRUCTURE] ${collectionName}: ` +
               `Local=${localData.length}, Cloud=${cloudData.length}`
             );
           }
 
           // Check for documents in cloud but not in local
-          const cloudIds = new Set(cloudData.map((item: any) => String(item.id)));
-          const localIds = new Set(localData.map((item: any) => String(item.id)));
+          const cloudIds = new Set((cloudData as BaseEntity[]).map(item => String(item.id)));
+          const localIds = new Set(localData.map(item => String(item.id)));
 
           const onlyInCloud = Array.from(cloudIds).filter(id => !localIds.has(id));
           const onlyInLocal = Array.from(localIds).filter(id => !cloudIds.has(id));
 
           if (onlyInCloud.length > 0) {
-            console.warn(
-              `⚠️ [STRUCTURE] ${collectionName}: ${onlyInCloud.length} documents only in cloud`
+            logger.warn(
+              `[STRUCTURE] ${collectionName}: ${onlyInCloud.length} documents only in cloud`
             );
           }
 
           if (onlyInLocal.length > 0) {
-            console.warn(
-              `⚠️ [STRUCTURE] ${collectionName}: ${onlyInLocal.length} documents only in local (unsynced)`
+            logger.warn(
+              `[STRUCTURE] ${collectionName}: ${onlyInLocal.length} documents only in local (unsynced)`
             );
           }
         }
-      } catch (error) {
-        console.error(`❌ [STRUCTURE] ${collectionName}: Failed to compare`, error);
+      } catch (error: unknown) {
+        logger.error(`[STRUCTURE] ${collectionName}: Failed to compare`, error);
       }
     }
   }
@@ -553,8 +531,7 @@ export async function diagnoseDatabase(db: DatabaseService): Promise<DiagnosticR
 /**
  * Convenience function to check database integrity
  */
-export function checkDatabaseIntegrity(db: DatabaseService): any {
+export function checkDatabaseIntegrity(db: DatabaseService): Promise<DiagnosticReport> {
   const diagnostics = new DatabaseDiagnostics(db);
-  return diagnostics.diagnoseDatabase(); // Or use integrityService directly if needed
+  return diagnostics.diagnoseDatabase();
 }
-

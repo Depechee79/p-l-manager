@@ -10,7 +10,7 @@
  * </Layout>
  */
 import React, { ReactNode, useState } from 'react';
-import { useRestaurantContext } from '@core';
+import { useOptionalRestaurantContext } from '@core';
 import {
   Sidebar,
   MobileTopBar,
@@ -31,13 +31,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isMobile } = useResponsive();
 
-  // Restaurant context (optional - only if provider is available)
-  let restaurantContext: ReturnType<typeof useRestaurantContext> | null = null;
-  try {
-    restaurantContext = useRestaurantContext();
-  } catch {
-    // RestaurantProvider not available, continue without multi-restaurant features
-  }
+  // Restaurant context (optional - returns null if provider is not available)
+  const restaurantContext = useOptionalRestaurantContext();
 
   return (
     <div className="layout-container">

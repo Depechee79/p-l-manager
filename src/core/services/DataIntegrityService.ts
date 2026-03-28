@@ -35,6 +35,13 @@ export class DataIntegrityService {
   }
 
   /**
+   * Type-safe field accessor for BaseEntity items with dynamic field names
+   */
+  private getRecord(item: BaseEntity): Record<string, unknown> {
+    return item as unknown as Record<string, unknown>;
+  }
+
+  /**
    * Validate that a foreign key reference exists
    */
   validateForeignKey(
@@ -106,7 +113,7 @@ export class DataIntegrityService {
         const targetCollection = this.db[config.target] as BaseEntity[];
 
         for (const item of collection) {
-          const value = (item as unknown as Record<string, unknown>)[field];
+          const value = this.getRecord(item)[field];
 
           if (value === undefined || value === null || value === '') {
             if (config.required) {
@@ -171,7 +178,7 @@ export class DataIntegrityService {
     const productoIds = new Set(productos.map(p => String(p.id)));
 
     for (const inventario of inventarios) {
-      const invRecord = inventario as unknown as Record<string, unknown>;
+      const invRecord = this.getRecord(inventario);
       const invProductos = invRecord['productos'];
       if (invProductos && Array.isArray(invProductos)) {
         for (const producto of invProductos as Record<string, unknown>[]) {
@@ -191,7 +198,7 @@ export class DataIntegrityService {
     // Validate escandallos.ingredientes[].productoId
     const escandallos = this.db.escandallos as BaseEntity[];
     for (const escandallo of escandallos) {
-      const escRecord = escandallo as unknown as Record<string, unknown>;
+      const escRecord = this.getRecord(escandallo);
       const ingredientes = escRecord['ingredientes'];
       if (ingredientes && Array.isArray(ingredientes)) {
         for (const ingrediente of ingredientes as Record<string, unknown>[]) {
@@ -211,7 +218,7 @@ export class DataIntegrityService {
     // Validate facturas.productos[].productoId (optional)
     const facturas = this.db.facturas as BaseEntity[];
     for (const factura of facturas) {
-      const facRecord = factura as unknown as Record<string, unknown>;
+      const facRecord = this.getRecord(factura);
       const facProductos = facRecord['productos'];
       if (facProductos && Array.isArray(facProductos)) {
         for (const producto of facProductos as Record<string, unknown>[]) {
@@ -231,7 +238,7 @@ export class DataIntegrityService {
     // Validate albaranes.productos[].productoId (optional)
     const albaranes = this.db.albaranes as BaseEntity[];
     for (const albaran of albaranes) {
-      const albRecord = albaran as unknown as Record<string, unknown>;
+      const albRecord = this.getRecord(albaran);
       const albProductos = albRecord['productos'];
       if (albProductos && Array.isArray(albProductos)) {
         for (const producto of albProductos as Record<string, unknown>[]) {
@@ -271,7 +278,7 @@ export class DataIntegrityService {
       const collectionData = this.db[rel.collection] as BaseEntity[];
 
       for (const item of collectionData) {
-        const itemRecord = item as unknown as Record<string, unknown>;
+        const itemRecord = this.getRecord(item);
         const value = itemRecord[rel.field];
 
         // Handle nested references

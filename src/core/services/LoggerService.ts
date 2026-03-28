@@ -13,26 +13,26 @@ class LoggerService {
         this.isDev = import.meta.env?.DEV || false;
     }
 
-    private formatMessage(level: LogLevel, message: string, ...args: any[]) {
+    private formatMessage(level: LogLevel, message: string, ...args: unknown[]) {
         const timestamp = new Date().toISOString();
         return [`[${timestamp}] [${level.toUpperCase()}] ${message}`, ...args];
     }
 
-    debug(message: string, ...args: any[]) {
+    debug(message: string, ...args: unknown[]) {
         if (this.isDev) {
             console.debug(...this.formatMessage('debug', message, ...args));
         }
     }
 
-    info(message: string, ...args: any[]) {
+    info(message: string, ...args: unknown[]) {
         console.info(...this.formatMessage('info', message, ...args));
     }
 
-    warn(message: string, ...args: any[]) {
+    warn(message: string, ...args: unknown[]) {
         console.warn(...this.formatMessage('warn', message, ...args));
     }
 
-    error(message: string, ...args: any[]) {
+    error(message: string, ...args: unknown[]) {
         console.error(...this.formatMessage('error', message, ...args));
     }
 }

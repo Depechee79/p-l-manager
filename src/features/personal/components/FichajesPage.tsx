@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Square } from 'lucide-react';
 import { Button, Card, Table } from '@shared/components';
-import { useRestaurantContext, useDatabase } from '@core';
+import { useRestaurantContext, useDatabase, useApp } from '@core';
 import { logger } from '@core/services/LoggerService';
 import { useToast } from '@utils/toast';
 import type { TimeEntry } from '@types';
 
 export const FichajesPage: React.FC = () => {
     const { currentRestaurant } = useRestaurantContext();
+    const { user } = useApp();
     const { showToast } = useToast();
     const { db } = useDatabase();
 
@@ -79,7 +80,7 @@ export const FichajesPage: React.FC = () => {
             const now = new Date();
             const newEntry: TimeEntry = {
                 id: Date.now(), // Firestore will replace this ID usually, or we use uuid
-                workerId: 'current-user-id', // TODO: Replace with actual auth user ID
+                workerId: user?.name || 'unknown',
                 restaurantId: String(currentRestaurant?.id || ''),
                 date: now.toISOString().split('T')[0],
                 entryTime: now.toISOString(),

@@ -52,20 +52,10 @@ const RESTAURANT_FILTERED_COLLECTIONS: CollectionName[] = [
 ];
 
 /**
- * Colecciones que se comparten (no requieren filtro por restaurante)
- * @internal Used for documentation/reference
+ * Colecciones que se comparten (no requieren filtro por restaurante):
+ * productos, proveedores, escandallos, companies, restaurants, usuarios, roles
+ * (Documented here as reference; no runtime constant needed.)
  */
-const _SHARED_COLLECTIONS: CollectionName[] = [
-  'productos',
-  'proveedores',
-  'escandallos',
-  'companies',
-  'restaurants',
-  'usuarios',
-  'roles',
-];
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-void _SHARED_COLLECTIONS; // Suppress unused warning - kept for documentation
 
 /**
  * Colecciones de RRHH (filtran por companyId o workerId)

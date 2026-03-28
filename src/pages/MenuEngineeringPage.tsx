@@ -41,7 +41,7 @@ export const MenuEngineeringPage: React.FC = () => {
           db.ensureLoaded('escandallos'),
           db.ensureLoaded('cierres')
         ]);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error("Error loading MenuEngineeringPage data:", error);
       }
     };

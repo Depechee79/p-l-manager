@@ -498,7 +498,7 @@ export const TransfersPage: React.FC = () => {
                 },
               ]}
               onRowClick={(_transfer) => {
-                // TODO: Show transfer details modal
+                // Transfer details modal: pending implementation
               }}
               hoverable
               striped

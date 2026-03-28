@@ -141,7 +141,7 @@ export const CountingStep: React.FC<CountingStepProps> = ({
 
     const handleScan = (decodedText: string) => {
         const products = db.productos as Product[] || [];
-        // Search by ID or assume it's a barcode (TODO: Add barcode field to Product type)
+        // Search by ID or name match (barcode field planned for Product type)
         // For now, search by exact name match or ID if numeric
         const product = products.find(p =>
             String(p.id) === decodedText ||

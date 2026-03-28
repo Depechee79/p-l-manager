@@ -36,3 +36,11 @@ export const useRestaurantContext = (): RestaurantContextType => {
   return context;
 };
 
+/**
+ * Safe version that returns null when used outside RestaurantProvider.
+ * Use this in components that may render with or without the provider.
+ */
+export const useOptionalRestaurantContext = (): RestaurantContextType | null => {
+  return useContext(RestaurantContext) ?? null;
+};
+
