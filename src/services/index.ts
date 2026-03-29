@@ -26,7 +26,6 @@ export * from '@features/personal';
 // SPECIALIZED SERVICES
 // =============================================================================
 
-export * from './delivery-service';
 export * from './escandallo-service';
 export * from './ocr-service';
 export * from './pnl-service';

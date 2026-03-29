@@ -1,0 +1,28 @@
+# robots.txt for P&L Manager
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://plmanager.app/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 10
+
+# Disallow private routes (app is behind auth, but good practice)
+Disallow: /login
+Disallow: /registro
+Disallow: /crear-negocio
+Disallow: /api/
+Disallow: /admin/
+
+# Allow search engines to crawl main marketing pages
+Allow: /$
+Allow: /about
+Allow: /features
+Allow: /pricing
+Allow: /contact
+Allow: /blog/
+Allow: /help/
+Allow: /legal/
