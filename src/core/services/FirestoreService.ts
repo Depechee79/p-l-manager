@@ -337,7 +337,9 @@ export class FirestoreService {
 
     try {
       const collectionRef = collection(this.db, collectionName);
-      const snapshot = await getDocs(collectionRef);
+      // SESSION-008: Always apply limit to prevent unbounded reads
+      const q = query(collectionRef, limit(500));
+      const snapshot = await getDocs(q);
       const data = snapshot.docs.map((doc) => ({
         ...doc.data(),
         id: doc.id,
@@ -446,9 +448,15 @@ export class FirestoreService {
       const collectionRef = collection(this.db, collectionName);
       const constraints: QueryConstraint[] = [];
 
-      // Filtro por restaurante si se proporciona
+      // Filtro por restaurante — obligatorio para colecciones que lo requieren
       if (options.restaurantId) {
         constraints.push(where('restaurantId', '==', options.restaurantId));
+      } else if (this.requiresRestaurantFilter(collectionName)) {
+        logger.error(`[SECURITY] getWithQuery() on ${collectionName} without restaurantId`);
+        return {
+          success: false,
+          error: `restaurantId es obligatorio para consultas en ${collectionName}`,
+        };
       }
 
       // Filtros adicionales
