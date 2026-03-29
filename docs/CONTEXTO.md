@@ -11,14 +11,19 @@ React 19 + TypeScript 5.9 + Vite 7.2 + Firebase (pylhospitality) + Tailwind CSS 
 ## Arquitectura
 Single app (puerto 3004). Feature-based: src/core (infra), src/shared (design system), src/features (modulos), src/pages (composicion).
 
-## Estado (28 marzo 2026)
-- 6 sesiones completadas
-- Plan TURMIX completo (14 fases, todo el codigo pasado por contratos)
+## Estado (29 marzo 2026)
+- 7 sesiones completadas
+- Plan TURMIX completo (14 fases) + Fix total (8 fases)
 - tsc: 0 errores
-- Tests: 430 (273 passing, 156 failing preexistentes)
+- Build: OK (Tailwind CSS 4 + @tailwindcss/postcss)
+- Tests: 381 (357 passing, 24 skipped integration)
 - 0 `any`, 0 `console.log`, 0 `export default`, 0 catch sin tipo en produccion
+- Auth: Firebase Auth real (onAuthStateChanged en AppContext)
+- Firestore rules: endurecidas con restaurantId (15 colecciones)
+- Tokens: crypto.getRandomValues()
+- Timestamps: Timestamp.now() en writes, formatDateOnly() para display
+- src/components/ legacy ELIMINADO, V2 suffixes ELIMINADOS
 - 8 modulos existentes + 4 previstos
-- 15 commits en sesion #006 (sin push)
 
 ## Gobernanza
 - CLAUDE.md: constitucion del proyecto
@@ -27,18 +32,27 @@ Single app (puerto 3004). Feature-based: src/core (infra), src/shared (design sy
 - .claude/skills/: 6 skills (scanner, inspector, verificar, sesion, firebase-guide, design-system)
 
 ## Decisiones tecnicas vigentes
-- DatabaseService usa CollectionTypeMap (tipado seguro desde sesion #006)
+- Auth: Firebase Auth real con onAuthStateChanged (localStorage ELIMINADO, sesion #007)
+- Firestore rules: canAccessDocument() + hasRestaurantAccess() en 15 colecciones (sesion #007)
+- Timestamps: Timestamp.now() para writes, string | Timestamp en tipos (sesion #007)
+- Tokens: crypto.getRandomValues() en cliente (sesion #007)
+- DatabaseService usa CollectionTypeMap (tipado seguro, sesion #006)
 - LoggerService usa `unknown[]` (cero `any`)
 - Helpers centralizados para casts: getField(), toRecord(), getRecord(), getDbStore()
 - useOptionalRestaurantContext() para providers opcionales (Rules of Hooks)
 - ShellUser tipo en layout (acepta User de AppContext y AppUser de Firestore)
+- dateUtils.ts: formatDateOnly(), toDate(), toISOString() (maneja Timestamp + string)
+- Button canonico: 8 variantes, 3 tamanos, Tailwind tokens (ButtonV2 consolidado)
 
-## Decisiones de producto pendientes
-Ver `docs/DECISIONES_PRODUCTO_PENDIENTES.md` — 4 decisiones que requieren input de Aitor.
+## Decisiones de producto DECIDIDAS (sesion #007)
+- DP-1: Auth real (opcion A) — EJECUTADA
+- DP-2: Firestore rules endurecidas (opcion A) — EJECUTADA
+- DP-3: Timestamps nativos (opcion A) — EJECUTADA
+- DP-4: Tokens cripto seguros (opcion A) — EJECUTADA
 
 ## Clave
 - Aitor es director de restaurante, NO programador
 - Calidad maxima siempre
 - Mobile-first (camareros con movil)
 - Multi-restaurante y grupos
-- Claude API Vision para documentos (NO Tesseract)
+- Claude API Vision para documentos (NO Tesseract) — pendiente implementacion

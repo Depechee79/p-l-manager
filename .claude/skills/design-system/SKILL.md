@@ -115,7 +115,7 @@ description: |
 
 | Componente | Descripcion |
 |------------|-------------|
-| `Button` / `ButtonV2` | Boton con variantes: primary, secondary, ghost, danger. Loading state. |
+| `Button` | Boton consolidado con variantes: primary, secondary, ghost, danger, outline. Loading state, icon support. |
 | `Input` | Input de texto con label, error, helper text |
 | `Select` | Select nativo con label y error |
 | `Checkbox` | Checkbox con label |

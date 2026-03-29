@@ -7,7 +7,7 @@
 App de gestion de operaciones diarias de hosteleria para restaurantes en Espana.
 React 19 + TypeScript 5.9 + Vite 7.2 + Firebase + Tailwind CSS 4.
 Single app (futuro: +admin empresarial). Proyecto Firebase: pylhospitality.
-Desarrollo activo temprano. Puerto 3004. 5 sesiones completadas.
+Desarrollo activo temprano. Puerto 3004. 7 sesiones completadas.
 
 ## Vision del producto
 
@@ -73,7 +73,7 @@ La estructura `src/shared/` ya prepara esta separacion.
 | `@features/*` | `src/features/*` | Modulos de negocio |
 | `@pages/*` | `src/pages/*` | Paginas |
 | `@utils/*` | `src/utils/*` | Utilidades |
-| `@components/*` | `src/components/*` | Re-exports y wrappers (NO es src/shared/components/) |
+| `@components/*` | `src/shared/components/*` | Shortcut for shared components |
 | `@/*` | `src/*` | Fallback general |
 
 ## Modulos del producto
@@ -261,9 +261,9 @@ Ver `.claude/skills/inspector/SKILL.md`.
 ## Deuda tecnica activa
 
 - Migracion gradual de servicios/hooks legacy (src/services, src/hooks) a src/core/
-- Duplicidad componentes: Button.tsx + ButtonV2.tsx (consolidar)
+- Duplicidad componentes: RESUELTO (ButtonV2 consolidado en Button, sesion #007)
 - OCR con Tesseract.js → migrar a Claude API Vision
 - 0 Cloud Functions (se anadiran cuando proceda)
 - TypeScript 6.0 → migrar cuando ecosistema lo soporte
 - CI/CD: sin GitHub Actions (deploy manual)
-- Testing: 51 tests, cobertura incompleta
+- Testing: 359 tests, cobertura incompleta

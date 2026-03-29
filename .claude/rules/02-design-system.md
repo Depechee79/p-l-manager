@@ -147,8 +147,7 @@ Follow Tailwind's 4px base scale. For layout-level spacing, use consistent patte
 
 | Component      | Purpose                              | Key Props                      |
 |----------------|--------------------------------------|--------------------------------|
-| `Button`       | Primary action button                | variant, size, loading, icon   |
-| `ButtonV2`     | Enhanced button with icon support    | variant, size, loading, leftIcon, rightIcon |
+| `Button`       | Consolidated button (all variants)   | variant, size, loading, icon, iconPosition, iconOnly, fullWidth |
 | `Card`         | Content container                    | padding, hoverable, bordered   |
 | `Input`        | Text input field                     | label, error, helper, icon     |
 | `Select`       | Dropdown select                      | options, value, onChange, error |
