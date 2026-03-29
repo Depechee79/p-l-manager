@@ -76,10 +76,10 @@
         "./src/pages/*"
       ],
       "@components": [
-        "./src/components"
+        "./src/shared/components"
       ],
       "@components/*": [
-        "./src/components/*"
+        "./src/shared/components/*"
       ],
       "@features/*": [
         "./src/features/*"

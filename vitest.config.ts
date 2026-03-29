@@ -48,7 +48,7 @@ export default defineConfig({
       // Pages
       '@pages': resolve(__dirname, './src/pages'),
       // Components
-      '@components': resolve(__dirname, './src/components'),
+      '@components': resolve(__dirname, './src/shared/components'),
       // Features
       '@features': resolve(__dirname, './src/features'),
     },

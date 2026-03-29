@@ -1,5 +1,5 @@
 /**
- * FilterCardV2 - Compact filter panel with V2 design system
+ * FilterCard - Compact filter panel
  *
  * Session 007: New design matching Almacen reference
  * Features:
@@ -11,7 +11,7 @@
 import React from 'react';
 import type { ReactNode } from 'react';
 
-export interface FilterCardV2Props {
+export interface FilterCardProps {
   children: ReactNode;
   /** Number of columns (default: 4) */
   columns?: 1 | 2 | 3 | 4;
@@ -19,7 +19,8 @@ export interface FilterCardV2Props {
   className?: string;
 }
 
-export const FilterCardV2: React.FC<FilterCardV2Props> = ({
+
+export const FilterCard: React.FC<FilterCardProps> = ({
   children,
   columns = 4,
   className = '',
@@ -40,17 +41,19 @@ export const FilterCardV2: React.FC<FilterCardV2Props> = ({
   );
 };
 
+
 /**
- * FilterInputV2 - Compact filter input with label
+ * FilterInput - Compact filter input with label
  */
-export interface FilterInputV2Props {
+export interface FilterInputProps {
   label: string;
   children: ReactNode;
   /** Make this input grow to fill available space */
   grow?: boolean;
 }
 
-export const FilterInputV2: React.FC<FilterInputV2Props> = ({
+
+export const FilterInput: React.FC<FilterInputProps> = ({
   label,
   children,
   grow = false,
@@ -64,6 +67,7 @@ export const FilterInputV2: React.FC<FilterInputV2Props> = ({
     </div>
   );
 };
+
 
 /**
  * Compact text input for filters
@@ -108,7 +112,7 @@ export const FilterTextInput: React.FC<FilterTextInputProps> = ({
 };
 
 /**
- * Compact select for filters - Custom dropdown with V2 design
+ * Compact select for filters - Custom dropdown
  */
 export interface FilterSelectProps {
   value: string;

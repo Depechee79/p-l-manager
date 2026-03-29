@@ -1,5 +1,5 @@
 /**
- * DataCardV2 - Data display card with integrated KPI header
+ * DataCard - Data display card with integrated KPI header
  *
  * Session 007: New design matching Almacen reference
  * Features:
@@ -19,7 +19,7 @@ export interface KPIItem {
   variant?: 'default' | 'danger' | 'warning' | 'success';
 }
 
-export interface DataCardV2Props {
+export interface DataCardProps {
   /** KPI items to show in header row */
   kpis?: KPIItem[];
   /** Main content */
@@ -38,7 +38,8 @@ export interface DataCardV2Props {
   noPadding?: boolean;
 }
 
-export const DataCardV2: React.FC<DataCardV2Props> = ({
+
+export const DataCard: React.FC<DataCardProps> = ({
   kpis,
   children,
   isEmpty = false,

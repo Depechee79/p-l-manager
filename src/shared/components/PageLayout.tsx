@@ -1,5 +1,5 @@
 /**
- * PageLayoutV2 - Page layout with sticky header area
+ * PageLayout - Page layout with sticky header area
  *
  * Session 007: Layout component for sticky tabs/filters
  * Features:
@@ -10,10 +10,10 @@
 import React from 'react';
 import type { ReactNode } from 'react';
 
-export interface PageLayoutV2Props {
-  /** Sticky header content (ActionHeaderV2, FilterCardV2) */
+export interface PageLayoutProps {
+  /** Sticky header content (ActionHeader, FilterCard) */
   header?: ReactNode;
-  /** Scrollable content (DataCardV2, tables, lists) */
+  /** Scrollable content (DataCard, tables, lists) */
   children: ReactNode;
   /** Gap between header and content */
   gap?: string;
@@ -21,7 +21,8 @@ export interface PageLayoutV2Props {
   disableScroll?: boolean;
 }
 
-export const PageLayoutV2: React.FC<PageLayoutV2Props> = ({
+
+export const PageLayout: React.FC<PageLayoutProps> = ({
   header,
   children,
   gap = 'var(--spacing-md)',

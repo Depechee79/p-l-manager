@@ -1,7 +1,6 @@
 /**
- * TabsNavV2 - Horizontal tabs with V2 design system
+ * TabsNav - Horizontal tabs with pill-style design
  *
- * Session 007: New design matching Almacen reference
  * Features:
  * - Contained within rounded pill-style background
  * - Active tab with primary color and subtle shadow
@@ -12,22 +11,26 @@
  */
 import React from 'react';
 
-export interface TabV2 {
+export interface Tab {
   id: string;
   label: string;
   icon?: React.ReactNode;
   disabled?: boolean;
 }
 
-export interface TabsNavV2Props {
-  tabs: TabV2[];
+
+
+export interface TabsNavProps {
+  tabs: Tab[];
   activeTab: string;
   onTabChange: (tabId: string) => void;
   /** Show icons in tabs (default: true on first tab only for visual hierarchy) */
   showIcons?: boolean | 'first-only';
 }
 
-export const TabsNavV2: React.FC<TabsNavV2Props> = ({
+
+
+export const TabsNav: React.FC<TabsNavProps> = ({
   tabs,
   activeTab,
   onTabChange,

@@ -17,9 +17,7 @@
 
 export * from './Checkbox';
 export * from './Button';
-export * from './ButtonV2';
 export * from './Switch';
-export type { ButtonProps } from './Button';
 
 export { Card } from './Card';
 export type { CardProps } from './Card';
@@ -102,33 +100,24 @@ export type { FilterBarProps } from './layout/FilterBar';
 // =============================================================================
 
 export { TabsHorizontal } from './TabsHorizontal';
-export type { TabsHorizontalProps, Tab as TabItem } from './TabsHorizontal';
+export type { TabsHorizontalProps } from './TabsHorizontal';
+
+export * from './TabsNav';
 
 // =============================================================================
-// V2 DESIGN SYSTEM COMPONENTS (Session 007)
-// Based on Almacen reference design - 36px height, 8px radius, compact filters
+// DESIGN SYSTEM COMPONENTS
 // =============================================================================
 
-export { TabsNavV2 } from './TabsNavV2';
-export type { TabsNavV2Props, TabV2 } from './TabsNavV2';
+export * from './ActionHeader';
 
-export { ButtonV2 } from './ButtonV2';
-export type { ButtonV2Props } from './ButtonV2';
+export { FilterCard, FilterInput, FilterTextInput, FilterSelect } from './FilterCard';
+export type { FilterCardProps, FilterInputProps, FilterTextInputProps, FilterSelectProps } from './FilterCard';
 
-export { ActionHeaderV2 } from './ActionHeaderV2';
-export type { ActionHeaderV2Props } from './ActionHeaderV2';
+export { DataCard } from './DataCard';
+export type { DataCardProps, KPIItem } from './DataCard';
 
-export { FilterCardV2, FilterInputV2, FilterTextInput, FilterSelect } from './FilterCardV2';
-export type { FilterCardV2Props, FilterInputV2Props, FilterTextInputProps, FilterSelectProps } from './FilterCardV2';
-
-export { DataCardV2 } from './DataCardV2';
-export type { DataCardV2Props, KPIItem } from './DataCardV2';
-
-export { PageLayoutV2 } from './PageLayoutV2';
-export type { PageLayoutV2Props } from './PageLayoutV2';
-
-export { SelectV2 } from './SelectV2';
-export type { SelectV2Props, SelectV2Option } from './SelectV2';
+export { PageLayout } from './PageLayout';
+export type { PageLayoutProps } from './PageLayout';
 
 // =============================================================================
 // SECURITY COMPONENTS
@@ -136,4 +125,10 @@ export type { SelectV2Props, SelectV2Option } from './SelectV2';
 
 export { ProtectedRoute } from './ProtectedRoute';
 export type { ProtectedRouteProps } from './ProtectedRoute';
+
+// =============================================================================
+// ERROR HANDLING COMPONENTS
+// =============================================================================
+
+export { ErrorBoundary } from './ErrorBoundary';
 

@@ -1,7 +1,6 @@
 /**
- * ActionHeaderV2 - Header row with tabs and action buttons
+ * ActionHeader - Header row with tabs and action buttons
  *
- * Session 007: New design matching Almacen reference
  * Features:
  * - Tabs on the left with pill-style container
  * - Action buttons on the right
@@ -10,11 +9,11 @@
  */
 import React from 'react';
 import type { ReactNode } from 'react';
-import { TabsNavV2, type TabV2 } from './TabsNavV2';
+import { TabsNav, type Tab } from './TabsNav';
 
-export interface ActionHeaderV2Props {
+export interface ActionHeaderProps {
   /** Tabs configuration */
-  tabs?: TabV2[];
+  tabs?: Tab[];
   /** Currently active tab */
   activeTab?: string;
   /** Tab change handler */
@@ -27,7 +26,9 @@ export interface ActionHeaderV2Props {
   sticky?: boolean;
 }
 
-export const ActionHeaderV2: React.FC<ActionHeaderV2Props> = ({
+
+
+export const ActionHeader: React.FC<ActionHeaderProps> = ({
   tabs,
   activeTab,
   onTabChange,
@@ -49,7 +50,7 @@ export const ActionHeaderV2: React.FC<ActionHeaderV2Props> = ({
     >
       {/* Tabs */}
       {hasTabs && (
-        <TabsNavV2
+        <TabsNav
           tabs={tabs}
           activeTab={activeTab}
           onTabChange={onTabChange}

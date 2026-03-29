@@ -18,7 +18,7 @@ export default defineConfig({
       '@utils': resolve(__dirname, './src/utils'),
       '@hooks': resolve(__dirname, './src/hooks'),
       '@pages': resolve(__dirname, './src/pages'),
-      '@components': resolve(__dirname, './src/components'),
+      '@components': resolve(__dirname, './src/shared/components'),
       '@features': resolve(__dirname, './src/features'),
       '@core': resolve(__dirname, './src/core'),
     },
@@ -28,8 +28,12 @@ export default defineConfig({
     'import.meta.env.VITE_BUILD_TIME': JSON.stringify(new Date().toISOString()),
   },
   server: {
-    port: 3000,
+    port: 3004,
     open: true,
+    hmr: {
+      host: 'localhost',
+      port: 3004,
+    },
   },
   build: {
     outDir: 'dist',
