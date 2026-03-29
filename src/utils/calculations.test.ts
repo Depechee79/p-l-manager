@@ -7,6 +7,15 @@ import {
   calculateGrossMargin,
 } from './calculations';
 
+/**
+ * Test helper: casts a value to type T for runtime edge-case testing.
+ * Used to pass null/undefined to functions that TypeScript would reject,
+ * verifying that the functions handle invalid runtime inputs gracefully.
+ */
+function asRuntimeInput<T>(value: unknown): T {
+  return value as T;
+}
+
 describe('calculations', () => {
   describe('calculateFoodCost', () => {
     it('should calculate food cost percentage correctly', () => {
@@ -20,10 +29,8 @@ describe('calculations', () => {
     });
 
     it('should return 0 when pvpNeto is null or undefined', () => {
-      expect(calculateFoodCost(30, // @ts-expect-error testing null input
-      null)).toBe(0);
-      expect(calculateFoodCost(30, // @ts-expect-error testing undefined input
-      undefined)).toBe(0);
+      expect(calculateFoodCost(30, asRuntimeInput<number>(null))).toBe(0);
+      expect(calculateFoodCost(30, asRuntimeInput<number>(undefined))).toBe(0);
     });
 
     it('should handle edge case with very small numbers', () => {
@@ -43,10 +50,8 @@ describe('calculations', () => {
     });
 
     it('should return 0 when pvpNeto is null or undefined', () => {
-      expect(calculateMarginPercentage(30, // @ts-expect-error testing null input
-      null)).toBe(0);
-      expect(calculateMarginPercentage(30, // @ts-expect-error testing undefined input
-      undefined)).toBe(0);
+      expect(calculateMarginPercentage(30, asRuntimeInput<number>(null))).toBe(0);
+      expect(calculateMarginPercentage(30, asRuntimeInput<number>(undefined))).toBe(0);
     });
 
     it('should handle negative margin (loss)', () => {
@@ -62,13 +67,9 @@ describe('calculations', () => {
     });
 
     it('should handle null or undefined values as 0', () => {
-      expect(calculateCosteIngrediente(// @ts-expect-error testing null input
-      null, 10)).toBe(0);
-      expect(calculateCosteIngrediente(5, // @ts-expect-error testing undefined input
-      undefined)).toBe(0);
-      expect(calculateCosteIngrediente(// @ts-expect-error testing null input
-      null, // @ts-expect-error testing null input
-      null)).toBe(0);
+      expect(calculateCosteIngrediente(asRuntimeInput<number>(null), 10)).toBe(0);
+      expect(calculateCosteIngrediente(5, asRuntimeInput<number>(undefined))).toBe(0);
+      expect(calculateCosteIngrediente(asRuntimeInput<number>(null), asRuntimeInput<number>(null))).toBe(0);
     });
 
     it('should handle decimal quantities', () => {
@@ -85,10 +86,8 @@ describe('calculations', () => {
 
     it('should return 0 when precioConIva is 0 or falsy', () => {
       expect(calculateBaseImponible(0, 10)).toBe(0);
-      expect(calculateBaseImponible(// @ts-expect-error testing null input
-      null, 10)).toBe(0);
-      expect(calculateBaseImponible(// @ts-expect-error testing undefined input
-      undefined, 10)).toBe(0);
+      expect(calculateBaseImponible(asRuntimeInput<number>(null), 10)).toBe(0);
+      expect(calculateBaseImponible(asRuntimeInput<number>(undefined), 10)).toBe(0);
     });
 
     it('should handle 0% VAT', () => {
@@ -109,13 +108,9 @@ describe('calculations', () => {
     });
 
     it('should handle null or undefined values as 0', () => {
-      expect(calculateGrossMargin(// @ts-expect-error testing null input
-      null, 30)).toBe(-30);
-      expect(calculateGrossMargin(100, // @ts-expect-error testing undefined input
-      undefined)).toBe(100);
-      expect(calculateGrossMargin(// @ts-expect-error testing null input
-      null, // @ts-expect-error testing null input
-      null)).toBe(0);
+      expect(calculateGrossMargin(asRuntimeInput<number>(null), 30)).toBe(-30);
+      expect(calculateGrossMargin(100, asRuntimeInput<number>(undefined))).toBe(100);
+      expect(calculateGrossMargin(asRuntimeInput<number>(null), asRuntimeInput<number>(null))).toBe(0);
     });
 
     it('should handle zero values', () => {

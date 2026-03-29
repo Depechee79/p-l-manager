@@ -2,201 +2,193 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProvidersPage } from './ProvidersPage';
-import { DatabaseService } from '../services/DatabaseService';
 import type { Provider } from '@types';
 
+// Mock hooks
+vi.mock('@core', () => ({
+  useDatabase: vi.fn(() => ({
+    db: {
+      ensureLoaded: vi.fn().mockResolvedValue(undefined),
+      proveedores: [],
+    }
+  }))
+}));
+
+vi.mock('@hooks', () => ({
+  useProviders: vi.fn()
+}));
+
+vi.mock('../utils/toast', () => ({
+  useToast: vi.fn(() => ({
+    showToast: vi.fn(),
+  }))
+}));
+
+vi.mock('@core/services/LoggerService', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }
+}));
+
+// Mock feature components to isolate page-level behavior
+vi.mock('@/features/providers', () => ({
+  ProvidersList: vi.fn(({ providers, loading, onEdit, onDelete, onNew }: {
+    providers: Provider[];
+    loading: boolean;
+    onEdit: (provider: Provider) => void;
+    onDelete: (provider: Provider) => void;
+    onNew: () => void;
+  }) => (
+    <div data-testid="providers-list">
+      <button type="button" onClick={onNew}>Nuevo Proveedor</button>
+      {loading && <span>Cargando...</span>}
+      {!loading && providers.length === 0 && <span>No hay proveedores</span>}
+      {providers.map((p) => (
+        <div key={p.id} data-testid={`provider-${p.id}`}>
+          <span>{p.nombre}</span>
+          <button type="button" onClick={() => onEdit(p)}>Editar</button>
+          <button type="button" onClick={() => onDelete(p)}>Eliminar</button>
+        </div>
+      ))}
+    </div>
+  )),
+  ProviderForm: vi.fn(({ onCancel }: { onCancel: () => void }) => (
+    <div data-testid="provider-form">
+      <span>Formulario Proveedor</span>
+      <button type="button" onClick={onCancel}>Cancelar</button>
+    </div>
+  )),
+}));
+
+import { useProviders } from '@hooks';
+
 describe('ProvidersPage', () => {
-  let db: DatabaseService;
-
-  beforeEach(() => {
-    localStorage.clear();
-    db = new DatabaseService();
-  });
-
-  it('should render page title', () => {
-    render(<ProvidersPage db={db} />);
-    expect(screen.getByText('Proveedores')).toBeInTheDocument();
-  });
-
-  it('should render add provider button', () => {
-    render(<ProvidersPage db={db} />);
-    expect(screen.getByRole('button', { name: /nuevo proveedor/i })).toBeInTheDocument();
-  });
-
-  it('should render search input', () => {
-    render(<ProvidersPage db={db} />);
-    expect(screen.getByPlaceholderText(/buscar/i)).toBeInTheDocument();
-  });
-
-  it('should display empty state when no providers', () => {
-    render(<ProvidersPage db={db} />);
-    expect(screen.getByText(/no hay proveedores/i)).toBeInTheDocument();
-  });
-
-  it('should display providers list', () => {
-    db.add('proveedores', {
+  const mockProviders: Provider[] = [
+    {
+      id: 1,
       nombre: 'Proveedor 1',
       cif: 'A12345678',
       contacto: 'contact@provider1.com',
-    } as Omit<Provider, 'id'>);
-
-    db.add('proveedores', {
+    } as Provider,
+    {
+      id: 2,
       nombre: 'Proveedor 2',
       cif: 'B87654321',
       contacto: 'contact@provider2.com',
-    } as Omit<Provider, 'id'>);
+    } as Provider,
+  ];
 
-    render(<ProvidersPage db={db} />);
-    
+  const mockUseProviders = {
+    providers: mockProviders,
+    filteredProviders: mockProviders,
+    loading: false,
+    error: null,
+    createProvider: vi.fn(),
+    updateProvider: vi.fn(),
+    deleteProvider: vi.fn(),
+    searchProviders: vi.fn(),
+    refreshProviders: vi.fn(),
+    stats: { total: 2, withInvoices: 0, withoutInvoices: 2, totalSpent: 0 },
+    setError: vi.fn(),
+    clearError: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (vi.mocked(useProviders)).mockReturnValue(mockUseProviders);
+  });
+
+  it('should render providers list', () => {
+    render(<ProvidersPage />);
+    expect(screen.getByTestId('providers-list')).toBeInTheDocument();
+  });
+
+  it('should render add provider button', () => {
+    render(<ProvidersPage />);
+    expect(screen.getByText('Nuevo Proveedor')).toBeInTheDocument();
+  });
+
+  it('should display empty state when no providers', () => {
+    (vi.mocked(useProviders)).mockReturnValue({
+      ...mockUseProviders,
+      filteredProviders: [],
+    });
+
+    render(<ProvidersPage />);
+    expect(screen.getByText('No hay proveedores')).toBeInTheDocument();
+  });
+
+  it('should display providers list', () => {
+    render(<ProvidersPage />);
     expect(screen.getByText('Proveedor 1')).toBeInTheDocument();
     expect(screen.getByText('Proveedor 2')).toBeInTheDocument();
   });
 
-  it('should filter providers on search', async () => {
+  it('should switch to form view when add button is clicked', async () => {
     const user = userEvent.setup();
+    render(<ProvidersPage />);
 
-    db.add('proveedores', {
-      nombre: 'Acme Corporation',
-      cif: 'A12345678',
-      contacto: 'acme@example.com',
-    } as Omit<Provider, 'id'>);
+    await user.click(screen.getByText('Nuevo Proveedor'));
 
-    db.add('proveedores', {
-      nombre: 'Beta Solutions',
-      cif: 'B87654321',
-      contacto: 'beta@example.com',
-    } as Omit<Provider, 'id'>);
-
-    render(<ProvidersPage db={db} />);
-
-    const searchInput = screen.getByPlaceholderText(/buscar/i);
-    await user.type(searchInput, 'acme');
-
-    await waitFor(() => {
-      expect(screen.getByText('Acme Corporation')).toBeInTheDocument();
-      expect(screen.queryByText('Beta Solutions')).not.toBeInTheDocument();
-    });
+    expect(screen.getByTestId('provider-form')).toBeInTheDocument();
   });
 
-  it('should open modal when add button is clicked', async () => {
+  it('should return to list view when cancel is clicked', async () => {
     const user = userEvent.setup();
-    render(<ProvidersPage db={db} />);
+    render(<ProvidersPage />);
 
-    const addButton = screen.getByRole('button', { name: /nuevo proveedor/i });
-    await user.click(addButton);
+    await user.click(screen.getByText('Nuevo Proveedor'));
+    expect(screen.getByTestId('provider-form')).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText(/crear proveedor/i)).toBeInTheDocument();
-    });
+    await user.click(screen.getByText('Cancelar'));
+    expect(screen.getByTestId('providers-list')).toBeInTheDocument();
   });
 
-  it('should close modal when cancel is clicked', async () => {
+  it('should switch to edit form when edit is clicked', async () => {
     const user = userEvent.setup();
-    render(<ProvidersPage db={db} />);
+    render(<ProvidersPage />);
 
-    const addButton = screen.getByRole('button', { name: /nuevo proveedor/i });
-    await user.click(addButton);
+    const editButtons = screen.getAllByText('Editar');
+    await user.click(editButtons[0]);
 
-    await waitFor(() => {
-      expect(screen.getByText(/crear proveedor/i)).toBeInTheDocument();
-    });
-
-    const cancelButton = screen.getByRole('button', { name: /cancelar/i });
-    await user.click(cancelButton);
-
-    await waitFor(() => {
-      expect(screen.queryByText(/crear proveedor/i)).not.toBeInTheDocument();
-    });
+    expect(screen.getByTestId('provider-form')).toBeInTheDocument();
   });
 
-  it('should display provider statistics', () => {
-    db.add('proveedores', {
-      nombre: 'Provider 1',
-      cif: 'A12345678',
-      contacto: 'p1@example.com',
-    } as Omit<Provider, 'id'>);
-
-    db.add('proveedores', {
-      nombre: 'Provider 2',
-      cif: 'B87654321',
-      contacto: 'p2@example.com',
-    } as Omit<Provider, 'id'>);
-
-    render(<ProvidersPage db={db} />);
-
-    expect(screen.getByText(/con facturas:/i)).toBeInTheDocument();
-    expect(screen.getByText(/sin facturas:/i)).toBeInTheDocument();
-    expect(screen.getByText(/gasto total:/i)).toBeInTheDocument();
-  });
-
-  it('should show edit modal when edit is clicked', async () => {
-    const user = userEvent.setup();
-
-    db.add('proveedores', {
-      nombre: 'Provider to Edit',
-      cif: 'A12345678',
-      contacto: 'edit@example.com',
-    } as Omit<Provider, 'id'>);
-
-    render(<ProvidersPage db={db} />);
-
-    const editButton = screen.getAllByRole('button', { name: /editar/i })[0];
-    await user.click(editButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/editar proveedor/i)).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Provider to Edit')).toBeInTheDocument();
-    });
-  });
-
-  it('should delete provider when delete is confirmed', async () => {
+  it('should delete provider when confirmed', async () => {
     const user = userEvent.setup();
     window.confirm = vi.fn(() => true);
 
-    db.add('proveedores', {
-      nombre: 'Provider to Delete',
-      cif: 'A12345678',
-      contacto: 'delete@example.com',
-    } as Omit<Provider, 'id'>);
+    render(<ProvidersPage />);
 
-    render(<ProvidersPage db={db} />);
+    const deleteButtons = screen.getAllByText('Eliminar');
+    await user.click(deleteButtons[0]);
 
-    expect(screen.getByText('Provider to Delete')).toBeInTheDocument();
-
-    const deleteButton = screen.getAllByRole('button', { name: /eliminar/i })[0];
-    await user.click(deleteButton);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Provider to Delete')).not.toBeInTheDocument();
-    });
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockUseProviders.deleteProvider).toHaveBeenCalledWith(1);
   });
 
-  it('should not delete provider when delete is cancelled', async () => {
+  it('should not delete provider when cancelled', async () => {
     const user = userEvent.setup();
     window.confirm = vi.fn(() => false);
 
-    db.add('proveedores', {
-      nombre: 'Provider to Keep',
-      cif: 'A12345678',
-      contacto: 'keep@example.com',
-    } as Omit<Provider, 'id'>);
+    render(<ProvidersPage />);
 
-    render(<ProvidersPage db={db} />);
+    const deleteButtons = screen.getAllByText('Eliminar');
+    await user.click(deleteButtons[0]);
 
-    const deleteButton = screen.getAllByRole('button', { name: /eliminar/i })[0];
-    await user.click(deleteButton);
-
-    expect(screen.getByText('Provider to Keep')).toBeInTheDocument();
+    expect(mockUseProviders.deleteProvider).not.toHaveBeenCalled();
   });
 
   it('should display error message when present', () => {
-    render(<ProvidersPage db={db} />);
-    
-    // Simulate error by trying to create invalid provider
-    const addButton = screen.getByRole('button', { name: /nuevo proveedor/i });
-    userEvent.click(addButton);
+    (vi.mocked(useProviders)).mockReturnValue({
+      ...mockUseProviders,
+      error: 'Error al cargar proveedores',
+    });
 
-    // Error handling will be tested in integration
-    expect(addButton).toBeInTheDocument();
+    render(<ProvidersPage />);
+    expect(screen.getByText('Error al cargar proveedores')).toBeInTheDocument();
   });
 });

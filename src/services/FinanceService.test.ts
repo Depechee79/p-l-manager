@@ -1,7 +1,29 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FinanceService } from './FinanceService';
 import { DatabaseService } from '@core';
 import type { Cierre } from '@/types';
+
+// Mock FirestoreService to skip cloud sync in tests
+vi.mock('@core/services/FirestoreService', () => {
+  return {
+    FirestoreService: class {
+      add = vi.fn().mockResolvedValue({ success: true });
+      update = vi.fn().mockResolvedValue({ success: true });
+      delete = vi.fn().mockResolvedValue({ success: true });
+      getAll = vi.fn().mockResolvedValue({ success: true, data: [] });
+    },
+  };
+});
+
+// Mock DataIntegrityService to skip FK validation in tests
+vi.mock('@core/services/DataIntegrityService', () => {
+  return {
+    DataIntegrityService: class {
+      validateForeignKey = vi.fn().mockReturnValue({ valid: true, errors: [] });
+      canDelete = vi.fn().mockReturnValue({ canDelete: true, blockingReferences: [] });
+    },
+  };
+});
 
 describe('FinanceService', () => {
   let financeService: FinanceService;
@@ -111,8 +133,8 @@ describe('FinanceService', () => {
       posExtras: 50,
     };
 
-    it('should save new closing with all calculations', () => {
-      const result = financeService.saveClosing(baseClosingData);
+    it('should save new closing with all calculations', async () => {
+      const result = await financeService.saveClosing(baseClosingData);
 
       expect(result.success).toBe(true);
       expect(db.cierres).toHaveLength(1);
@@ -129,7 +151,7 @@ describe('FinanceService', () => {
       expect(saved.descuadreTotal).toBe(20); // 870 - 850
     });
 
-    it('should calculate cash total correctly', () => {
+    it('should calculate cash total correctly', async () => {
       const data = {
         ...baseClosingData,
         desgloseEfectivo: {
@@ -139,13 +161,13 @@ describe('FinanceService', () => {
         },
       };
 
-      financeService.saveClosing(data);
+      await financeService.saveClosing(data);
       const saved = db.cierres[0] as any;
 
       expect(saved.efectivoContado).toBe(120); // 50 + 40 + 30
     });
 
-    it('should calculate datafonos total correctly', () => {
+    it('should calculate datafonos total correctly', async () => {
       const data = {
         ...baseClosingData,
         datafonos: [
@@ -155,14 +177,14 @@ describe('FinanceService', () => {
         ],
       };
 
-      financeService.saveClosing(data);
+      await financeService.saveClosing(data);
       const saved = db.cierres[0] as any;
 
       expect(saved.datafonos).toHaveLength(3);
       expect(saved.totalDatafonos).toBe(450);
     });
 
-    it('should calculate otros medios total correctly', () => {
+    it('should calculate otros medios total correctly', async () => {
       const data = {
         ...baseClosingData,
         otrosMedios: [
@@ -171,14 +193,14 @@ describe('FinanceService', () => {
         ],
       };
 
-      financeService.saveClosing(data);
+      await financeService.saveClosing(data);
       const saved = db.cierres[0] as any;
 
       expect(saved.otrosMedios).toHaveLength(2);
       expect(saved.totalOtrosMedios).toBe(100);
     });
 
-    it('should calculate descuadre as difference between real and POS', () => {
+    it('should calculate descuadre as difference between real and POS', async () => {
       const data = {
         ...baseClosingData,
         desgloseEfectivo: { b50: 10 }, // 500
@@ -191,7 +213,7 @@ describe('FinanceService', () => {
         posExtras: 50,
       };
 
-      financeService.saveClosing(data);
+      await financeService.saveClosing(data);
       const saved = db.cierres[0] as any;
 
       expect(saved.totalReal).toBe(1000); // 500 + 300 + 0 + 200
@@ -199,7 +221,7 @@ describe('FinanceService', () => {
       expect(saved.descuadreTotal).toBe(50); // 1000 - 950
     });
 
-    it('should handle negative descuadre', () => {
+    it('should handle negative descuadre', async () => {
       const data = {
         ...baseClosingData,
         desgloseEfectivo: { b50: 2 }, // 100
@@ -212,7 +234,7 @@ describe('FinanceService', () => {
         posExtras: 0,
       };
 
-      financeService.saveClosing(data);
+      await financeService.saveClosing(data);
       const saved = db.cierres[0] as any;
 
       expect(saved.totalReal).toBe(100);
@@ -220,7 +242,7 @@ describe('FinanceService', () => {
       expect(saved.descuadreTotal).toBe(-50);
     });
 
-    it('should handle zero values', () => {
+    it('should handle zero values', async () => {
       const data = {
         ...baseClosingData,
         desgloseEfectivo: {},
@@ -234,7 +256,7 @@ describe('FinanceService', () => {
         posExtras: 0,
       };
 
-      financeService.saveClosing(data);
+      await financeService.saveClosing(data);
       const saved = db.cierres[0] as any;
 
       expect(saved.totalReal).toBe(0);
@@ -242,13 +264,13 @@ describe('FinanceService', () => {
       expect(saved.descuadreTotal).toBe(0);
     });
 
-    it('should update existing closing when editId provided', () => {
+    it('should update existing closing when editId provided', async () => {
       // Create initial closing
-      const initial = financeService.saveClosing(baseClosingData);
+      const initial = await financeService.saveClosing(baseClosingData);
       expect(db.cierres).toHaveLength(1);
 
       // Update it
-      const updated = financeService.saveClosing(
+      const updated = await financeService.saveClosing(
         {
           ...baseClosingData,
           turno: 'cena',
@@ -265,7 +287,7 @@ describe('FinanceService', () => {
       expect(saved.posEfectivo).toBe(500);
     });
 
-    it('should preserve desgloseEfectivo in saved closing', () => {
+    it('should preserve desgloseEfectivo in saved closing', async () => {
       const desgloseEfectivo = {
         b500: 1,
         b200: 2,
@@ -275,15 +297,15 @@ describe('FinanceService', () => {
         m1: 20,
       };
 
-      financeService.saveClosing({ ...baseClosingData, desgloseEfectivo: desgloseEfectivo });
+      await financeService.saveClosing({ ...baseClosingData, desgloseEfectivo: desgloseEfectivo });
       const saved = db.cierres[0] as any;
 
       expect(saved.desgloseEfectivo).toEqual(desgloseEfectivo);
     });
 
-    it('should return error if fecha is missing', () => {
+    it('should return error if fecha is missing', async () => {
       const data = { ...baseClosingData, fecha: '' };
-      const result = financeService.saveClosing(data);
+      const result = await financeService.saveClosing(data);
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
@@ -292,7 +314,7 @@ describe('FinanceService', () => {
   });
 
   describe('getClosings()', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Add test closings with different dates
       // Using today's date for 'mes' period to work
       const today = new Date();
@@ -301,7 +323,7 @@ describe('FinanceService', () => {
         .toISOString()
         .slice(0, 10);
 
-      db.add('cierres', {
+      await db.add('cierres', {
         fecha: `${thisMonth}-15`,
         turno: 'comida',
         totalReal: 1000,
@@ -309,7 +331,7 @@ describe('FinanceService', () => {
         descuadreTotal: 50,
       } as any);
 
-      db.add('cierres', {
+      await db.add('cierres', {
         fecha: `${thisMonth}-16`,
         turno: 'cena',
         totalReal: 1200,
@@ -317,7 +339,7 @@ describe('FinanceService', () => {
         descuadreTotal: 0,
       } as any);
 
-      db.add('cierres', {
+      await db.add('cierres', {
         fecha: lastMonth,
         turno: 'comida',
         totalReal: 800,
@@ -348,8 +370,8 @@ describe('FinanceService', () => {
   describe('getClosing()', () => {
     let closingId: number;
 
-    beforeEach(() => {
-      const closing = db.add('cierres', {
+    beforeEach(async () => {
+      const closing = await db.add('cierres', {
         fecha: '2024-01-15',
         turno: 'comida',
         totalReal: 1000,
@@ -376,8 +398,8 @@ describe('FinanceService', () => {
   describe('deleteClosing()', () => {
     let closingId: number;
 
-    beforeEach(() => {
-      const closing = db.add('cierres', {
+    beforeEach(async () => {
+      const closing = await db.add('cierres', {
         fecha: '2024-01-15',
         turno: 'comida',
         totalReal: 1000,
@@ -387,10 +409,12 @@ describe('FinanceService', () => {
       closingId = closing.id as number;
     });
 
-    it('should delete closing by id', () => {
+    it('should delete closing by id', async () => {
       expect(db.cierres).toHaveLength(1);
 
       financeService.deleteClosing(closingId);
+      // deleteClosing fires async db.delete without await, flush microtasks
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(db.cierres).toHaveLength(0);
     });
@@ -400,9 +424,10 @@ describe('FinanceService', () => {
       expect(result).toBe(true);
     });
 
-    it('should handle deleting non-existent closing gracefully', () => {
+    it('should handle deleting non-existent closing gracefully', async () => {
       // This will attempt to delete but should not throw
       financeService.deleteClosing(999999);
+      await new Promise(resolve => setTimeout(resolve, 0));
       expect(db.cierres).toHaveLength(1); // Original still there
     });
   });

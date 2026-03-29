@@ -1,16 +1,25 @@
 /**
  * ProtectedRoute.test.tsx - Tests for the route guard component
+ *
+ * The component uses useUserPermissions (which internally calls useApp + SYSTEM_ROLES).
+ * We mock useUserPermissions directly to control auth/permission state.
  */
 import '@testing-library/jest-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
+import type { Permission } from '@types';
 
-// Mock useApp hook
-const mockUseApp = vi.fn();
-vi.mock('@core', () => ({
-    useApp: () => mockUseApp(),
+// Mock useUserPermissions hook
+const mockUseUserPermissions = vi.fn();
+vi.mock('@shared/hooks', () => ({
+    useUserPermissions: () => mockUseUserPermissions(),
+}));
+
+// Mock logger to silence warnings
+vi.mock('@core/services/LoggerService', () => ({
+    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
 // Test component to render when access granted
@@ -20,7 +29,7 @@ const FallbackContent = () => <div data-testid="fallback-content">Fallback Conte
 // Helper to render with router
 function renderWithRouter(
     initialPath: string,
-    requiredPermissions: string[],
+    requiredPermissions: Permission[],
     requireAll = true
 ) {
     return render(
@@ -32,7 +41,7 @@ function renderWithRouter(
                     element={
                         <ProtectedRoute
                             element={<ProtectedContent />}
-                            requiredPermissions={requiredPermissions as any}
+                            requiredPermissions={requiredPermissions}
                             requireAll={requireAll}
                         />
                     }
@@ -42,6 +51,23 @@ function renderWithRouter(
     );
 }
 
+/** Helper to build a mock return value for useUserPermissions */
+function mockPermissions(opts: {
+    isAuthenticated: boolean;
+    permissions?: Permission[];
+    roleName?: string;
+}) {
+    const perms = opts.permissions ?? [];
+    return {
+        isAuthenticated: opts.isAuthenticated,
+        permissions: perms,
+        role: opts.roleName ? { nombre: opts.roleName } : undefined,
+        hasPermission: (p: Permission) => perms.includes(p),
+        hasAnyPermission: (ps: Permission[]) => ps.some((p) => perms.includes(p)),
+        hasAllPermissions: (ps: Permission[]) => ps.every((p) => perms.includes(p)),
+    };
+}
+
 describe('ProtectedRoute', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -49,10 +75,9 @@ describe('ProtectedRoute', () => {
 
     describe('when user is not authenticated', () => {
         it('should redirect to fallback when user is null', () => {
-            mockUseApp.mockReturnValue({
-                user: null,
-                isAuthenticated: false,
-            });
+            mockUseUserPermissions.mockReturnValue(
+                mockPermissions({ isAuthenticated: false })
+            );
 
             renderWithRouter('/protected', ['pnl.view']);
 
@@ -61,10 +86,9 @@ describe('ProtectedRoute', () => {
         });
 
         it('should redirect to fallback when not authenticated', () => {
-            mockUseApp.mockReturnValue({
-                user: { name: 'Test User' },
-                isAuthenticated: false,
-            });
+            mockUseUserPermissions.mockReturnValue(
+                mockPermissions({ isAuthenticated: false })
+            );
 
             renderWithRouter('/protected', ['pnl.view']);
 
@@ -74,10 +98,13 @@ describe('ProtectedRoute', () => {
 
     describe('when user has Director role (all permissions)', () => {
         beforeEach(() => {
-            mockUseApp.mockReturnValue({
-                user: { name: 'Director Test', roleId: 'Director' },
-                isAuthenticated: true,
-            });
+            mockUseUserPermissions.mockReturnValue(
+                mockPermissions({
+                    isAuthenticated: true,
+                    permissions: ['pnl.view', 'usuarios.edit', 'dashboard.view', 'configuracion.edit'] as Permission[],
+                    roleName: 'Director Operaciones',
+                })
+            );
         });
 
         it('should render protected content when user has pnl.view permission', () => {
@@ -100,12 +127,15 @@ describe('ProtectedRoute', () => {
         });
     });
 
-    describe('when user has Camarero role (limited permissions)', () => {
+    describe('when user has limited permissions', () => {
         beforeEach(() => {
-            mockUseApp.mockReturnValue({
-                user: { name: 'Camarero Test', roleId: 'Camarero' },
-                isAuthenticated: true,
-            });
+            mockUseUserPermissions.mockReturnValue(
+                mockPermissions({
+                    isAuthenticated: true,
+                    permissions: ['dashboard.view'] as Permission[],
+                    roleName: 'Camarero',
+                })
+            );
         });
 
         it('should redirect when user lacks pnl.view permission', () => {
@@ -130,11 +160,14 @@ describe('ProtectedRoute', () => {
 
     describe('requireAll vs requireAny', () => {
         beforeEach(() => {
-            // Encargado has dashboard.view and cierres.view but not pnl.view
-            mockUseApp.mockReturnValue({
-                user: { name: 'Encargado Test', roleId: 'Encargado' },
-                isAuthenticated: true,
-            });
+            // Has dashboard.view but not pnl.view
+            mockUseUserPermissions.mockReturnValue(
+                mockPermissions({
+                    isAuthenticated: true,
+                    permissions: ['dashboard.view', 'cierres.view'] as Permission[],
+                    roleName: 'Encargado',
+                })
+            );
         });
 
         it('should redirect when requireAll=true and user lacks one permission', () => {
@@ -150,40 +183,33 @@ describe('ProtectedRoute', () => {
         });
     });
 
-    describe('when user has no roleId', () => {
-        it('should use default Camarero role and deny pnl access', () => {
-            mockUseApp.mockReturnValue({
-                user: { name: 'No Role User' }, // No roleId
-                isAuthenticated: true,
-            });
+    describe('when user has no role', () => {
+        it('should deny access when no permissions', () => {
+            mockUseUserPermissions.mockReturnValue(
+                mockPermissions({
+                    isAuthenticated: true,
+                    permissions: [],
+                })
+            );
 
             renderWithRouter('/protected', ['pnl.view']);
 
             expect(screen.getByTestId('fallback-content')).toBeInTheDocument();
         });
 
-        it('should use default Camarero role and allow dashboard access', () => {
-            mockUseApp.mockReturnValue({
-                user: { name: 'No Role User' },
-                isAuthenticated: true,
-            });
+        it('should render if no permissions required and user is authenticated', () => {
+            mockUseUserPermissions.mockReturnValue(
+                mockPermissions({
+                    isAuthenticated: true,
+                    permissions: [],
+                })
+            );
 
-            renderWithRouter('/protected', ['dashboard.view']);
+            // Empty permissions array - hasAnyPermission([]) returns false (vacuous)
+            // But since requireAll=true by default, hasAllPermissions([]) returns true
+            renderWithRouter('/protected', [], true);
 
             expect(screen.getByTestId('protected-content')).toBeInTheDocument();
-        });
-    });
-
-    describe('when user has unknown role', () => {
-        it('should redirect to fallback', () => {
-            mockUseApp.mockReturnValue({
-                user: { name: 'Unknown Role User', roleId: 'NonExistentRole' },
-                isAuthenticated: true,
-            });
-
-            renderWithRouter('/protected', ['dashboard.view']);
-
-            expect(screen.getByTestId('fallback-content')).toBeInTheDocument();
         });
     });
 });

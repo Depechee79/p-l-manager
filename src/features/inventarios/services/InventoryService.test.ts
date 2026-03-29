@@ -1,7 +1,29 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { InventoryService } from './InventoryService';
 import { DatabaseService } from '@core';
 import type { Product, InventoryProductCount } from '@/types';
+
+// Mock FirestoreService to skip cloud sync in tests
+vi.mock('@core/services/FirestoreService', () => {
+  return {
+    FirestoreService: class {
+      add = vi.fn().mockResolvedValue({ success: true });
+      update = vi.fn().mockResolvedValue({ success: true });
+      delete = vi.fn().mockResolvedValue({ success: true });
+      getAll = vi.fn().mockResolvedValue({ success: true, data: [] });
+    },
+  };
+});
+
+// Mock DataIntegrityService to skip FK validation in tests
+vi.mock('@core/services/DataIntegrityService', () => {
+  return {
+    DataIntegrityService: class {
+      validateForeignKey = vi.fn().mockReturnValue({ valid: true, errors: [] });
+      canDelete = vi.fn().mockReturnValue({ canDelete: true, blockingReferences: [] });
+    },
+  };
+});
 
 describe('InventoryService', () => {
   let inventoryService: InventoryService;
@@ -146,14 +168,14 @@ describe('InventoryService', () => {
     let product1Id: number;
     let product2Id: number;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       // Clear and reset for this test suite
       localStorage.clear();
       db = new DatabaseService();
       inventoryService = new InventoryService(db);
 
       // Add test products
-      const p1 = db.add('productos', {
+      const p1 = await db.add('productos', {
         nombre: 'Product A',
         categoria: 'Bebidas',
         proveedor: 'Provider 1',
@@ -165,7 +187,7 @@ describe('InventoryService', () => {
       } as any);
       product1Id = p1.id as number;
 
-      const p2 = db.add('productos', {
+      const p2 = await db.add('productos', {
         nombre: 'Product B',
         categoria: 'Alimentos',
         proveedor: 'Provider 2',
@@ -178,13 +200,13 @@ describe('InventoryService', () => {
       product2Id = p2.id as number;
     });
 
-    it('should save inventory with all products', () => {
+    it('should save inventory with all products', async () => {
       const date = '2024-01-15';
 
       inventoryService.setProductCount(product1Id, 48);
       inventoryService.setProductCount(product2Id, 32);
 
-      const result = inventoryService.saveInventory(date);
+      const result = await inventoryService.saveInventory(date);
 
       expect(result.success).toBe(true);
       expect(db.inventarios).toHaveLength(1);
@@ -194,13 +216,13 @@ describe('InventoryService', () => {
       expect(saved.productos).toHaveLength(2);
     });
 
-    it('should calculate differences correctly', () => {
+    it('should calculate differences correctly', async () => {
       const date = '2024-01-15';
 
       inventoryService.setProductCount(product1Id, 45); // -5 difference
       inventoryService.setProductCount(product2Id, 35); // +5 difference
 
-      inventoryService.saveInventory(date);
+      await inventoryService.saveInventory(date);
 
       const saved = db.inventarios[0] as any;
       const product1 = saved.productos.find(
@@ -214,13 +236,13 @@ describe('InventoryService', () => {
       expect(product2.diferencia).toBe(5);
     });
 
-    it('should use 0 for uncounted products', () => {
+    it('should use 0 for uncounted products', async () => {
       const date = '2024-01-15';
 
       // Only count one product
       inventoryService.setProductCount(product1Id, 48);
 
-      inventoryService.saveInventory(date);
+      await inventoryService.saveInventory(date);
 
       const saved = db.inventarios[0] as any;
       const product2 = saved.productos.find(
@@ -231,33 +253,33 @@ describe('InventoryService', () => {
       expect(product2.diferencia).toBe(-30);
     });
 
-    it('should update existing inventory if editId provided', () => {
+    it('should update existing inventory if editId provided', async () => {
       const date = '2024-01-15';
 
       // Create initial inventory
       inventoryService.setProductCount(product1Id, 48);
-      const initial = inventoryService.saveInventory(date);
+      const initial = await inventoryService.saveInventory(date);
 
       // Update it
       inventoryService.setProductCount(product1Id, 50);
-      const updated = inventoryService.saveInventory(date, initial.data?.id as number);
+      const updated = await inventoryService.saveInventory(date, initial.data?.id as number);
 
       expect(db.inventarios).toHaveLength(1);
       expect((db.inventarios[0] as any).productos[0].stockReal).toBe(50);
     });
 
-    it('should reset counts after saving', () => {
+    it('should reset counts after saving', async () => {
       inventoryService.setProductCount(1, 10);
       inventoryService.setProductCount(2, 20);
 
-      inventoryService.saveInventory('2024-01-15');
+      await inventoryService.saveInventory('2024-01-15');
 
       expect(inventoryService.getProductCount(1)).toBeUndefined();
       expect(inventoryService.getProductCount(2)).toBeUndefined();
     });
 
-    it('should return error if no date provided', () => {
-      const result = inventoryService.saveInventory('');
+    it('should return error if no date provided', async () => {
+      const result = await inventoryService.saveInventory('');
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });

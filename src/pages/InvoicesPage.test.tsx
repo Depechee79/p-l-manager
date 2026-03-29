@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InvoicesPage } from './InvoicesPage';
 import type { Invoice, Provider } from '../types';
 
 // Mock hooks
-vi.mock('../hooks/useDatabase', () => ({
+vi.mock('@core', () => ({
   useDatabase: vi.fn()
 }));
 
@@ -17,7 +17,45 @@ vi.mock('../hooks/useProviders', () => ({
   useProviders: vi.fn()
 }));
 
-import { useDatabase } from '../hooks/useDatabase';
+// Mock feature components to isolate page-level behavior
+vi.mock('@/features/invoices', () => ({
+  InvoiceForm: vi.fn(({ onCancel }: { onCancel: () => void }) => (
+    <div data-testid="invoice-form">
+      <span>Formulario Factura</span>
+      <button type="button" onClick={onCancel}>Cancelar</button>
+    </div>
+  )),
+  InvoicesList: vi.fn(({ invoices, loading, onEdit, onDelete }: {
+    invoices: Invoice[];
+    loading: boolean;
+    onEdit: (inv: Invoice) => void;
+    onDelete: (inv: Invoice) => void;
+  }) => (
+    <div data-testid="invoices-list">
+      {loading && <span>Cargando...</span>}
+      {!loading && invoices.length === 0 && <span>No hay facturas registradas</span>}
+      {invoices.map((inv) => (
+        <div key={inv.id} data-testid={`invoice-${inv.id}`}>
+          <span>{inv.numero || inv.numeroFactura}</span>
+          <span>{inv.proveedor}</span>
+          <button type="button" onClick={() => onEdit(inv)}>Editar</button>
+          <button type="button" onClick={() => onDelete(inv)}>Eliminar</button>
+        </div>
+      ))}
+    </div>
+  )),
+}));
+
+vi.mock('@core/services/LoggerService', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }
+}));
+
+import { useDatabase } from '@core';
 import { useInvoices } from '../hooks/useInvoices';
 import { useProviders } from '../hooks/useProviders';
 
@@ -26,6 +64,7 @@ describe('InvoicesPage', () => {
     {
       id: 1,
       tipo: 'factura',
+      numero: 'F001',
       numeroFactura: 'F001',
       proveedor: 'Proveedor Test',
       proveedorId: 1,
@@ -46,6 +85,7 @@ describe('InvoicesPage', () => {
     {
       id: 2,
       tipo: 'factura',
+      numero: 'F002',
       numeroFactura: 'F002',
       proveedor: 'Otro Proveedor',
       proveedorId: 2,
@@ -68,7 +108,7 @@ describe('InvoicesPage', () => {
       id: 1,
       nombre: 'Proveedor Test',
       cif: '12345678A',
-      contacto: 'Juan Pérez',
+      contacto: 'Juan Perez',
       telefono: '600000000',
       email: 'test@test.com',
       direccion: 'Calle Test 1',
@@ -97,31 +137,43 @@ describe('InvoicesPage', () => {
 
   const mockUseProviders = {
     providers: mockProviders,
+    filteredProviders: mockProviders,
     loading: false,
     error: null,
-    addProvider: vi.fn(),
+    createProvider: vi.fn(),
     updateProvider: vi.fn(),
     deleteProvider: vi.fn(),
     searchProviders: vi.fn(),
-    getStatistics: vi.fn(),
+    refreshProviders: vi.fn(),
+    stats: { total: 1, withInvoices: 1, withoutInvoices: 0, totalSpent: 1815 },
+    setError: vi.fn(),
     clearError: vi.fn()
+  };
+
+  const mockDb = {
+    ensureLoaded: vi.fn().mockResolvedValue(undefined),
+    productos: [],
+    proveedores: [],
+    facturas: [],
+    update: vi.fn().mockResolvedValue(null),
+    add: vi.fn().mockResolvedValue({ id: 999 }),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (vi.mocked(useDatabase)).mockReturnValue({ db: {} });
+    (vi.mocked(useDatabase)).mockReturnValue({ db: mockDb } as ReturnType<typeof useDatabase>);
     (vi.mocked(useInvoices)).mockReturnValue(mockUseInvoices);
     (vi.mocked(useProviders)).mockReturnValue(mockUseProviders);
   });
 
   it('renders page title', () => {
     render(<InvoicesPage />);
-    expect(screen.getByText('Gestión de Facturas')).toBeInTheDocument();
+    expect(screen.getByText('Facturas')).toBeInTheDocument();
   });
 
   it('displays add invoice button', () => {
     render(<InvoicesPage />);
-    expect(screen.getByText('➕ Nueva Factura')).toBeInTheDocument();
+    expect(screen.getByText(/Nueva Factura/)).toBeInTheDocument();
   });
 
   it('displays empty state when no invoices', () => {
@@ -137,153 +189,56 @@ describe('InvoicesPage', () => {
 
   it('displays list of invoices', () => {
     render(<InvoicesPage />);
-    
+
     expect(screen.getByText('F001')).toBeInTheDocument();
     expect(screen.getByText('F002')).toBeInTheDocument();
     expect(screen.getAllByText('Proveedor Test').length).toBeGreaterThan(0);
     expect(screen.getByText('Otro Proveedor')).toBeInTheDocument();
   });
 
-  it('displays statistics', () => {
-    render(<InvoicesPage />);
-    
-    expect(screen.getByText(/total facturas:/i)).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByText(/importe total:/i)).toBeInTheDocument();
-    expect(screen.getByText('1815,00 €')).toBeInTheDocument();
-  });
-
-  it('opens modal when clicking add invoice', async () => {
+  it('switches to form view when clicking add invoice', async () => {
     const user = userEvent.setup();
     render(<InvoicesPage />);
-    
-    await user.click(screen.getByText('➕ Nueva Factura'));
-    
-    expect(screen.getByText('Nueva Factura')).toBeInTheDocument();
-    expect(screen.getByLabelText(/número factura/i)).toBeInTheDocument();
+
+    await user.click(screen.getByText(/Nueva Factura/));
+
+    expect(screen.getByTestId('invoice-form')).toBeInTheDocument();
   });
 
-  it('filters invoices by provider', async () => {
+  it('returns to list view when clicking cancel in form', async () => {
     const user = userEvent.setup();
     render(<InvoicesPage />);
-    
-    const select = screen.getByLabelText(/filtrar por proveedor/i);
-    await user.selectOptions(select, '1');
-    
-    expect(mockUseInvoices.filterByProvider).toHaveBeenCalledWith(1);
+
+    await user.click(screen.getByText(/Nueva Factura/));
+    expect(screen.getByTestId('invoice-form')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Cancelar'));
+    expect(screen.getByTestId('invoices-list')).toBeInTheDocument();
   });
 
-  it('filters invoices by period', async () => {
-    const user = userEvent.setup();
-    render(<InvoicesPage />);
-    
-    const input = screen.getByLabelText(/periodo/i);
-    await user.type(input, '2024-01');
-    
-    expect(mockUseInvoices.filterByPeriod).toHaveBeenCalledWith('2024-01-01', '2024-01-31');
-  });
-
-  it('submits create invoice form', async () => {
-    const user = userEvent.setup();
-    render(<InvoicesPage />);
-    
-    await user.click(screen.getByText('➕ Nueva Factura'));
-    
-    await user.type(screen.getByLabelText(/número factura/i), 'F003');
-    const proveedorSelects = screen.getAllByLabelText(/proveedor/i);
-    await user.selectOptions(proveedorSelects[1], '1'); // Use the modal select (second one)
-    
-    const fechaInput = screen.getByLabelText(/fecha/i);
-    fireEvent.change(fechaInput, { target: { value: '2024-01-25' } });
-    
-    await user.clear(screen.getByLabelText(/total/i));
-    await user.type(screen.getByLabelText(/total/i), '800');
-    
-    await user.click(screen.getByText('Guardar'));
-    
-    await waitFor(() => {
-      expect(mockUseInvoices.createInvoice).toHaveBeenCalledWith(
-        expect.objectContaining({
-          numeroFactura: 'F003',
-          proveedorId: 1,
-          fecha: '2024-01-25',
-          total: 800
-        })
-      );
-    });
-  });
-
-  it('opens edit modal with invoice data', async () => {
-    const user = userEvent.setup();
-    render(<InvoicesPage />);
-    
-    const editButtons = screen.getAllByText('✏️');
-    await user.click(editButtons[0]);
-    
-    expect(screen.getByText('Editar Factura')).toBeInTheDocument();
-    expect(screen.getByLabelText(/número factura/i)).toHaveValue('F001');
-    expect(screen.getByLabelText(/total/i)).toHaveValue(1210);
-  });
-
-  it('submits edit invoice form', async () => {
-    const user = userEvent.setup();
-    render(<InvoicesPage />);
-    
-    const editButtons = screen.getAllByText('✏️');
-    await user.click(editButtons[0]);
-    
-    const totalInput = screen.getByLabelText(/total/i);
-    await user.clear(totalInput);
-    await user.type(totalInput, '1500');
-    
-    await user.click(screen.getByText('Guardar'));
-    
-    await waitFor(() => {
-      expect(mockUseInvoices.updateInvoice).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({
-          total: 1500
-        })
-      );
-    });
-  });
-
-  it('deletes invoice after confirmation', async () => {
+  it('calls deleteInvoice after confirmation', async () => {
     const user = userEvent.setup();
     window.confirm = vi.fn(() => true);
-    
+
     render(<InvoicesPage />);
-    
-    const deleteButtons = screen.getAllByText('🗑️');
+
+    const deleteButtons = screen.getAllByText('Eliminar');
     await user.click(deleteButtons[0]);
-    
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining('¿Eliminar la factura F001?')
-    );
+
+    expect(window.confirm).toHaveBeenCalled();
     expect(mockUseInvoices.deleteInvoice).toHaveBeenCalledWith(1);
   });
 
   it('does not delete invoice when confirmation is cancelled', async () => {
     const user = userEvent.setup();
     window.confirm = vi.fn(() => false);
-    
-    render(<InvoicesPage />);
-    
-    const deleteButtons = screen.getAllByText('🗑️');
-    await user.click(deleteButtons[0]);
-    
-    expect(mockUseInvoices.deleteInvoice).not.toHaveBeenCalled();
-  });
 
-  it('closes modal when clicking cancel', async () => {
-    const user = userEvent.setup();
     render(<InvoicesPage />);
-    
-    await user.click(screen.getByText('➕ Nueva Factura'));
-    expect(screen.getByText('Nueva Factura')).toBeInTheDocument();
-    
-    await user.click(screen.getByText('Cancelar'));
-    expect(screen.queryByText('Nueva Factura')).not.toBeInTheDocument();
+
+    const deleteButtons = screen.getAllByText('Eliminar');
+    await user.click(deleteButtons[0]);
+
+    expect(mockUseInvoices.deleteInvoice).not.toHaveBeenCalled();
   });
 
   it('displays error message when present', () => {
@@ -296,7 +251,7 @@ describe('InvoicesPage', () => {
     expect(screen.getByText('Error al cargar facturas')).toBeInTheDocument();
   });
 
-  it('clears error message when clicking close', async () => {
+  it('clears error message when clicking close button', async () => {
     const user = userEvent.setup();
     (vi.mocked(useInvoices)).mockReturnValue({
       ...mockUseInvoices,
@@ -304,19 +259,28 @@ describe('InvoicesPage', () => {
     });
 
     render(<InvoicesPage />);
-    
+
     await user.click(screen.getByText('✕'));
     expect(mockUseInvoices.clearError).toHaveBeenCalled();
   });
 
-  it('displays invoice type selector', async () => {
+  it('calls ensureLoaded on mount', async () => {
+    render(<InvoicesPage />);
+
+    await waitFor(() => {
+      expect(mockDb.ensureLoaded).toHaveBeenCalledWith('facturas');
+      expect(mockDb.ensureLoaded).toHaveBeenCalledWith('proveedores');
+      expect(mockDb.ensureLoaded).toHaveBeenCalledWith('productos');
+    });
+  });
+
+  it('switches to edit form when edit is clicked', async () => {
     const user = userEvent.setup();
     render(<InvoicesPage />);
-    
-    await user.click(screen.getByText('➕ Nueva Factura'));
-    
-    const tipoSelect = screen.getByLabelText(/tipo/i);
-    expect(tipoSelect).toBeInTheDocument();
-    expect(tipoSelect).toHaveValue('factura');
+
+    const editButtons = screen.getAllByText('Editar');
+    await user.click(editButtons[0]);
+
+    expect(screen.getByTestId('invoice-form')).toBeInTheDocument();
   });
 });

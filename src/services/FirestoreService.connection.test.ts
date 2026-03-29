@@ -6,7 +6,14 @@ import {
   isFirebaseConfigured,
   firebaseConfig,
 } from '@/config/firebase.config';
-import { FirestoreService } from '@/services/FirestoreService';
+import { FirestoreService } from '@core/services/FirestoreService';
+
+/**
+ * EXCEPTION: console.log statements are intentionally kept in this file.
+ * The connection tests and integration tests (gated by FIREBASE_INTEGRATION env var)
+ * only run manually for diagnostic purposes. The console output serves as
+ * real-time diagnostic feedback during manual integration testing sessions.
+ */
 
 describe('Firebase Connection Tests', () => {
   describe('Configuration', () => {
@@ -114,7 +121,11 @@ describe('Firebase Connection Tests', () => {
   });
 });
 
-describe('Firebase Integration Test (Real Connection)', () => {
+// Real connection tests require authenticated Firebase access.
+// Run with FIREBASE_INTEGRATION=true to enable.
+const runIntegration = process.env.FIREBASE_INTEGRATION === 'true';
+
+describe.skipIf(!runIntegration)('Firebase Integration Test (Real Connection)', () => {
   let firestoreService: FirestoreService;
 
   beforeAll(() => {
@@ -122,35 +133,13 @@ describe('Firebase Integration Test (Real Connection)', () => {
   });
 
   it('should connect to Firebase if configured', async () => {
-    const isConfigured = isFirebaseConfigured();
-    
-    if (!isConfigured) {
-      console.log('\n⚠️  SKIPPING REAL CONNECTION TEST');
-      console.log('Firebase is not configured with real credentials.');
-      console.log('\nTo enable real Firebase connection tests:');
-      console.log('1. Create a Firebase project at https://console.firebase.google.com');
-      console.log('2. Copy .env.example to .env');
-      console.log('3. Add your Firebase project credentials to .env');
-      console.log('4. Run tests again\n');
-      return;
-    }
-
-    console.log('\n🔥 Testing real Firebase connection...');
     const result = await firestoreService.testConnection();
-    
+
     expect(result.success).toBe(true);
     expect(result.data).toBe(true);
-    console.log('✅ Firebase connection successful!');
   });
 
   it('should perform CRUD operations if configured', async () => {
-    const isConfigured = isFirebaseConfigured();
-    
-    if (!isConfigured) {
-      console.log('⚠️  Skipping CRUD test - Firebase not configured');
-      return;
-    }
-
     // Test adding a document
     const testData = {
       nombre: 'Test Provider',
@@ -158,24 +147,18 @@ describe('Firebase Integration Test (Real Connection)', () => {
     };
 
     const addResult = await firestoreService.add('proveedores', testData);
-    
+
     if (!addResult.success) {
-      console.log('⚠️  Add operation failed:', addResult.error);
-      console.log('This might be due to Firestore rules. Check your Firebase console.');
+      // Might fail due to Firestore rules - not a test failure
       return;
     }
 
     expect(addResult.success).toBe(true);
     expect(addResult.data).toHaveProperty('id');
-    
+
     const docId = addResult.data!.id;
-    console.log(`✅ Created test document: ${docId}`);
 
     // Clean up - delete the test document
-    const deleteResult = await firestoreService.delete('proveedores', docId);
-    
-    if (deleteResult.success) {
-      console.log(`✅ Cleaned up test document: ${docId}`);
-    }
+    await firestoreService.delete('proveedores', docId);
   });
 });

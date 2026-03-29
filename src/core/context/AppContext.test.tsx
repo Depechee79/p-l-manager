@@ -1,23 +1,60 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppProvider, useApp } from './AppContext';
+import type { AppUser } from '@types';
+
+// Track the callback registered by onAuthStateChange
+let authStateCallback: ((user: AppUser | null) => void) | null = null;
+const mockLogoutUser = vi.fn().mockResolvedValue(undefined);
+
+// Mock AuthService
+vi.mock('../services/AuthService', () => ({
+  onAuthStateChange: vi.fn((callback: (user: AppUser | null) => void) => {
+    authStateCallback = callback;
+    return vi.fn(); // unsubscribe
+  }),
+  logoutUser: () => mockLogoutUser(),
+}));
+
+// Mock firebase.config
+vi.mock('../../config/firebase.config', () => ({
+  isFirebaseConfigured: vi.fn().mockReturnValue(true),
+}));
+
+// Mock LoggerService
+vi.mock('../services/LoggerService', () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+}));
+
+const mockAppUser: AppUser = {
+  id: 'test-uid-123',
+  uid: 'test-uid-123',
+  nombre: 'Test User',
+  email: 'test@example.com',
+  rolId: 'director_operaciones',
+  restaurantIds: ['rest-1'],
+  activo: true,
+  fechaCreacion: '2026-01-01T00:00:00Z',
+  ultimoAcceso: '2026-03-29T00:00:00Z',
+};
 
 // Test component that uses the context
 const TestComponent = () => {
-  const { user, isAuthenticated, error, clearError, login, logout } = useApp();
-  
+  const { user, isAuthenticated, authLoading, error, clearError, logout } = useApp();
+
   return (
     <div>
       <div>Auth Status: {isAuthenticated ? 'Authenticated' : 'Not Authenticated'}</div>
+      <div>Loading: {authLoading ? 'true' : 'false'}</div>
       {user && <div>User: {user.name}</div>}
+      {user && <div>UID: {user.uid}</div>}
       {error && (
         <div>
           <div>Error: {error}</div>
           <button onClick={clearError}>Clear Error</button>
         </div>
       )}
-      <button onClick={() => login('Test User')}>Login</button>
       <button onClick={logout}>Logout</button>
     </div>
   );
@@ -25,57 +62,64 @@ const TestComponent = () => {
 
 describe('AppContext', () => {
   beforeEach(() => {
-    localStorage.clear();
+    authStateCallback = null;
+    vi.clearAllMocks();
   });
 
-  it('provides default unauthenticated state', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('starts in loading state', () => {
     render(
       <AppProvider>
         <TestComponent />
       </AppProvider>
     );
 
+    expect(screen.getByText('Loading: true')).toBeInTheDocument();
     expect(screen.getByText('Auth Status: Not Authenticated')).toBeInTheDocument();
-    expect(screen.queryByText(/User:/)).not.toBeInTheDocument();
   });
 
-  it('allows user to login', async () => {
-    const user = userEvent.setup();
+  it('sets user when auth state fires with a user', async () => {
     render(
       <AppProvider>
         <TestComponent />
       </AppProvider>
     );
 
-    await user.click(screen.getByText('Login'));
+    // Simulate Firebase auth state change
+    await act(async () => {
+      authStateCallback?.(mockAppUser);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Auth Status: Authenticated')).toBeInTheDocument();
       expect(screen.getByText('User: Test User')).toBeInTheDocument();
+      expect(screen.getByText('UID: test-uid-123')).toBeInTheDocument();
+      expect(screen.getByText('Loading: false')).toBeInTheDocument();
     });
   });
 
-  it('allows user to logout', async () => {
-    const user = userEvent.setup();
+  it('sets unauthenticated when auth state fires with null', async () => {
     render(
       <AppProvider>
         <TestComponent />
       </AppProvider>
     );
 
-    await user.click(screen.getByText('Login'));
-    await waitFor(() => {
-      expect(screen.getByText('Auth Status: Authenticated')).toBeInTheDocument();
+    await act(async () => {
+      authStateCallback?.(null);
     });
 
-    await user.click(screen.getByText('Logout'));
     await waitFor(() => {
       expect(screen.getByText('Auth Status: Not Authenticated')).toBeInTheDocument();
+      expect(screen.getByText('Loading: false')).toBeInTheDocument();
       expect(screen.queryByText(/User:/)).not.toBeInTheDocument();
     });
   });
 
-  it('persists user data in localStorage on login', async () => {
+  it('calls logoutUser and clears user on logout', async () => {
     const user = userEvent.setup();
     render(
       <AppProvider>
@@ -83,50 +127,27 @@ describe('AppContext', () => {
       </AppProvider>
     );
 
-    await user.click(screen.getByText('Login'));
+    // First, set a user
+    await act(async () => {
+      authStateCallback?.(mockAppUser);
+    });
 
     await waitFor(() => {
-      const stored = localStorage.getItem('app_user');
-      expect(stored).toBeTruthy();
-      const userData = JSON.parse(stored!);
-      expect(userData.name).toBe('Test User');
+      expect(screen.getByText('Auth Status: Authenticated')).toBeInTheDocument();
     });
-  });
 
-  it('loads user from localStorage on mount', () => {
-    localStorage.setItem('app_user', JSON.stringify({ name: 'Stored User' }));
-
-    render(
-      <AppProvider>
-        <TestComponent />
-      </AppProvider>
-    );
-
-    expect(screen.getByText('Auth Status: Authenticated')).toBeInTheDocument();
-    expect(screen.getByText('User: Stored User')).toBeInTheDocument();
-  });
-
-  it('clears user from localStorage on logout', async () => {
-    const user = userEvent.setup();
-    localStorage.setItem('app_user', JSON.stringify({ name: 'Stored User' }));
-
-    render(
-      <AppProvider>
-        <TestComponent />
-      </AppProvider>
-    );
-
+    // Then logout
     await user.click(screen.getByText('Logout'));
 
     await waitFor(() => {
-      expect(localStorage.getItem('app_user')).toBeNull();
+      expect(mockLogoutUser).toHaveBeenCalled();
     });
   });
 
   it('displays error messages', async () => {
     const TestErrorComponent = () => {
       const { error, setError } = useApp();
-      
+
       return (
         <div>
           {error && <div>Error: {error}</div>}
@@ -151,23 +172,13 @@ describe('AppContext', () => {
 
   it('clears error messages', async () => {
     const user = userEvent.setup();
+
     render(
-      <AppProvider>
-        <TestComponent />
-      </AppProvider>
-    );
-
-    // Manually set error using a helper component
-    const TestErrorSetter = () => {
-      const { setError } = useApp();
-      return <button onClick={() => setError('Test error')}>Set Error</button>;
-    };
-
-    const { rerender } = render(
       <AppProvider>
         <div>
           <TestComponent />
-          <TestErrorSetter />
+          {/* Helper to set error */}
+          <SetErrorHelper />
         </div>
       </AppProvider>
     );
@@ -183,8 +194,67 @@ describe('AppContext', () => {
     });
   });
 
+  it('recovers when onAuthStateChange callback throws — authLoading becomes false, user is null', async () => {
+    render(
+      <AppProvider>
+        <TestComponent />
+      </AppProvider>
+    );
+
+    // Simulate the callback throwing an error
+    await act(async () => {
+      if (authStateCallback) {
+        // Pass an object that will cause the mapping to throw
+        const badUser = null as unknown as AppUser;
+        // We need to trigger the catch path: pass an object whose property access throws
+        const trap = new Proxy({} as AppUser, {
+          get(_target, prop) {
+            if (prop === 'uid' || prop === 'id' || prop === 'nombre') {
+              throw new Error('Simulated auth processing error');
+            }
+            return undefined;
+          },
+        });
+        authStateCallback(trap);
+      }
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Loading: false')).toBeInTheDocument();
+      expect(screen.getByText('Auth Status: Not Authenticated')).toBeInTheDocument();
+    });
+  });
+
+  it('warns when user has no restaurantIds', async () => {
+    const { logger: mockLogger } = await import('../services/LoggerService');
+
+    render(
+      <AppProvider>
+        <TestComponent />
+      </AppProvider>
+    );
+
+    const userWithoutRestaurants: AppUser = {
+      ...mockAppUser,
+      restaurantIds: [],
+    };
+
+    await act(async () => {
+      authStateCallback?.(userWithoutRestaurants);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Auth Status: Authenticated')).toBeInTheDocument();
+      expect(screen.getByText('Loading: false')).toBeInTheDocument();
+    });
+
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      'User has no restaurantIds assigned',
+      expect.objectContaining({ uid: 'test-uid-123' })
+    );
+  });
+
   it('throws error when useApp is used outside AppProvider', () => {
-    // Suppress console.error for this test
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => {
@@ -194,3 +264,9 @@ describe('AppContext', () => {
     consoleError.mockRestore();
   });
 });
+
+// Helper component
+const SetErrorHelper = () => {
+  const { setError } = useApp();
+  return <button onClick={() => setError('Test error')}>Set Error</button>;
+};

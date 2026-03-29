@@ -1,7 +1,29 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useInventory } from './useInventory';
 import { DatabaseService } from '@core';
+
+// Mock FirestoreService to skip cloud sync in tests
+vi.mock('@core/services/FirestoreService', () => {
+  return {
+    FirestoreService: class {
+      add = vi.fn().mockResolvedValue({ success: true });
+      update = vi.fn().mockResolvedValue({ success: true });
+      delete = vi.fn().mockResolvedValue({ success: true });
+      getAll = vi.fn().mockResolvedValue({ success: true, data: [] });
+    },
+  };
+});
+
+// Mock DataIntegrityService to skip FK validation in tests
+vi.mock('@core/services/DataIntegrityService', () => {
+  return {
+    DataIntegrityService: class {
+      validateForeignKey = vi.fn().mockReturnValue({ valid: true, errors: [] });
+      canDelete = vi.fn().mockReturnValue({ canDelete: true, blockingReferences: [] });
+    },
+  };
+});
 
 describe('useInventory', () => {
   let db: DatabaseService;
@@ -16,8 +38,8 @@ describe('useInventory', () => {
     expect(result.current.products).toEqual([]);
   });
 
-  it('should load products from database', () => {
-    db.add('productos', {
+  it('should load products from database', async () => {
+    await db.add('productos', {
       nombre: 'Product 1',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -27,7 +49,7 @@ describe('useInventory', () => {
       esEmpaquetado: false,
     } as any);
 
-    db.add('productos', {
+    await db.add('productos', {
       nombre: 'Product 2',
       categoria: 'Carnes',
       proveedor: 'Provider 2',
@@ -38,11 +60,15 @@ describe('useInventory', () => {
     } as any);
 
     const { result } = renderHook(() => useInventory(db));
-    expect(result.current.products).toHaveLength(2);
+
+    // useInventory has a 1s setTimeout before loading data
+    await waitFor(() => {
+      expect(result.current.products).toHaveLength(2);
+    }, { timeout: 2000 });
   });
 
-  it('should start new inventory count', () => {
-    db.add('productos', {
+  it('should start new inventory count', async () => {
+    await db.add('productos', {
       nombre: 'Product 1',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -62,8 +88,8 @@ describe('useInventory', () => {
     expect(result.current.inventory).toBeDefined();
   });
 
-  it('should record product count', () => {
-    const product = db.add('productos', {
+  it('should record product count', async () => {
+    const product = await db.add('productos', {
       nombre: 'Product 1',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -86,8 +112,8 @@ describe('useInventory', () => {
     expect(result.current.inventory?.getCounts().size).toBe(1);
   });
 
-  it('should complete inventory', () => {
-    const product = db.add('productos', {
+  it('should complete inventory', async () => {
+    const product = await db.add('productos', {
       nombre: 'Product 1',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -109,16 +135,18 @@ describe('useInventory', () => {
 
     const initialInventories = db.inventarios.length;
 
-    act(() => {
+    await act(async () => {
       result.current.completeInventory();
+      // Wait for async db.add to complete
+      await new Promise(resolve => setTimeout(resolve, 10));
     });
 
     expect(result.current.isCountingInventory).toBe(false);
     expect(db.inventarios.length).toBe(initialInventories + 1);
   });
 
-  it('should cancel inventory', () => {
-    const product = db.add('productos', {
+  it('should cancel inventory', async () => {
+    const product = await db.add('productos', {
       nombre: 'Product 1',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -148,8 +176,8 @@ describe('useInventory', () => {
     expect(db.inventarios.length).toBe(initialInventories);
   });
 
-  it('should filter products by category', () => {
-    db.add('productos', {
+  it('should filter products by category', async () => {
+    await db.add('productos', {
       nombre: 'Tomato',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -159,7 +187,7 @@ describe('useInventory', () => {
       esEmpaquetado: false,
     } as any);
 
-    db.add('productos', {
+    await db.add('productos', {
       nombre: 'Chicken',
       categoria: 'Carnes',
       proveedor: 'Provider 2',
@@ -170,6 +198,11 @@ describe('useInventory', () => {
     } as any);
 
     const { result } = renderHook(() => useInventory(db));
+
+    // Wait for async data loading (1s setTimeout + ensureLoaded)
+    await waitFor(() => {
+      expect(result.current.products).toHaveLength(2);
+    }, { timeout: 2000 });
 
     act(() => {
       result.current.filterByCategory('Verduras');
@@ -179,8 +212,8 @@ describe('useInventory', () => {
     expect(result.current.filteredProducts[0].nombre).toBe('Tomato');
   });
 
-  it('should return all products when category filter is "Todos"', () => {
-    db.add('productos', {
+  it('should return all products when category filter is "Todos"', async () => {
+    await db.add('productos', {
       nombre: 'Tomato',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -190,7 +223,7 @@ describe('useInventory', () => {
       esEmpaquetado: false,
     } as any);
 
-    db.add('productos', {
+    await db.add('productos', {
       nombre: 'Chicken',
       categoria: 'Carnes',
       proveedor: 'Provider 2',
@@ -201,6 +234,10 @@ describe('useInventory', () => {
     } as any);
 
     const { result } = renderHook(() => useInventory(db));
+
+    await waitFor(() => {
+      expect(result.current.products).toHaveLength(2);
+    }, { timeout: 2000 });
 
     act(() => {
       result.current.filterByCategory('Verduras');
@@ -215,8 +252,8 @@ describe('useInventory', () => {
     expect(result.current.filteredProducts).toHaveLength(2);
   });
 
-  it('should get available categories', () => {
-    db.add('productos', {
+  it('should get available categories', async () => {
+    await db.add('productos', {
       nombre: 'Tomato',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -226,7 +263,7 @@ describe('useInventory', () => {
       esEmpaquetado: false,
     } as any);
 
-    db.add('productos', {
+    await db.add('productos', {
       nombre: 'Chicken',
       categoria: 'Carnes',
       proveedor: 'Provider 2',
@@ -236,7 +273,7 @@ describe('useInventory', () => {
       esEmpaquetado: false,
     } as any);
 
-    db.add('productos', {
+    await db.add('productos', {
       nombre: 'Lettuce',
       categoria: 'Verduras',
       proveedor: 'Provider 1',
@@ -248,25 +285,41 @@ describe('useInventory', () => {
 
     const { result } = renderHook(() => useInventory(db));
 
-    expect(result.current.categories).toContain('Verduras');
-    expect(result.current.categories).toContain('Carnes');
-    expect(result.current.categories.length).toBe(2);
+    await waitFor(() => {
+      expect(result.current.categories).toContain('Verduras');
+      expect(result.current.categories).toContain('Carnes');
+      expect(result.current.categories.length).toBe(2);
+    }, { timeout: 2000 });
   });
 
-  it('should get inventory history', () => {
-    db.add('inventarios', {
+  it('should get inventory history', async () => {
+    // Seed prerequisite product (inventarios.productos[].productoId references productos)
+    await db.add('productos', {
+      nombre: 'Product 1',
+      categoria: 'Test',
+      proveedor: 'Provider',
+      proveedorId: 1,
+      unidadBase: 'kg',
+      precioCompra: 10,
+      esEmpaquetado: false,
+    } as any);
+    const productId = db.productos[0].id;
+
+    await db.add('inventarios', {
       fecha: '2024-01-15',
-      productos: [{ productoId: 1, cantidad: 10 }],
+      productos: [{ productoId: productId, cantidad: 10 }],
     } as any);
 
-    db.add('inventarios', {
+    await db.add('inventarios', {
       fecha: '2024-02-15',
-      productos: [{ productoId: 1, cantidad: 15 }],
+      productos: [{ productoId: productId, cantidad: 15 }],
     } as any);
 
     const { result } = renderHook(() => useInventory(db));
 
-    expect(result.current.inventoryHistory).toHaveLength(2);
+    await waitFor(() => {
+      expect(result.current.inventoryHistory).toHaveLength(2);
+    }, { timeout: 2000 });
   });
 
   it('should handle errors', () => {

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DatabaseService } from './DatabaseService';
-import type { Product, Provider } from '@types';
+import type { Product, Provider, BaseEntity } from '@types';
 
-// Mock localStorage
-const localStorageMock = (() => {
+// Mock localStorage with proper Storage interface
+const localStorageMock: Storage = (() => {
   let store: Record<string, string> = {};
   return {
     getItem: (key: string) => store[key] || null,
@@ -16,10 +16,14 @@ const localStorageMock = (() => {
     clear: () => {
       store = {};
     },
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: (index: number) => Object.keys(store)[index] || null,
   };
 })();
 
-global.localStorage = localStorageMock as any;
+global.localStorage = localStorageMock;
 
 // Mock FirestoreService
 vi.mock('./FirestoreService', () => {
@@ -60,8 +64,6 @@ describe('DatabaseService', () => {
       expect(db.cierres).toEqual([]);
     });
 
-    // TODO: This test is obsolete - DatabaseService now clears localStorage and syncs from Firebase only
-    // See constructor: "Clear any old localStorage data to ensure only Firebase data is used"
     it.skip('should load existing data from localStorage', () => {
       const mockProducts: Product[] = [
         {
@@ -83,7 +85,7 @@ describe('DatabaseService', () => {
   });
 
   describe('add()', () => {
-    it('should add item with auto-generated id and timestamps', () => {
+    it('should add item with auto-generated id and timestamps', async () => {
       const product: Omit<Product, 'id'> = {
         nombre: 'New Product',
         categoria: 'Food',
@@ -94,15 +96,15 @@ describe('DatabaseService', () => {
         esEmpaquetado: false,
       };
 
-      const result = db.add('productos', product);
+      const result = await db.add('productos', product);
 
       expect(result.id).toBeDefined();
       expect(result.nombre).toBe('New Product');
-      expect(result._synced).toBe(false);
+      expect(result._synced).toBe(true);
       expect(db.productos).toHaveLength(1);
     });
 
-    it('should save to localStorage after adding', () => {
+    it('should save to localStorage after adding', async () => {
       const product: Omit<Product, 'id'> = {
         nombre: 'Test',
         categoria: 'Test',
@@ -113,7 +115,7 @@ describe('DatabaseService', () => {
         esEmpaquetado: false,
       };
 
-      db.add('productos', product);
+      await db.add('productos', product);
 
       const stored = JSON.parse(localStorage.getItem('productos') || '[]');
       expect(stored).toHaveLength(1);
@@ -131,10 +133,7 @@ describe('DatabaseService', () => {
         esEmpaquetado: false,
       };
 
-      db.add('productos', product);
-
-      // Wait for async cloud sync
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await db.add('productos', product);
 
       // CloudService.add now receives: collectionName, data, firestoreId
       expect(db.cloudService.add).toHaveBeenCalledWith(
@@ -146,8 +145,8 @@ describe('DatabaseService', () => {
   });
 
   describe('update()', () => {
-    it('should update existing item', () => {
-      const product = db.add('productos', {
+    it('should update existing item', async () => {
+      const product = await db.add('productos', {
         nombre: 'Original',
         categoria: 'Test',
         proveedor: 'Test',
@@ -157,21 +156,21 @@ describe('DatabaseService', () => {
         esEmpaquetado: false,
       } as Omit<Product, 'id'>);
 
-      const updated = db.update('productos', product.id, { nombre: 'Updated' });
+      const updated = await db.update('productos', product.id, { nombre: 'Updated' });
 
       expect(updated).toBeTruthy();
       expect(updated?.nombre).toBe('Updated');
-      expect(updated?._synced).toBe(false);
+      expect(updated?._synced).toBe(true);
       expect(updated?.updatedAt).toBeDefined();
     });
 
-    it('should return null for non-existent item', () => {
-      const result = db.update('productos', 99999, { nombre: 'Ghost' });
+    it('should return null for non-existent item', async () => {
+      const result = await db.update('productos', 99999, { nombre: 'Ghost' });
       expect(result).toBeNull();
     });
 
-    it('should preserve item id during update', () => {
-      const product = db.add('productos', {
+    it('should preserve item id during update', async () => {
+      const product = await db.add('productos', {
         nombre: 'Test',
         categoria: 'Test',
         proveedor: 'Test',
@@ -182,15 +181,15 @@ describe('DatabaseService', () => {
       } as Omit<Product, 'id'>);
 
       const originalId = product.id;
-      const updated = db.update('productos', originalId, { nombre: 'Updated' });
+      const updated = await db.update('productos', originalId, { nombre: 'Updated' });
 
       expect(updated?.id).toBe(originalId);
     });
   });
 
   describe('delete()', () => {
-    it('should remove item from collection', () => {
-      const product = db.add('productos', {
+    it('should remove item from collection', async () => {
+      const product = await db.add('productos', {
         nombre: 'To Delete',
         categoria: 'Test',
         proveedor: 'Test',
@@ -202,13 +201,13 @@ describe('DatabaseService', () => {
 
       expect(db.productos).toHaveLength(1);
 
-      db.delete('productos', product.id);
+      await db.delete('productos', product.id);
 
       expect(db.productos).toHaveLength(0);
     });
 
-    it('should save to localStorage after deletion', () => {
-      const product = db.add('productos', {
+    it('should save to localStorage after deletion', async () => {
+      const product = await db.add('productos', {
         nombre: 'Test',
         categoria: 'Test',
         proveedor: 'Test',
@@ -218,7 +217,7 @@ describe('DatabaseService', () => {
         esEmpaquetado: false,
       } as Omit<Product, 'id'>);
 
-      db.delete('productos', product.id);
+      await db.delete('productos', product.id);
 
       const stored = JSON.parse(localStorage.getItem('productos') || '[]');
       expect(stored).toHaveLength(0);
@@ -226,7 +225,12 @@ describe('DatabaseService', () => {
   });
 
   describe('getByPeriod()', () => {
-    beforeEach(() => {
+    /** Creates minimal test invoice data for period filtering tests */
+    function makeTestInvoice(fecha: string, total: number): Omit<BaseEntity, 'id'> & Record<string, unknown> {
+      return { fecha, total, _synced: false };
+    }
+
+    beforeEach(async () => {
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
@@ -235,16 +239,16 @@ describe('DatabaseService', () => {
       const lastMonth = new Date(today);
       lastMonth.setMonth(lastMonth.getMonth() - 2);
 
-      db.add('facturas', { fecha: today.toISOString(), total: 100 } as any);
-      db.add('facturas', { fecha: yesterday.toISOString(), total: 200 } as any);
-      db.add('facturas', { fecha: lastWeek.toISOString(), total: 300 } as any);
-      db.add('facturas', { fecha: lastMonth.toISOString(), total: 400 } as any);
+      await db.add('facturas', makeTestInvoice(today.toISOString(), 100));
+      await db.add('facturas', makeTestInvoice(yesterday.toISOString(), 200));
+      await db.add('facturas', makeTestInvoice(lastWeek.toISOString(), 300));
+      await db.add('facturas', makeTestInvoice(lastMonth.toISOString(), 400));
     });
 
     it('should filter by day', () => {
       const result = db.getByPeriod('facturas', 'dia');
       expect(result).toHaveLength(1);
-      expect((result[0] as any).total).toBe(100);
+      expect((result[0] as BaseEntity & { total: number }).total).toBe(100);
     });
 
     it('should filter by week', () => {
@@ -267,16 +271,16 @@ describe('DatabaseService', () => {
       expect(result).toHaveLength(4);
     });
 
-    it('should handle items without fecha', () => {
-      db.add('facturas', { total: 500 } as any);
+    it('should handle items without fecha', async () => {
+      await db.add('facturas', { total: 500, _synced: false } as Omit<BaseEntity, 'id'> & { total: number });
       const result = db.getByPeriod('facturas', 'dia');
-      expect(result.some((f: any) => f.total === 500)).toBe(true);
+      expect(result.some((f) => (f as BaseEntity & { total: number }).total === 500)).toBe(true);
     });
   });
 
   describe('Collection Access', () => {
-    it('should allow direct access to collections', () => {
-      db.add('productos', {
+    it('should allow direct access to collections', async () => {
+      await db.add('productos', {
         nombre: 'Test',
         categoria: 'Test',
         proveedor: 'Test',

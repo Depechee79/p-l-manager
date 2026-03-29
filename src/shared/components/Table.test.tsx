@@ -70,13 +70,13 @@ describe('Table', () => {
   it('should apply hoverable class when hoverable is true', () => {
     render(<Table columns={columns} data={data} hoverable />);
     const table = screen.getByRole('table');
-    expect(table).toHaveClass('table-hover');
+    expect(table.className).toContain('[&_tbody_tr]:hover:bg-surface-muted');
   });
 
   it('should apply striped class when striped is true', () => {
     render(<Table columns={columns} data={data} striped />);
     const table = screen.getByRole('table');
-    expect(table).toHaveClass('table-striped');
+    expect(table.className).toContain('[&_tbody_tr:nth-child(even)]');
   });
 
   it('should render loading state', () => {
