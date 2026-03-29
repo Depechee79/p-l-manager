@@ -3,6 +3,8 @@ import { CompanyService } from '@core/services/CompanyService';
 import { RestaurantService } from '@core/services/RestaurantService';
 import { logger } from '@core/services/LoggerService';
 import type { Company, Restaurant, BaseEntity, CollectionName } from '@types';
+import { migrateFichajesWorkerIds } from './migrateFichajesWorkerIds';
+import { migrateRestaurantIds } from './migrateRestaurantIds';
 
 /**
  * Migration script to convert existing single-restaurant data to multi-restaurant structure
@@ -93,8 +95,8 @@ export class DataMigration {
       // Step 4: Add restaurantId to all existing data entities
       await this.migrateEntities(restaurantId);
 
-      // Step 5: Set default restaurant in localStorage
-      localStorage.setItem('current_restaurant_id', restaurantId);
+      // Step 5: Set default restaurant in sessionStorage (tab-scoped)
+      try { sessionStorage.setItem('current_restaurant_id', restaurantId); } catch { /* private mode */ }
 
       return {
         success: true,
@@ -211,7 +213,7 @@ export class DataMigration {
         await this.restaurantService.deleteRestaurant(String(restaurant.id));
       }
 
-      localStorage.removeItem('current_restaurant_id');
+      try { sessionStorage.removeItem('current_restaurant_id'); } catch { /* private mode */ }
 
       return { success: true };
     } catch (error: unknown) {
@@ -244,5 +246,36 @@ export async function runMigrationIfNeeded(db: DatabaseService): Promise<void> {
     }
   } else {
     logger.info('Data already migrated');
+  }
+
+  // Always run idempotent fichajes workerId migration (name → uid)
+  try {
+    await db.ensureLoaded('fichajes');
+    await db.ensureLoaded('usuarios');
+    const fichajesResult = await migrateFichajesWorkerIds(db);
+    if (fichajesResult.migrated > 0) {
+      logger.info('Fichajes workerId migration applied', fichajesResult);
+    }
+  } catch (error: unknown) {
+    logger.error('Fichajes workerId migration error:', error);
+  }
+
+  // Always run idempotent restaurantId backfill migration
+  // Ensures all documents have restaurantId so Firestore rules with canAccessDocument() work
+  try {
+    let restaurantId: string | null = null;
+    try {
+      restaurantId = sessionStorage.getItem('current_restaurant_id');
+    } catch {
+      // sessionStorage can throw in private/incognito mode
+    }
+    if (restaurantId) {
+      const restaurantIdResult = await migrateRestaurantIds(db, restaurantId);
+      if (restaurantIdResult.migrated > 0) {
+        logger.info('RestaurantId backfill migration applied', restaurantIdResult);
+      }
+    }
+  } catch (error: unknown) {
+    logger.error('RestaurantId backfill migration error:', error);
   }
 }

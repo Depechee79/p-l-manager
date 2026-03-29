@@ -16,6 +16,7 @@ export * from './services/CompanyService';
 export * from './services/RestaurantService';
 export * from './services/DataIntegrityService';
 export * from './services/ItemsService';
+export * from './services/AuthService';
 
 // Utils
 export * from './utils/migration';

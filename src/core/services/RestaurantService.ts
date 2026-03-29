@@ -93,4 +93,11 @@ export class RestaurantService {
     const restaurants = this.db.restaurants as Restaurant[];
     return restaurants.filter(r => r.companyId === companyId);
   }
+  /**
+   * Delete restaurant (Logical delete)
+   */
+  async deleteRestaurant(id: string): Promise<boolean> {
+    const result = await this.updateRestaurant(id, { activo: false });
+    return !!result;
+  }
 }

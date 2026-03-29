@@ -52,10 +52,10 @@ const CURRENT_RESTAURANT_ID_KEY = 'current_restaurant_id';
  */
 export function getCurrentRestaurantId(): string | null {
   try {
-    const savedRestaurantId = localStorage.getItem(CURRENT_RESTAURANT_ID_KEY);
+    const savedRestaurantId = sessionStorage.getItem(CURRENT_RESTAURANT_ID_KEY);
     return savedRestaurantId || null;
   } catch {
-    // localStorage can throw in private/incognito mode — returning null is intentional
+    // sessionStorage can throw in private/incognito mode — returning null is intentional
     return null;
   }
 }
