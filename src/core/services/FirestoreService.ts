@@ -49,12 +49,23 @@ const RESTAURANT_FILTERED_COLLECTIONS: CollectionName[] = [
   'gastosFijos',
   'pnl_adjustments',
   'nominas',
+  'workers',
+  'fichajes',
+  'absences',
+  'vacation_requests',
+  'transfers',
+  'productos',
+  'proveedores',
+  'escandallos',
 ];
 
 /**
  * Colecciones que se comparten (no requieren filtro por restaurante):
- * productos, proveedores, escandallos, companies, restaurants, usuarios, roles
+ * companies, restaurants, usuarios, roles, invitations
  * (Documented here as reference; no runtime constant needed.)
+ *
+ * Note: productos, proveedores, escandallos were moved to RESTAURANT_FILTERED_COLLECTIONS
+ * in Session #008 to enforce restaurantId in Firestore rules (H-7 fix).
  */
 
 /**
@@ -303,8 +314,14 @@ export class FirestoreService {
    */
   async getAll<T>(
     collectionName: CollectionName,
-    silent: boolean = false
+    silent: boolean = false,
+    restaurantId?: string
   ): Promise<FirebaseResponse<T[]>> {
+    // Si se proporciona restaurantId y la coleccion requiere filtro, delegar a getByRestaurant
+    if (restaurantId && this.requiresRestaurantFilter(collectionName)) {
+      return this.getByRestaurant<T>(collectionName, restaurantId);
+    }
+
     if (!this.db) {
       return { success: false, error: 'Firestore not initialized' };
     }

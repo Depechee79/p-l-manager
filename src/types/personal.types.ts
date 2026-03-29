@@ -76,7 +76,7 @@ export interface Shift extends BaseEntity {
  */
 export interface Absence extends BaseEntity {
     workerId: string;
-    restaurantId?: string;
+    restaurantId: string;
     type: IncidenceType;
 
     startDate: string;
@@ -96,7 +96,7 @@ export interface Absence extends BaseEntity {
  */
 export interface VacationRequest extends BaseEntity {
     workerId: string;
-    restaurantId?: string;
+    restaurantId: string;
     startDate: string;
     endDate: string;
 

@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 // ============================================
 // DOMAIN TYPES
 // ============================================
@@ -21,8 +23,8 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number] | (string & {});
 export interface BaseEntity {
   id: number | string;
   _synced?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: string | Timestamp;
+  updatedAt?: string | Timestamp;
 }
 
 /**
@@ -320,6 +322,7 @@ export interface Restaurant extends BaseEntity {
  */
 export interface Transfer extends BaseEntity {
   companyId: string;
+  restaurantId?: string;
   restauranteOrigen: string;
   restauranteDestino: string;
   fecha: string;
@@ -340,6 +343,7 @@ export interface Transfer extends BaseEntity {
  */
 export interface Worker extends BaseEntity {
   companyId: string;
+  restaurantId?: string;
   restaurantes: string[]; // Restaurantes donde puede trabajar
   nombre: string;
   apellidos: string;

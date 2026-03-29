@@ -17,24 +17,45 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
     }
 
-    // Verifica si el usuario es administrador
-    function isAdmin() {
-      return isAuthenticated() && getUserData().rolId == 'admin';
+    // Verifica si el usuario es director (tiene acceso completo)
+    // Soporta: 'director_operaciones', 'director_restaurante', 'admin'
+    function isDirector() {
+      return isAuthenticated() && (
+        getUserData().rolId == 'director_operaciones' ||
+        getUserData().rolId == 'director_restaurante' ||
+        getUserData().rolId == 'admin'
+      );
     }
 
     // Verifica si el usuario tiene acceso al restaurante especificado
     function hasRestaurantAccess(restaurantId) {
       return isAuthenticated() && (
-        isAdmin() ||
+        isDirector() ||
         restaurantId in getUserData().restaurantIds ||
         getUserData().restaurantId == restaurantId
       );
     }
 
     // Verifica si el documento pertenece al restaurante del usuario
-    // NOTA: Permite acceso si restaurantId es null (datos antiguos sin migrar)
-    function ownsDocument(restaurantId) {
-      return restaurantId == null || hasRestaurantAccess(restaurantId);
+    // PERMITE acceso si:
+    // - El usuario es director
+    // - restaurantId es null/no existe (datos legacy — escape temporal)
+    // - El usuario tiene acceso al restaurante
+    //
+    // TODO(C-4): Remove the legacy escape clauses below once ALL existing data
+    // has been confirmed migrated (migrateRestaurantIds.ts backfills restaurantId
+    // at app startup). After migration is confirmed for all users, tighten to:
+    //   return isAuthenticated() && (
+    //     isDirector() ||
+    //     resource.data.restaurantId in getUserData().restaurantIds
+    //   );
+    function canAccessDocument() {
+      return isAuthenticated() && (
+        isDirector() ||
+        !('restaurantId' in resource.data) ||
+        resource.data.restaurantId == null ||
+        resource.data.restaurantId in getUserData().restaurantIds
+      );
     }
 
     // Valida que el documento tenga los campos requeridos
@@ -49,145 +70,160 @@ service cloud.firestore {
     // Companias
     match /companies/{companyId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isDirector();
     }
 
     // Restaurantes
     match /restaurants/{restaurantId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isDirector();
     }
 
-    // Usuarios
+    // Usuarios (coleccion principal)
     match /usuarios/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow create: if isAdmin();
-      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isDirector());
+      allow delete: if isDirector();
     }
+
+    // Invitaciones
+    match /invitations/{invitationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isDirector();
+    }
+
+    // NOTE: Legacy 'users' collection removed (Session 003)
+    // All user data now stored in 'usuarios' collection only
 
     // Roles
     match /roles/{roleId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isDirector();
     }
 
     // ============================================================
-    // COLECCIONES DE OPERACIONES (Filtradas por restaurante)
+    // COLECCIONES DE OPERACIONES
+    // Lectura/actualizacion: canAccessDocument() (permite legacy sin restaurantId)
+    // Creacion: requiere restaurantId + hasRestaurantAccess()
+    // Borrado: solo directores + canAccessDocument()
     // ============================================================
 
     // Cierres de caja
     match /cierres/{cierreId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if hasRestaurantAccess(request.resource.data.restaurantId)
-                    && hasRequiredFields(['fecha', 'turno', 'totalReal', 'restaurantId']);
-      allow update: if ownsDocument(resource.data.restaurantId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Facturas
     match /facturas/{facturaId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if hasRestaurantAccess(request.resource.data.restaurantId)
-                    && hasRequiredFields(['numeroFactura', 'proveedorId', 'total', 'restaurantId']);
-      allow update: if ownsDocument(resource.data.restaurantId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Albaranes
     match /albaranes/{albaranId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
-      allow update: if ownsDocument(resource.data.restaurantId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Inventarios
     match /inventarios/{inventarioId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if hasRestaurantAccess(request.resource.data.restaurantId)
-                    && hasRequiredFields(['fecha', 'restaurantId']);
-      allow update: if ownsDocument(resource.data.restaurantId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Delivery
     match /delivery/{deliveryId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
-      allow update: if ownsDocument(resource.data.restaurantId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Mermas
     match /mermas/{mermaId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
-      allow update: if ownsDocument(resource.data.restaurantId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Pedidos (Orders)
     match /orders/{orderId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
-      allow update: if ownsDocument(resource.data.restaurantId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Transferencias
     match /transfers/{transferId} {
-      allow read: if hasRestaurantAccess(resource.data.origenId)
-                  || hasRestaurantAccess(resource.data.destinoId);
-      allow create: if hasRestaurantAccess(request.resource.data.origenId);
-      allow update: if hasRestaurantAccess(resource.data.origenId)
-                    || hasRestaurantAccess(resource.data.destinoId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Gastos Fijos
     match /gastosFijos/{gastoId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if hasRestaurantAccess(request.resource.data.restaurantId)
-                    && hasRequiredFields(['tipo', 'descripcion', 'importeMensual', 'restaurantId']);
-      allow update: if ownsDocument(resource.data.restaurantId);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Ajustes P&L
     match /pnl_adjustments/{adjId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow create: if isAdmin() && hasRequiredFields(['period', 'amount', 'category', 'restaurantId']);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // ============================================================
     // COLECCIONES COMPARTIDAS (Productos, Proveedores, Recetas)
+    // Hardened in Session #008: now enforce restaurantId like operations.
+    // Migration script (migrateRestaurantIds.ts) backfills restaurantId
+    // on legacy documents at app startup.
     // ============================================================
 
     // Proveedores
     match /proveedores/{proveedorId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Productos
     match /productos/{productoId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Escandallos (Recetas)
     match /escandallos/{escandalloId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // ============================================================
@@ -196,40 +232,42 @@ service cloud.firestore {
 
     // Trabajadores
     match /workers/{workerId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Fichajes
     match /fichajes/{fichajeId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Ausencias
     match /absences/{absenceId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Solicitudes de vacaciones
     match /vacation_requests/{requestId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isAuthenticated() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isAuthenticated() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
 
     // Nominas
     match /nominas/{nominaId} {
-      allow read: if ownsDocument(resource.data.restaurantId);
-      allow write: if isAdmin();
+      allow read: if isAuthenticated() && canAccessDocument();
+      allow create: if isDirector() && hasRequiredFields(['restaurantId']) && hasRestaurantAccess(request.resource.data.restaurantId);
+      allow update: if isDirector() && canAccessDocument();
+      allow delete: if isDirector() && canAccessDocument();
     }
   }
 }
