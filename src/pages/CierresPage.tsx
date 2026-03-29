@@ -9,7 +9,7 @@
  */
 import { useState, useEffect, type FC } from 'react';
 import { Plus } from 'lucide-react';
-import { PageContainer, PageLayout, ActionHeader, Button } from '@shared/components';
+import { PageContainer, PageLayout, ActionHeader, Button, ConfirmDialog } from '@shared/components';
 import { logger } from '@core/services/LoggerService';
 import { useFinance } from '../hooks/useFinance';
 import { useDatabase } from '@core';
@@ -44,6 +44,10 @@ export const CierresPage: FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [editingCierre, setEditingCierre] = useState<Cierre | null>(null);
   const [filterPeriod, setFilterPeriod] = useState(new Date().toISOString().substring(0, 7));
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    onConfirm: () => void;
+  }>({ open: false, onConfirm: () => {} });
 
   // Apply initial filter
   useEffect(() => {
@@ -70,10 +74,13 @@ export const CierresPage: FC = () => {
     setViewMode('form');
   };
 
-  const handleDelete = async (cierre: Cierre) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este cierre?')) {
-      await deleteClosing(Number(cierre.id));
-    }
+  const handleDelete = (cierre: Cierre) => {
+    setConfirmState({
+      open: true,
+      onConfirm: async () => {
+        await deleteClosing(Number(cierre.id));
+      },
+    });
   };
 
   const handleSubmit = async (data: Omit<Cierre, 'id'>) => {
@@ -133,6 +140,15 @@ export const CierresPage: FC = () => {
           onDeleteClosing={handleDelete}
         />
       </PageLayout>
+        <ConfirmDialog
+          open={confirmState.open}
+          onClose={() => setConfirmState(prev => ({ ...prev, open: false }))}
+          onConfirm={() => { confirmState.onConfirm(); setConfirmState(prev => ({ ...prev, open: false })); }}
+          title="Eliminar cierre"
+          description="¿Estás seguro de que deseas eliminar este cierre?"
+          variant="danger"
+          confirmLabel="Eliminar"
+        />
     </PageContainer>
   );
 };

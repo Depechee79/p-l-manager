@@ -65,6 +65,7 @@ vi.mock('../features/ocr', () => ({
 // Mock shared components
 vi.mock('@shared/components', () => ({
   PageContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ConfirmDialog: () => null,
 }));
 
 describe('OCRPage Flow', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InvoicesPage } from './InvoicesPage';
 import type { Invoice, Provider } from '../types';
@@ -218,26 +218,32 @@ describe('InvoicesPage', () => {
 
   it('calls deleteInvoice after confirmation', async () => {
     const user = userEvent.setup();
-    window.confirm = vi.fn(() => true);
 
     render(<InvoicesPage />);
 
     const deleteButtons = screen.getAllByText('Eliminar');
     await user.click(deleteButtons[0]);
 
-    expect(window.confirm).toHaveBeenCalled();
-    expect(mockUseInvoices.deleteInvoice).toHaveBeenCalledWith(1);
+    // ConfirmDialog opens — click the confirm button inside it
+    const confirmDialog = screen.getByRole('alertdialog');
+    const confirmButton = within(confirmDialog).getByText('Eliminar');
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockUseInvoices.deleteInvoice).toHaveBeenCalledWith(1);
+    });
   });
 
   it('does not delete invoice when confirmation is cancelled', async () => {
     const user = userEvent.setup();
-    window.confirm = vi.fn(() => false);
 
     render(<InvoicesPage />);
 
     const deleteButtons = screen.getAllByText('Eliminar');
     await user.click(deleteButtons[0]);
 
+    // ConfirmDialog opens but we don't click confirm
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(mockUseInvoices.deleteInvoice).not.toHaveBeenCalled();
   });
 

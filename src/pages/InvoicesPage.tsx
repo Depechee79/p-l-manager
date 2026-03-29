@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Select, PageContainer, PageHeader, FilterBar, Input } from '@shared/components';
+import { Button, Select, PageContainer, PageHeader, FilterBar, Input, ConfirmDialog } from '@shared/components';
 import { useDatabase } from '@core';
 import { useInvoices } from '../hooks/useInvoices';
 import { useProviders } from '../hooks/useProviders';
@@ -44,6 +44,11 @@ export const InvoicesPage: React.FC = () => {
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [filterProvider, setFilterProvider] = useState<number | string | null>(null);
   const [filterPeriod, setFilterPeriod] = useState('');
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    description: string;
+    onConfirm: () => void;
+  }>({ open: false, description: '', onConfirm: () => {} });
 
   const handleOpenForm = () => {
     setEditingInvoice(null);
@@ -56,9 +61,13 @@ export const InvoicesPage: React.FC = () => {
   };
 
   const handleDelete = (invoice: Invoice) => {
-    if (window.confirm(`¿Eliminar la factura ${invoice.numero}?`)) {
-      deleteInvoice(invoice.id);
-    }
+    setConfirmState({
+      open: true,
+      description: `¿Eliminar la factura ${invoice.numero}?`,
+      onConfirm: () => {
+        deleteInvoice(invoice.id);
+      },
+    });
   };
 
   const handleSave = (formData: InvoiceFormData) => {
@@ -209,6 +218,16 @@ export const InvoicesPage: React.FC = () => {
           onCancel={() => setViewMode('list')}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmState.open}
+        onClose={() => setConfirmState(prev => ({ ...prev, open: false }))}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(prev => ({ ...prev, open: false })); }}
+        title="Eliminar factura"
+        description={confirmState.description}
+        variant="danger"
+        confirmLabel="Eliminar"
+      />
     </PageContainer>
   );
 };

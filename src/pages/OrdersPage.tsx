@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, Select, Card } from '@shared/components';
+import { Button, Input, Select, Card, ConfirmDialog } from '@shared/components';
 import { Plus, Search } from 'lucide-react';
 import { useDatabase } from '@core';
 import { logger } from '@core/services/LoggerService';
@@ -43,6 +43,14 @@ export const OrdersPage: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    variant: 'danger' | 'warning' | 'default';
+    confirmLabel: string;
+    onConfirm: () => void;
+  }>({ open: false, title: '', description: '', variant: 'default', confirmLabel: 'Confirmar', onConfirm: () => {} });
 
   const productos = (db.productos || []) as Product[];
   const proveedores = (db.proveedores || []) as Provider[];
@@ -57,16 +65,30 @@ export const OrdersPage: React.FC = () => {
     setViewMode('form');
   };
 
-  const handleDelete = async (order: Order) => {
-    if (window.confirm(`¿Eliminar el pedido a ${order.proveedorNombre}?`)) {
-      await deleteOrder(order.id);
-    }
+  const handleDelete = (order: Order) => {
+    setConfirmState({
+      open: true,
+      title: 'Eliminar pedido',
+      description: `¿Eliminar el pedido a ${order.proveedorNombre}?`,
+      variant: 'danger',
+      confirmLabel: 'Eliminar',
+      onConfirm: async () => {
+        await deleteOrder(order.id);
+      },
+    });
   };
 
-  const handleSend = async (order: Order) => {
-    if (window.confirm(`¿Enviar el pedido a ${order.proveedorNombre}?`)) {
-      await sendOrder(order);
-    }
+  const handleSend = (order: Order) => {
+    setConfirmState({
+      open: true,
+      title: 'Enviar pedido',
+      description: `¿Enviar el pedido a ${order.proveedorNombre}?`,
+      variant: 'warning',
+      confirmLabel: 'Enviar',
+      onConfirm: async () => {
+        await sendOrder(order);
+      },
+    });
   };
 
   const handleSave = async (formData: OrderFormData) => {
@@ -179,6 +201,16 @@ export const OrdersPage: React.FC = () => {
           />
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmState.open}
+        onClose={() => setConfirmState(prev => ({ ...prev, open: false }))}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(prev => ({ ...prev, open: false })); }}
+        title={confirmState.title}
+        description={confirmState.description}
+        variant={confirmState.variant}
+        confirmLabel={confirmState.confirmLabel}
+      />
     </div>
   );
 };

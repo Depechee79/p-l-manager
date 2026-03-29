@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryList, InventoryWizard, InventoryFormData } from '../features/inventarios';
+import { ConfirmDialog } from '@shared/components';
 import { useDatabase } from '@core';
 import { useToast } from '../utils/toast';
 import { formatDate } from '../utils/formatters';
@@ -14,6 +15,11 @@ export const InventariosPage: React.FC = () => {
   const [editingInventory, setEditingInventory] = useState<InventoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    description: string;
+    onConfirm: () => void;
+  }>({ open: false, description: '', onConfirm: () => {} });
 
   // AUDIT-FIX: Ensure data is loaded (R-14)
   React.useEffect(() => {
@@ -55,23 +61,27 @@ export const InventariosPage: React.FC = () => {
   };
 
   const handleDelete = (inventory: InventoryItem) => {
-    if (window.confirm(`¿Eliminar el inventario del ${formatDate(inventory.fecha)}?`)) {
-      try {
-        db.delete('inventarios', inventory.id as number);
-        showToast({
-          type: 'success',
-          title: 'Inventario eliminado',
-          message: 'El inventario ha sido eliminado correctamente',
-        });
-      } catch (error: unknown) {
-        logger.error('Error eliminando inventario:', error instanceof Error ? error.message : String(error));
-        showToast({
-          type: 'error',
-          title: 'Error',
-          message: 'No se pudo eliminar el inventario',
-        });
-      }
-    }
+    setConfirmState({
+      open: true,
+      description: `¿Eliminar el inventario del ${formatDate(inventory.fecha)}?`,
+      onConfirm: () => {
+        try {
+          db.delete('inventarios', inventory.id as number);
+          showToast({
+            type: 'success',
+            title: 'Inventario eliminado',
+            message: 'El inventario ha sido eliminado correctamente',
+          });
+        } catch (error: unknown) {
+          logger.error('Error eliminando inventario:', error instanceof Error ? error.message : String(error));
+          showToast({
+            type: 'error',
+            title: 'Error',
+            message: 'No se pudo eliminar el inventario',
+          });
+        }
+      },
+    });
   };
 
   const handleSave = async (formData: InventoryFormData) => {
@@ -167,6 +177,16 @@ export const InventariosPage: React.FC = () => {
           loading={loading}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmState.open}
+        onClose={() => setConfirmState(prev => ({ ...prev, open: false }))}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(prev => ({ ...prev, open: false })); }}
+        title="Eliminar inventario"
+        description={confirmState.description}
+        variant="danger"
+        confirmLabel="Eliminar"
+      />
     </div>
   );
 };

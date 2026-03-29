@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CierresPage } from './CierresPage';
 import type { Cierre, CashBreakdown } from '../types';
@@ -211,7 +211,6 @@ describe('CierresPage', () => {
 
   it('deletes closing after confirmation', async () => {
     const user = userEvent.setup();
-    window.confirm = vi.fn(() => true);
 
     render(<CierresPage />);
 
@@ -220,15 +219,18 @@ describe('CierresPage', () => {
     const deleteButtons = screen.getAllByRole('button', { name: /Eliminar/i });
     await user.click(deleteButtons[0]);
 
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining('¿Estás seguro de que deseas eliminar este cierre?')
-    );
-    expect(mockUseFinance.deleteClosing).toHaveBeenCalledWith(1);
+    // ConfirmDialog opens — click the confirm button inside it
+    const confirmDialog = screen.getByRole('alertdialog');
+    const confirmButton = within(confirmDialog).getByText('Eliminar');
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockUseFinance.deleteClosing).toHaveBeenCalledWith(1);
+    });
   });
 
   it('does not delete closing when confirmation is cancelled', async () => {
     const user = userEvent.setup();
-    window.confirm = vi.fn(() => false);
 
     render(<CierresPage />);
 
@@ -237,6 +239,8 @@ describe('CierresPage', () => {
     const deleteButtons = screen.getAllByRole('button', { name: /Eliminar/i });
     await user.click(deleteButtons[0]);
 
+    // ConfirmDialog opens but we don't click confirm
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(mockUseFinance.deleteClosing).not.toHaveBeenCalled();
   });
 

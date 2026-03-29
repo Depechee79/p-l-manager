@@ -35,6 +35,7 @@ import {
   Button,
   Table,
   Badge,
+  ConfirmDialog,
 } from '@shared/components';
 import { useDatabase } from '@core';
 import { logger } from '@core/services/LoggerService';
@@ -415,6 +416,14 @@ const PedidosTab: React.FC = () => {
 
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    variant: 'danger' | 'warning' | 'default';
+    confirmLabel: string;
+    onConfirm: () => void;
+  }>({ open: false, title: '', description: '', variant: 'default', confirmLabel: 'Confirmar', onConfirm: () => {} });
 
   const productos = (db.productos || []) as Product[];
   const proveedores = (db.proveedores || []) as Provider[];
@@ -424,16 +433,30 @@ const PedidosTab: React.FC = () => {
     setMode('edit');
   };
 
-  const handleDelete = async (order: Order) => {
-    if (window.confirm('¿Estás seguro de eliminar este pedido?')) {
-      await deleteOrder(order.id);
-    }
+  const handleDelete = (order: Order) => {
+    setConfirmState({
+      open: true,
+      title: 'Eliminar pedido',
+      description: '¿Estás seguro de eliminar este pedido?',
+      variant: 'danger',
+      confirmLabel: 'Eliminar',
+      onConfirm: async () => {
+        await deleteOrder(order.id);
+      },
+    });
   };
 
-  const handleSend = async (order: Order) => {
-    if (window.confirm('¿Enviar este pedido al proveedor?')) {
-      await sendOrder(order);
-    }
+  const handleSend = (order: Order) => {
+    setConfirmState({
+      open: true,
+      title: 'Enviar pedido',
+      description: '¿Enviar este pedido al proveedor?',
+      variant: 'warning',
+      confirmLabel: 'Enviar',
+      onConfirm: async () => {
+        await sendOrder(order);
+      },
+    });
   };
 
   const handleSave = async (data: OrderFormData) => {
@@ -524,6 +547,16 @@ const PedidosTab: React.FC = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onSend={handleSend}
+      />
+
+      <ConfirmDialog
+        open={confirmState.open}
+        onClose={() => setConfirmState(prev => ({ ...prev, open: false }))}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(prev => ({ ...prev, open: false })); }}
+        title={confirmState.title}
+        description={confirmState.description}
+        variant={confirmState.variant}
+        confirmLabel={confirmState.confirmLabel}
       />
     </div>
   );

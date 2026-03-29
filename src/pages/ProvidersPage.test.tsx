@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProvidersPage } from './ProvidersPage';
 import type { Provider } from '@types';
@@ -159,26 +159,32 @@ describe('ProvidersPage', () => {
 
   it('should delete provider when confirmed', async () => {
     const user = userEvent.setup();
-    window.confirm = vi.fn(() => true);
 
     render(<ProvidersPage />);
 
     const deleteButtons = screen.getAllByText('Eliminar');
     await user.click(deleteButtons[0]);
 
-    expect(window.confirm).toHaveBeenCalled();
-    expect(mockUseProviders.deleteProvider).toHaveBeenCalledWith(1);
+    // ConfirmDialog opens — click the confirm button inside it
+    const confirmDialog = screen.getByRole('alertdialog');
+    const confirmButton = within(confirmDialog).getByText('Eliminar');
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockUseProviders.deleteProvider).toHaveBeenCalledWith(1);
+    });
   });
 
   it('should not delete provider when cancelled', async () => {
     const user = userEvent.setup();
-    window.confirm = vi.fn(() => false);
 
     render(<ProvidersPage />);
 
     const deleteButtons = screen.getAllByText('Eliminar');
     await user.click(deleteButtons[0]);
 
+    // ConfirmDialog opens but we don't click confirm
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(mockUseProviders.deleteProvider).not.toHaveBeenCalled();
   });
 

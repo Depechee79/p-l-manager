@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+
+import { ConfirmDialog } from '@shared/components';
 import { useDatabase } from '@core';
 import { logger } from '@core/services/LoggerService';
 import { useProviders } from '@hooks';
@@ -22,6 +24,11 @@ export const ProvidersPage: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    description: string;
+    onConfirm: () => void;
+  }>({ open: false, description: '', onConfirm: () => {} });
 
   const handleOpenForm = (provider?: Provider) => {
     setEditingProvider(provider || null);
@@ -62,24 +69,28 @@ export const ProvidersPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (provider: Provider) => {
-    if (window.confirm(`¿Está seguro de que desea eliminar el proveedor "${provider.nombre}"?`)) {
-      try {
-        await deleteProvider(provider.id);
-        showToast({
-          type: 'success',
-          title: 'Proveedor eliminado',
-          message: `El proveedor ${provider.nombre} ha sido eliminado correctamente`,
-        });
-      } catch (deleteError: unknown) {
-        logger.error('Error deleting provider:', deleteError instanceof Error ? deleteError.message : String(deleteError));
-        showToast({
-          type: 'error',
-          title: 'Error',
-          message: 'No se pudo eliminar el proveedor',
-        });
-      }
-    }
+  const handleDelete = (provider: Provider) => {
+    setConfirmState({
+      open: true,
+      description: `¿Está seguro de que desea eliminar el proveedor "${provider.nombre}"?`,
+      onConfirm: async () => {
+        try {
+          await deleteProvider(provider.id);
+          showToast({
+            type: 'success',
+            title: 'Proveedor eliminado',
+            message: `El proveedor ${provider.nombre} ha sido eliminado correctamente`,
+          });
+        } catch (deleteError: unknown) {
+          logger.error('Error deleting provider:', deleteError instanceof Error ? deleteError.message : String(deleteError));
+          showToast({
+            type: 'error',
+            title: 'Error',
+            message: 'No se pudo eliminar el proveedor',
+          });
+        }
+      },
+    });
   };
 
   return (
@@ -115,6 +126,16 @@ export const ProvidersPage: React.FC = () => {
           onNew={() => handleOpenForm()}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmState.open}
+        onClose={() => setConfirmState(prev => ({ ...prev, open: false }))}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(prev => ({ ...prev, open: false })); }}
+        title="Eliminar proveedor"
+        description={confirmState.description}
+        variant="danger"
+        confirmLabel="Eliminar"
+      />
     </div>
   );
 };

@@ -9,7 +9,7 @@ import { useToast } from '../utils/toast';
 import type { OCRDocumentType, ExtractedData } from '../types/ocr.types';
 import { useDatabase } from '../hooks';
 import { formatDate, formatCurrency } from '../utils/formatters';
-import { PageContainer } from '@shared/components';
+import { PageContainer, ConfirmDialog } from '@shared/components';
 import { logger } from '@core/services/LoggerService';
 
 // Import extracted components
@@ -45,6 +45,11 @@ export const OCRPage: React.FC = () => {
   const [listFilter, setListFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [recentDocs, setRecentDocs] = useState<OCRPageDocument[]>([]);
+
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    onConfirm: () => void;
+  }>({ open: false, onConfirm: () => {} });
 
   // Wizard State - For initial values when editing or starting
   const [wizardStep, setWizardStep] = useState<number>(1);
@@ -187,25 +192,28 @@ export const OCRPage: React.FC = () => {
 
   const renderList = () => {
     const handleDeleteDocument = (doc: { id: string | number, type: string }) => {
-      if (window.confirm('¿Eliminar este documento?')) {
-        try {
-          const collection = doc.type === 'Factura' ? 'facturas' : doc.type === 'Albarán' ? 'albaranes' : 'cierres';
-          db.delete(collection as 'facturas' | 'albaranes' | 'cierres', doc.id);
-          loadDocuments();
-          showToast({
-            type: 'success',
-            title: 'Documento eliminado',
-            message: 'El documento ha sido eliminado correctamente',
-          });
-        } catch (error: unknown) {
-          logger.error('Error al eliminar documento', error instanceof Error ? error.message : String(error));
-          showToast({
-            type: 'error',
-            title: 'Error',
-            message: 'No se pudo eliminar el documento',
-          });
-        }
-      }
+      setConfirmState({
+        open: true,
+        onConfirm: () => {
+          try {
+            const collection = doc.type === 'Factura' ? 'facturas' : doc.type === 'Albarán' ? 'albaranes' : 'cierres';
+            db.delete(collection as 'facturas' | 'albaranes' | 'cierres', doc.id);
+            loadDocuments();
+            showToast({
+              type: 'success',
+              title: 'Documento eliminado',
+              message: 'El documento ha sido eliminado correctamente',
+            });
+          } catch (error: unknown) {
+            logger.error('Error al eliminar documento', error instanceof Error ? error.message : String(error));
+            showToast({
+              type: 'error',
+              title: 'Error',
+              message: 'No se pudo eliminar el documento',
+            });
+          }
+        },
+      });
     };
 
     return (
@@ -278,6 +286,16 @@ export const OCRPage: React.FC = () => {
       {viewMode === 'list' && renderList()}
       {viewMode === 'detail' && renderDetail()}
       {viewMode === 'wizard' && renderWizard()}
+
+      <ConfirmDialog
+        open={confirmState.open}
+        onClose={() => setConfirmState(prev => ({ ...prev, open: false }))}
+        onConfirm={() => { confirmState.onConfirm(); setConfirmState(prev => ({ ...prev, open: false })); }}
+        title="Eliminar documento"
+        description="¿Eliminar este documento?"
+        variant="danger"
+        confirmLabel="Eliminar"
+      />
     </PageContainer>
   );
 };
