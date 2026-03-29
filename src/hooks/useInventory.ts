@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DatabaseService } from '@core';
 import { logger } from '@core/services/LoggerService';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { InventoryService } from '@/features/inventarios/services/InventoryService';
 import type { Product, InventoryItem } from '../types';
 import { filterByRestaurant, getCurrentRestaurantId } from '../utils/restaurantFilter';
@@ -95,7 +96,7 @@ export const useInventory = (db: DatabaseService) => {
     }
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = formatDateOnly(new Date());
       const result = await inventory.saveInventory(today);
 
       if (!result.success) {

@@ -4,6 +4,7 @@ import { PnLService } from '../../../services/pnl-service';
 import { useRestaurantContext } from '@core';
 import { logger } from '@core/services/LoggerService';
 import { formatDate, formatCurrency } from '@utils';
+import { toDate } from '@shared/utils/dateUtils';
 import type { Cierre, Invoice, Product, DeliveryRecord, Escandallo, PnLManualEntry, Nomina, GastoFijo, InventoryItem } from '@types';
 
 export type DashboardPeriod = 'day' | 'week' | 'month' | 'quarter' | 'year';
@@ -221,7 +222,7 @@ export const useDashboardMetrics = () => {
         const inventarios = (db.inventarios as InventoryItem[] || []);
         if (inventarios.length > 0) {
             const ultimoInventario = inventarios
-                .map((inv) => ({ ...inv, fecha: new Date(inv.fecha || inv.createdAt || '') }))
+                .map((inv) => ({ ...inv, fecha: toDate(inv.fecha || inv.createdAt) ?? new Date(0) }))
                 .sort((a, b) => b.fecha.getTime() - a.fecha.getTime())[0];
 
             const diasSinInventariar = Math.floor(

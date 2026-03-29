@@ -16,6 +16,7 @@ import {
     Building2
 } from 'lucide-react';
 import { Button, Input, Select, Table, Card, FormSection, DatePicker } from '@shared/components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useDatabase, useRestaurant } from '@core';
 import { logger } from '@core/services/LoggerService';
 import { useToast } from '../utils/toast';
@@ -70,7 +71,7 @@ export const GastosFijosPage: React.FC = () => {
         descripcion: '',
         importeMensual: 0,
         proveedor: '',
-        fechaInicio: new Date().toISOString().split('T')[0],
+        fechaInicio: formatDateOnly(new Date()),
         fechaFin: '',
         notas: '',
         activo: true,
@@ -113,7 +114,7 @@ export const GastosFijosPage: React.FC = () => {
             descripcion: '',
             importeMensual: 0,
             proveedor: '',
-            fechaInicio: new Date().toISOString().split('T')[0],
+            fechaInicio: formatDateOnly(new Date()),
             fechaFin: '',
             notas: '',
             activo: true,

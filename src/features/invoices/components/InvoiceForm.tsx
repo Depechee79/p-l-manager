@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Input, Select, DatePicker } from '@components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { InvoiceProductList } from './InvoiceProductList';
 import type { InvoiceFormData, Invoice, InvoiceProduct } from '../invoices.types';
 import type { Provider } from '@types';
@@ -15,7 +16,7 @@ const DEFAULT_FORM_DATA: InvoiceFormData = {
     tipo: 'factura',
     numeroFactura: '',
     proveedorId: null,
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: formatDateOnly(new Date()),
     total: 0,
     productos: [],
     metodoPago: '',

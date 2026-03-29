@@ -7,6 +7,7 @@ import {
   Save
 } from 'lucide-react';
 import { Button, Input, Select, Table, Card, FormSection, DatePicker } from '@shared/components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useDatabase, useRestaurant } from '@core';
 import { useToast } from '../utils/toast';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -32,7 +33,7 @@ export const MermasPage: React.FC = () => {
     restaurantId?: string | number;
     notas?: string;
   }>({
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: formatDateOnly(new Date()),
     productoId: '',
     cantidad: 0,
     unidad: 'unidad',
@@ -82,7 +83,7 @@ export const MermasPage: React.FC = () => {
   const handleOpenForm = () => {
     setEditingMerma(null);
     setFormData({
-      fecha: new Date().toISOString().split('T')[0],
+      fecha: formatDateOnly(new Date()),
       productoId: '',
       cantidad: 0,
       unidad: 'unidad',

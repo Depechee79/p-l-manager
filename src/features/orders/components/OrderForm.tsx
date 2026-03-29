@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Select, Card, DatePicker, FormSection } from '@components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { Save, X } from 'lucide-react';
 import type { OrderFormData, Order, OrderProduct, OrderStatus } from '../orders.types';
 import type { Product, Provider } from '@types';
@@ -15,7 +16,7 @@ interface OrderFormProps {
 }
 
 const DEFAULT_FORM_DATA: OrderFormData = {
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: formatDateOnly(new Date()),
     proveedorId: '',
     productos: [],
     estado: 'borrador',

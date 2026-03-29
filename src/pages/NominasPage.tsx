@@ -15,6 +15,7 @@ import {
     Check
 } from 'lucide-react';
 import { Button, Input, Select, Table, Card, FormSection, Badge } from '@shared/components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useDatabase, useRestaurant } from '@core';
 import { logger } from '@core/services/LoggerService';
 import { useToast } from '../utils/toast';
@@ -264,7 +265,7 @@ export const NominasPage: React.FC = () => {
         try {
             db.update<Nomina>('nominas', nomina.id, {
                 status: 'pagada',
-                fechaPago: new Date().toISOString().split('T')[0]
+                fechaPago: formatDateOnly(new Date())
             });
             showToast({ type: 'success', title: 'Marcada como pagada', message: `Nómina de ${nomina.workerNombre}` });
         } catch (error: unknown) {

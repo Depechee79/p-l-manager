@@ -5,6 +5,7 @@ import {
     Plus,
 } from 'lucide-react';
 import { Button, Card, Select, Modal, Input } from '@shared/components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useWorkers } from '../hooks/useWorkers';
 import { useDatabase, useRestaurantContext } from '@core';
 import type { Shift, Worker } from '@types';
@@ -148,7 +149,7 @@ export const HorariosPage: React.FC = () => {
                                     // Match by YYYY-MM-DD
                                     // Note: day is a Date object (00:00:00 local time usually depending on creation)
                                     // We need to compare specific date strings
-                                    const dayString = day.toISOString().split('T')[0];
+                                    const dayString = formatDateOnly(day);
 
                                     const shift = shifts.find(s =>
                                         String(s.workerId) === String(worker.id) &&
@@ -236,7 +237,7 @@ const ShiftForm: React.FC<{
 }> = ({ workers, currentRestaurantId, onSave, onCancel, initialDate }) => {
     const [formData, setFormData] = useState({
         workerId: '',
-        date: initialDate.toISOString().split('T')[0],
+        date: formatDateOnly(initialDate),
         startTime: '09:00',
         endTime: '17:00',
         role: ''

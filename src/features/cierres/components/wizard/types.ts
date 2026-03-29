@@ -1,4 +1,5 @@
 import type { Datafono, OtroMedio, CashBreakdown } from '@types';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 
 export interface ClosingFormData {
     fecha: string;
@@ -24,7 +25,7 @@ export interface ClosingFormData {
 }
 
 export const INITIAL_FORM_STATE: ClosingFormData = {
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: formatDateOnly(new Date()),
     turno: 'dia_completo',
     efectivoContado: 0,
     desgloseEfectivo: {},

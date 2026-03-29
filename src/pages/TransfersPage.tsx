@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { Button, Input, Select, Table, Card, FormSection } from '@shared/components';
 import { useDatabase, useRestaurantContext } from '@core';
 import { logger } from '@core/services/LoggerService';
@@ -103,7 +104,7 @@ export const TransfersPage: React.FC = () => {
         companyId: restaurantContext.currentRestaurant?.companyId || '',
         restauranteOrigen: currentRestaurantId,
         restauranteDestino: formData.restauranteDestino,
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: formatDateOnly(new Date()),
         productos: formData.productos,
         estado: 'pendiente',
         notas: formData.notas,

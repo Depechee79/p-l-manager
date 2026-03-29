@@ -1,3 +1,5 @@
+import { formatDateOnly } from '@shared/utils/dateUtils';
+
 export type CountingZone = 'bar' | 'cocina' | 'camara' | 'almacen';
 export type CountingMethod = 'total' | 'pack';
 
@@ -21,7 +23,7 @@ export interface InventoryFormData {
 }
 
 export const INITIAL_FORM_DATA: InventoryFormData = {
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: formatDateOnly(new Date()),
     persona: '',
     nombre: '',
     zona: 'bar',

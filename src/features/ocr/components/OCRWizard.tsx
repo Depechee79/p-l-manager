@@ -26,6 +26,7 @@ import {
     AlertTriangle,
 } from 'lucide-react';
 import { Button, StepIndicator, Card } from '@shared/components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 
 import { compressImage, fileToBase64 } from '@utils/imageUtils';
 import { OCRService } from '@services/ocr-service';
@@ -236,7 +237,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                 numeroFactura: formData.numero || 'S/N',
                 proveedor: formData.proveedor || 'Desconocido',
                 proveedorId: providerId,
-                fecha: formData.fecha || new Date().toISOString().split('T')[0],
+                fecha: formData.fecha || formatDateOnly(new Date()),
                 total: formData.total || 0,
                 productos: [],
                 confianza: 90,

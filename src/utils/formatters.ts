@@ -1,12 +1,27 @@
+import { Timestamp } from 'firebase/firestore';
+
 const DEFAULT_LOCALE = 'es-ES';
 
 /**
  * Formatea una fecha a formato español DD/MM/YYYY
- * @param dateInput - Fecha en formato ISO, Date object, timestamp o string DD/MM/YYYY
+ * @param dateInput - Fecha en formato ISO, Date object, Firestore Timestamp, timestamp numerico o string DD/MM/YYYY
  * @returns Fecha formateada o string vacío si es inválida
  */
-export function formatDate(dateInput: string | Date | number | null | undefined): string {
+export function formatDate(dateInput: string | Date | number | Timestamp | null | undefined): string {
   if (!dateInput) return '';
+
+  // Handle Firestore Timestamp
+  if (dateInput instanceof Timestamp) return formatDate(dateInput.toDate());
+
+  // Handle serialized Timestamp ({seconds, nanoseconds}) from JSON round-trip
+  if (
+    typeof dateInput === 'object' &&
+    dateInput !== null &&
+    'seconds' in dateInput &&
+    typeof (dateInput as { seconds: number }).seconds === 'number'
+  ) {
+    return formatDate(new Date((dateInput as { seconds: number }).seconds * 1000));
+  }
 
   // Si ya está en formato DD/MM/YYYY, devolver tal cual
   if (typeof dateInput === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateInput)) {

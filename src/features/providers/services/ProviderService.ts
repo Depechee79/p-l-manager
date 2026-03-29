@@ -1,6 +1,7 @@
 import type { Provider, Invoice } from '@/types';
 import { DatabaseService } from '@core';
 import { logger } from '@core/services/LoggerService';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 
 /**
  * Provider data for saving
@@ -98,7 +99,7 @@ export class ProviderService {
         saved = await this.db.update('proveedores', editId, data) as Provider;
       } else {
         // Create new provider
-        data.fechaAlta = new Date().toISOString().split('T')[0];
+        data.fechaAlta = formatDateOnly(new Date());
         // Type assertion needed because ProviderData is partial match for Provider, but DatabaseService validates
         saved = await this.db.add('proveedores', data as Omit<Provider, 'id'>);
       }

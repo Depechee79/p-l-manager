@@ -1,14 +1,19 @@
 /**
  * P&L Manager - Shared Utils Index
- * 
+ *
  * Barrel export de utilidades compartidas del sistema.
- * 
+ *
  * @example
  * import { cn, formatCurrency, generateId } from '@/shared/utils';
- * 
+ *
  * @version 1.0.0
  * @date 2025-12-30
  */
+
+// =============================================================================
+// DATE UTILITIES
+// =============================================================================
+export { formatDateOnly, toDate, toISOString } from './dateUtils';
 
 // =============================================================================
 // CLASS NAME UTILITIES
@@ -38,7 +43,7 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
  * // => 'input-a1b2c3d4'
  */
 export function generateId(prefix: string = 'id'): string {
-    return `${prefix}-${Math.random().toString(36).substring(2, 10)}`;
+    return `${prefix}-${crypto.randomUUID().substring(0, 8)}`;
 }
 
 // =============================================================================

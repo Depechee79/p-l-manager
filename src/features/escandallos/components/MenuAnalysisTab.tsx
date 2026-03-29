@@ -15,6 +15,7 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { Button, Input, Select, Table, Card, DatePicker } from '@shared/components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useDatabase } from '@core';
 import { useToast } from '../../../utils/toast';
 import { formatCurrency } from '../../../utils/formatters';
@@ -39,10 +40,10 @@ export const MenuAnalysisTab: React.FC = () => {
   const { showToast } = useToast();
 
   const [startDate, setStartDate] = useState<string>(
-    new Date(new Date().setDate(1)).toISOString().split('T')[0]
+    formatDateOnly(new Date(new Date().setDate(1)))
   );
   const [endDate, setEndDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+    formatDateOnly(new Date())
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');

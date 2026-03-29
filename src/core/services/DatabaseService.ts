@@ -20,10 +20,13 @@ import type {
   GastoFijo
 } from '@types';
 
+import { Timestamp } from 'firebase/firestore';
+
 import { FirestoreService } from './FirestoreService';
 import { DataIntegrityService } from './DataIntegrityService';
 import { logger } from './LoggerService';
 import { ToastService } from './ToastService';
+import { toDate } from '@shared/utils/dateUtils';
 
 /**
  * Maps each collection name to its concrete entity type.
@@ -313,10 +316,22 @@ export class DatabaseService implements Collections {
 
 
   /**
-   * Save data to localStorage
+   * Save data to localStorage.
+   * Converts Firestore Timestamps to ISO strings before serializing,
+   * because JSON.stringify(Timestamp) produces {seconds,nanoseconds}
+   * which loses the Timestamp prototype and breaks instanceof checks.
    */
   private save(key: string, data: BaseEntity[]): void {
-    localStorage.setItem(key, JSON.stringify(data));
+    const serializable = data.map(item => ({
+      ...item,
+      createdAt: item.createdAt instanceof Timestamp
+        ? item.createdAt.toDate().toISOString()
+        : item.createdAt,
+      updatedAt: item.updatedAt instanceof Timestamp
+        ? item.updatedAt.toDate().toISOString()
+        : item.updatedAt,
+    }));
+    localStorage.setItem(key, JSON.stringify(serializable));
   }
 
   /**
@@ -436,7 +451,7 @@ export class DatabaseService implements Collections {
         ...item,
         id: this.generateId(),
         _synced: true,
-        createdAt: new Date().toISOString(),
+        createdAt: Timestamp.now(),
       } as T;
 
       const firestoreId = String(newItem.id);
@@ -549,7 +564,7 @@ export class DatabaseService implements Collections {
         ...updatedItem,
         id, // Preserve id
         _synced: true,
-        updatedAt: new Date().toISOString(),
+        updatedAt: Timestamp.now(),
       } as T;
 
       // Validate foreign keys if they are being updated
@@ -797,8 +812,8 @@ export class DatabaseService implements Collections {
         }
       } else if (local && cloud) {
         // In both: resolve conflict
-        const localUpdated = local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
-        const cloudUpdated = cloud.updatedAt ? new Date(cloud.updatedAt).getTime() : 0;
+        const localUpdated = local.updatedAt ? (toDate(local.updatedAt)?.getTime() ?? 0) : 0;
+        const cloudUpdated = cloud.updatedAt ? (toDate(cloud.updatedAt)?.getTime() ?? 0) : 0;
 
         if (cloudUpdated > localUpdated) {
           // Cloud is more recent: use cloud version
