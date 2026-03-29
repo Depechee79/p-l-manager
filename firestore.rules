@@ -65,22 +65,39 @@ service cloud.firestore {
 
     // ============================================================
     // COLECCIONES DE CONFIGURACION
+    // Ownership hardened in Session #008:
+    // - create: abierto (necesario para onboarding de usuario nuevo)
+    // - read/update/delete: con ownership check
     // ============================================================
 
     // Companias
+    // Ownership: el usuario debe pertenecer a la empresa (companyId en su perfil)
     match /companies/{companyId} {
-      allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isDirector();
+      allow read: if isAuthenticated() && (
+        isDirector() ||
+        getUserData().companyId == companyId
+      );
+      allow update: if isAuthenticated() && (
+        isDirector() ||
+        getUserData().companyId == companyId
+      );
+      allow delete: if isDirector() && getUserData().companyId == companyId;
     }
 
     // Restaurantes
+    // Ownership: el restaurantId del documento debe estar en restaurantIds del usuario
     match /restaurants/{restaurantId} {
-      allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isDirector();
+      allow read: if isAuthenticated() && (
+        isDirector() ||
+        restaurantId in getUserData().restaurantIds
+      );
+      allow update: if isAuthenticated() && (
+        isDirector() ||
+        restaurantId in getUserData().restaurantIds
+      );
+      allow delete: if isDirector() && restaurantId in getUserData().restaurantIds;
     }
 
     // Usuarios (coleccion principal)
@@ -92,10 +109,21 @@ service cloud.firestore {
     }
 
     // Invitaciones
+    // Ownership: el usuario debe tener acceso al restaurante de la invitacion
     match /invitations/{invitationId} {
-      allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow read: if isAuthenticated() && (
+        isDirector() ||
+        !('restaurantIds' in resource.data) ||
+        resource.data.restaurantIds.size() == 0 ||
+        resource.data.restaurantIds.hasAny(getUserData().restaurantIds)
+      );
+      allow update: if isAuthenticated() && (
+        isDirector() ||
+        !('restaurantIds' in resource.data) ||
+        resource.data.restaurantIds.size() == 0 ||
+        resource.data.restaurantIds.hasAny(getUserData().restaurantIds)
+      );
       allow delete: if isDirector();
     }
 
