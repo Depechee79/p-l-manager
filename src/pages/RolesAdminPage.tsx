@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import {
     Card,
     Button,
@@ -66,7 +67,7 @@ export const RolesAdminPage: React.FC = () => {
         if (loadedRoles.length === 0) {
             const initialRoles = getAllSystemRoles().map(r => ({
                 ...r,
-                createdAt: new Date().toISOString()
+                createdAt: Timestamp.now()
             } as Role));
 
             initialRoles.forEach(role => db.add('roles', role));

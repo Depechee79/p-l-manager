@@ -1,3 +1,4 @@
+import { Timestamp } from 'firebase/firestore';
 import type { Escandallo, EscandaloIngrediente as Ingredient, TipoIVA } from '../types';
 
 export class EscandalloService {
@@ -57,8 +58,8 @@ export class EscandalloService {
       margenBrutoPct,
       descripcion: escandallo.descripcion,
       notas: escandallo.notas,
-      createdAt: escandallo.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: escandallo.createdAt || Timestamp.now(),
+      updatedAt: Timestamp.now(),
     };
   }
 
@@ -104,8 +105,8 @@ export class EscandalloService {
       restaurantId,
       companyId,
       masterId: String(masterEscandallo.id),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
     };
   }
 

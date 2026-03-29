@@ -3,6 +3,7 @@ import { CompanyService } from '@core/services/CompanyService';
 import { RestaurantService } from '@core/services/RestaurantService';
 import { logger } from '@core/services/LoggerService';
 import type { Company, Restaurant, BaseEntity, CollectionName } from '@types';
+import { toRecord } from '@shared/utils';
 import { migrateFichajesWorkerIds } from './migrateFichajesWorkerIds';
 import { migrateRestaurantIds } from './migrateRestaurantIds';
 
@@ -15,12 +16,6 @@ import { migrateRestaurantIds } from './migrateRestaurantIds';
  * 3. Adds restaurantId to all existing data entities
  * 4. Assigns existing users to the default company and restaurant
  */
-/**
- * Type-safe record accessor for BaseEntity items with dynamic field names
- */
-function toRecord(entity: BaseEntity): Record<string, unknown> {
-  return entity as unknown as Record<string, unknown>;
-}
 
 export class DataMigration {
   private db: DatabaseService;

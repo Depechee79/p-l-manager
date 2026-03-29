@@ -121,7 +121,6 @@ export async function signUpBusinessOwner(data: SignUpData): Promise<SignUpResul
 
         await updateProfile(firebaseUser, { displayName: data.nombre });
 
-        const now = new Date().toISOString();
         const tsNow = Timestamp.now();
         let companyId: string | undefined;
         let restaurantId: string;
@@ -195,8 +194,8 @@ export async function signUpBusinessOwner(data: SignUpData): Promise<SignUpResul
             restaurantIds: [restaurantId],
             companyId: companyId,
             activo: true,
-            fechaCreacion: now,
-            ultimoAcceso: now,
+            fechaCreacion: tsNow,
+            ultimoAcceso: tsNow,
         };
 
         await setDoc(doc(db, 'usuarios', firebaseUser.uid), userProfile);
@@ -244,7 +243,6 @@ export async function loginUser(email: string, password: string): Promise<LoginR
         if (!userDoc.exists()) {
             logger.warn('User not found in Firestore, creating profile', { uid: firebaseUser.uid });
 
-            const now = new Date().toISOString();
             const tsNow = Timestamp.now();
             const newUserProfile: Omit<AppUser, 'id'> = {
                 uid: firebaseUser.uid,
@@ -253,8 +251,8 @@ export async function loginUser(email: string, password: string): Promise<LoginR
                 rolId: 'director_operaciones',
                 restaurantIds: [],
                 activo: true,
-                fechaCreacion: now,
-                ultimoAcceso: now,
+                fechaCreacion: tsNow,
+                ultimoAcceso: tsNow,
             };
 
             await setDoc(doc(db, 'usuarios', firebaseUser.uid), newUserProfile);
@@ -292,7 +290,7 @@ export async function loginUser(email: string, password: string): Promise<LoginR
         }
 
         await updateDoc(doc(db, 'usuarios', firebaseUser.uid), {
-            ultimoAcceso: new Date().toISOString(),
+            ultimoAcceso: Timestamp.now(),
         });
 
         return {
@@ -358,7 +356,7 @@ export async function createInvitation(
             companyId,
             datosPrecompletados,
             creadoPor: creatorUid,
-            creadoEn: now.toISOString(),
+            creadoEn: Timestamp.now(),
             expiraEn: expiraEn.toISOString(),
             usado: false,
         };
@@ -438,7 +436,7 @@ export async function signUpWithInvitation(data: InvitationSignUpData): Promise<
         await updateProfile(firebaseUser, { displayName: data.nombre });
 
         // 3. Create user profile with assigned role (NOT CHOSEN BY USER)
-        const now = new Date().toISOString();
+        const tsNow = Timestamp.now();
         const userProfile: Omit<AppUser, 'id'> = {
             uid: firebaseUser.uid,
             nombre: data.nombre,
@@ -448,8 +446,8 @@ export async function signUpWithInvitation(data: InvitationSignUpData): Promise<
             restaurantIds: invitation.restaurantIds, // ASSIGNED BY ADMIN
             companyId: invitation.companyId,
             activo: true,
-            fechaCreacion: now,
-            ultimoAcceso: now,
+            fechaCreacion: tsNow,
+            ultimoAcceso: tsNow,
             invitadoPor: invitation.creadoPor,
         };
 
@@ -458,7 +456,7 @@ export async function signUpWithInvitation(data: InvitationSignUpData): Promise<
         // 4. Mark invitation as used
         await updateDoc(doc(db, 'invitations', invitation.id as string), {
             usado: true,
-            usadoEn: now,
+            usadoEn: tsNow,
             usadoPor: firebaseUser.uid,
         });
 

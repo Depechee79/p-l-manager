@@ -12,6 +12,7 @@
  * @audit AUDIT-01 - Completed full P&L structure
  */
 import React, { useState, useEffect, useMemo } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import {
   BarChart3,
   Download,
@@ -393,7 +394,7 @@ export const PnLPage: React.FC = () => {
         category: manualEntry.category as PnLAdjustmentCategory,
         concept: manualEntry.concept || '',
         amount: Number(manualEntry.amount),
-        createdAt: new Date().toISOString(),
+        createdAt: Timestamp.now(),
       });
 
       showToast({ type: 'success', title: 'Guardado', message: 'Ajuste añadido correctamente' });

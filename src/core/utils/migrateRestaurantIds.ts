@@ -1,6 +1,7 @@
 import { logger } from '@core/services/LoggerService';
 import type { DatabaseService } from '@core/services/DatabaseService';
 import type { BaseEntity, CollectionName } from '@types';
+import { toRecord } from '@shared/utils';
 
 /**
  * Collections that require restaurantId for Firestore rules enforcement.
@@ -62,7 +63,7 @@ export async function migrateRestaurantIds(
     const items = db[collectionName] as BaseEntity[];
 
     for (const item of items) {
-      const record = item as unknown as Record<string, unknown>;
+      const record = toRecord(item);
 
       if (record['restaurantId']) {
         totalSkipped++;

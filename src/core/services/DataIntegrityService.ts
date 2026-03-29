@@ -1,5 +1,6 @@
 import type { BaseEntity, CollectionName } from '@types';
 import type { DatabaseService } from './DatabaseService';
+import { toRecord } from '@shared/utils';
 
 export interface ValidationResult {
   valid: boolean;
@@ -38,7 +39,7 @@ export class DataIntegrityService {
    * Type-safe field accessor for BaseEntity items with dynamic field names
    */
   private getRecord(item: BaseEntity): Record<string, unknown> {
-    return item as unknown as Record<string, unknown>;
+    return toRecord(item);
   }
 
   /**

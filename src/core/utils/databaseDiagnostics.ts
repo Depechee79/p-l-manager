@@ -1,5 +1,6 @@
 import type { BaseEntity, CollectionName } from '@types';
 import type { DatabaseService } from '../services/DatabaseService';
+import { toRecord } from '@shared/utils';
 import { DataIntegrityService, type IntegrityReport } from '../services/DataIntegrityService';
 import { logger } from '../services/LoggerService';
 
@@ -49,7 +50,7 @@ export interface DeadFieldReport {
  * Type-safe accessor for dynamic collection names on DatabaseService.
  */
 function getCollection(db: DatabaseService, name: CollectionName): BaseEntity[] {
-  return (db as unknown as Record<string, BaseEntity[]>)[name] || [];
+  return (toRecord(db) as Record<string, BaseEntity[]>)[name] || [];
 }
 
 /**
@@ -433,7 +434,7 @@ export class DatabaseDiagnostics {
 
     // Check if field exists and has non-null values in at least some records
     const hasValues = data.some((item: BaseEntity) => {
-      const record = item as unknown as Record<string, unknown>;
+      const record = toRecord(item);
       const value = record[field];
       return value !== undefined && value !== null && value !== '';
     });

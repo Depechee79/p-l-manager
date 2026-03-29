@@ -7,6 +7,7 @@
  * - ActionHeader with tabs
  */
 import React, { useState, useMemo } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import {
     Plus,
     Edit,
@@ -516,7 +517,7 @@ export const PersonalPage: React.FC = () => {
                                     ...data,
                                     workerId: workerId.toString(),
                                     status: 'pendiente',
-                                    requestDate: new Date().toISOString(),
+                                    requestDate: Timestamp.now(),
                                     daysCount: data.startDate && data.endDate
                                         ? Math.ceil((new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
                                         : 0

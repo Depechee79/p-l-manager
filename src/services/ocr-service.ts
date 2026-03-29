@@ -3,6 +3,7 @@ import type { PSM as TesseractPSM } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { OCRResult, PDFZone, ExtractedData, ConfidenceLevel, OCRDocumentType } from '../types/ocr.types';
 import { OCR_CONFIG } from '@shared/config';
+import { toRecord } from '@shared/utils';
 import { logger } from '@core/services/LoggerService';
 
 // Configure PDF.js worker
@@ -100,7 +101,7 @@ export class OCRService {
     const result = await worker.recognize(processedImage);
     await worker.terminate();
 
-    const dataRecord = result.data as unknown as Record<string, unknown>;
+    const dataRecord = toRecord(result.data);
     const rawWords = Array.isArray(dataRecord.words) ? dataRecord.words : undefined;
 
     return {

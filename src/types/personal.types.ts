@@ -2,6 +2,7 @@
 // WORKFORCE MANAGEMENT TYPES
 // ============================================
 
+import type { Timestamp } from 'firebase/firestore';
 import type { BaseEntity } from './index';
 
 /**
@@ -103,7 +104,7 @@ export interface VacationRequest extends BaseEntity {
     daysCount: number;
     status: ValidationStatus;
 
-    requestDate: string;
+    requestDate: string | Timestamp;
     responseDate?: string;
     approvedBy?: string;
 }

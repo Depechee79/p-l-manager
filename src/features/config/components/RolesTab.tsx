@@ -10,6 +10,7 @@
  * - Distinción visual entre roles de Sistema y Custom.
  */
 import React, { useState, useEffect } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import {
 
     Card,
@@ -74,7 +75,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({ onRegisterActions }) => {
     useEffect(() => {
         const loadedRoles = (db.roles || []) as Role[];
         if (loadedRoles.length === 0) {
-            const initialRoles = getAllSystemRoles().map(r => ({ ...r, createdAt: new Date().toISOString() } as Role));
+            const initialRoles = getAllSystemRoles().map(r => ({ ...r, createdAt: Timestamp.now() } as Role));
             initialRoles.forEach(role => db.add('roles', role));
             setRoles(initialRoles);
         } else {

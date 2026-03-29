@@ -189,8 +189,8 @@ export interface AppUser extends BaseEntity {
   restaurantes?: string[]; // Legacy field alias
   companyId?: string; // ID de la empresa (para director_operaciones)
   activo: boolean;
-  fechaCreacion?: string;
-  ultimoAcceso?: string;
+  fechaCreacion?: string | Timestamp;
+  ultimoAcceso?: string | Timestamp;
   invitadoPor?: string; // UID del usuario que lo invitó
 }
 
@@ -208,10 +208,10 @@ export interface Invitation extends BaseEntity {
     telefono?: string;
   };
   creadoPor: string; // UID del admin que creó la invitación
-  creadoEn: string; // Timestamp ISO
+  creadoEn: string | Timestamp; // Firestore Timestamp
   expiraEn: string; // Timestamp ISO (ej: 7 días desde creación)
   usado: boolean;
-  usadoEn?: string; // Timestamp cuando se usó
+  usadoEn?: string | Timestamp; // Firestore Timestamp
   usadoPor?: string; // UID del usuario que la usó
 }
 

@@ -45,7 +45,7 @@
         "./src/services/*"
       ],
       "@context": [
-        "./src/context"
+        "./src/core/context"
       ],
       "@context/*": [
         "./src/core/context/*"

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import { Card, Button, Input, Select, Modal, Badge } from '@components';
 import { Calendar, Plus, Clock } from 'lucide-react';
 import type { Absence, VacationRequest } from '@types';
@@ -40,9 +41,11 @@ export const AbsenceManager: React.FC<AbsenceManagerProps> = ({ requests, absenc
         ...requests.map(r => ({ ...r, category: 'Solicitud Vacaciones', color: 'primary' })),
         ...absences.map(a => ({ ...a, category: 'Baja / Ausencia', color: 'warning' }))
     ].sort((a, b) => {
-        const dateA = 'requestDate' in a ? a.requestDate : a.startDate;
-        const dateB = 'requestDate' in b ? b.requestDate : b.startDate;
-        return new Date(dateB).getTime() - new Date(dateA).getTime();
+        const rawA = 'requestDate' in a ? a.requestDate : a.startDate;
+        const rawB = 'requestDate' in b ? b.requestDate : b.startDate;
+        const dateA = rawA instanceof Timestamp ? rawA.toDate() : new Date(rawA);
+        const dateB = rawB instanceof Timestamp ? rawB.toDate() : new Date(rawB);
+        return dateB.getTime() - dateA.getTime();
     });
 
     return (

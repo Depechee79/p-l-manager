@@ -5,6 +5,8 @@ export interface PnLPeriod {
 
 export type PnLAdjustmentCategory = 'revenue' | 'cogs' | 'labor' | 'opex' | 'financial';
 
+import type { Timestamp } from 'firebase/firestore';
+
 export interface PnLManualEntry {
   id: number | string;
   restaurantId: string | number;
@@ -12,7 +14,7 @@ export interface PnLManualEntry {
   category: PnLAdjustmentCategory;
   concept: string;
   amount: number;
-  createdAt?: string;
+  createdAt?: string | Timestamp;
   _synced?: boolean;
 }
 

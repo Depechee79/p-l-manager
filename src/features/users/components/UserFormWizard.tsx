@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import { Button, Input, Card, FormSection, StepIndicator } from '@components';
 import { X, ArrowRight, ArrowLeft, Save } from 'lucide-react';
 import type { AppUser, Role, Permission } from '../users.types';
@@ -11,8 +12,8 @@ interface UserFormData {
     telefono: string;
     rolId: string | number;
     activo: boolean;
-    fechaCreacion: string;
-    ultimoAcceso: string;
+    fechaCreacion: string | Timestamp;
+    ultimoAcceso: string | Timestamp;
 }
 
 export interface UserFormWizardProps {
@@ -90,8 +91,8 @@ export const UserFormWizard: React.FC<UserFormWizardProps> = ({
     const handleSubmit = () => {
         const userData = {
             ...formData,
-            fechaCreacion: initialData?.fechaCreacion || new Date().toISOString(),
-            ultimoAcceso: initialData?.ultimoAcceso || new Date().toISOString(),
+            fechaCreacion: initialData?.fechaCreacion || Timestamp.now(),
+            ultimoAcceso: initialData?.ultimoAcceso || Timestamp.now(),
         };
         onSave(userData);
     };
