@@ -1,5 +1,12 @@
 # P&L Manager — Historial de Sesiones
 
+## Sesion #008 — 29 marzo 2026
+- **Objetivo:** Auditoria implacable post-TURMIX + remediacion completa
+- **Resultado:** Auditoria 78 hallazgos (9C/24G/30I/15M) con 5 agentes paralelos. 8 decisiones de Aitor. 8 fases de remediacion completadas: limpieza (7 temp files + dead code), unificacion tokens (tokens.css fuente unica, :root duplicado eliminado, 17+ hex tokenizados), window.confirm → ConfirmDialog (9 instancias en 6 paginas), Firestore rules ownership (companies/restaurants/invitations), seguridad queries (getAll limit + getWithQuery obligatorio + script diagnostico), timestamps (12 ubicaciones migradas a Timestamp.now()), aliases (tsconfig @context corregido), unsafe casts (toRecord utility, 8 instancias eliminadas), documentacion (README reescrito, 4 contratos actualizados)
+- **Metricas:** tsc 0, build OK, 359 tests passing, 0 any, 0 console.log, 0 as unknown as, 0 window.confirm, 0 export default
+- **Deploy:** Firestore rules actualizadas localmente (ownership). Pendiente deploy.
+- **Pendiente:** Tests para 32 componentes shared (C-08, sesion dedicada). Deploy rules. Script diagnostico legacy (ejecutar y decidir migrar o mantener bypass).
+
 ## Sesion #007 — 29 marzo 2026
 - **Objetivo:** Fix total: build + tests + auth + rules + timestamps + componentes + auditoria despiadada
 - **Resultado:** 8 fases + auditoria 23 hallazgos, 11 commits. Build OK, 359 tests 0 failing, auth Firebase real, 18 colecciones rules endurecidas, timestamps estandarizados, tokens crypto, V2 suffixes eliminados, src/components/ legacy eliminado, migraciones datos (fichajes workerId, restaurantId backfill), localStorage → sessionStorage

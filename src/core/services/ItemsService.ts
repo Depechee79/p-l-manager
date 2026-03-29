@@ -1,5 +1,6 @@
 import { DatabaseService } from './DatabaseService';
 import type { BaseEntity, Datafono } from '@types';
+import { toRecord } from '@shared/utils';
 
 export interface Familia extends BaseEntity {
     nombre: string;
@@ -39,16 +40,22 @@ export interface Persona extends BaseEntity {
  * DatabaseService's type but are created at runtime by ItemsService.
  */
 function getDbStore<T>(db: DatabaseService, key: string): T[] {
-    const record = db as unknown as Record<string, unknown>;
+    const record = toRecord(db);
     return (record[key] as T[] | undefined) || [];
 }
 
 function setDbStore<T>(db: DatabaseService, key: string, value: T[]): void {
-    const record = db as unknown as Record<string, unknown>;
+    const record = toRecord(db);
     record[key] = value;
 }
 
 
+/**
+ * STUB: ItemsService opera en memoria sobre DatabaseService.
+ * Los metodos add* NO persisten a Firestore — los datos se pierden al refrescar.
+ * Pendiente: implementar persistencia cuando los modulos consumidores esten completos.
+ * Tracked en BACKLOG.md (prioridad media).
+ */
 export class ItemsService {
     constructor(private db: DatabaseService) { }
 

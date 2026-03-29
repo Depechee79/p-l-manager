@@ -1,16 +1,78 @@
 # P&L Manager — Backlog
 
-> Ultima actualizacion: 2026-03-29 (Sesion #007 — Fix total: build + tests + auth + rules + timestamps + componentes)
+> Ultima actualizacion: 2026-03-29 (Sesion #008 — Auditoria implacable + remediacion 8 fases)
 
 ## Estado actual
 
 - **tsc:** 0 errores en todo el proyecto
 - **Build:** OK (Tailwind CSS 4 + @tailwindcss/postcss)
 - **Tests:** 383 tests (359 passing, 24 skipped integration)
-- **Deploy:** Manual (Firebase CLI). Pendiente deploy rules endurecidas.
-- **Sesiones completadas:** 7
+- **Deploy:** Manual (Firebase CLI). Pendiente deploy rules endurecidas (ownership #008).
+- **Sesiones completadas:** 8
 - **Decisiones producto:** DP-1 a DP-4 DECIDIDAS y EJECUTADAS (opcion A todas)
-- **Auditoria despiadada:** 23 hallazgos (6C/7H/7M/3L), todos reparados
+- **Auditoria #007:** 23 hallazgos (6C/7H/7M/3L), todos reparados
+- **Auditoria #008:** 78 hallazgos (9C/24G/30I/15M), remediacion completada (8 fases)
+- **Metricas limpias:** 0 `any`, 0 `console.log`, 0 `as unknown as`, 0 `window.confirm`, 0 export default
+
+## Sesion #008 — Auditoria implacable + remediacion (29 marzo 2026)
+
+Auditoria 78 hallazgos con 5 agentes paralelos. 8 decisiones de Aitor. 8 fases de remediacion.
+
+### FASE 1: Limpieza inmediata
+- 7 archivos temporales eliminados (tsc_errors*.txt, vitest_errors.txt, wizard_test_error.txt, nul)
+- InviteUserModal.tsx eliminado (360 lineas dead code, 0 imports)
+- ItemsService documentado como stub, fichajes client-side como deuda tecnica
+
+### FASE 2: Unificacion tokens (tokens.css fuente de verdad unica)
+- :root duplicado eliminado de index.css (~80 lineas)
+- 17+ hex hardcodeados reemplazados por var(--token) en clases .btn-*
+- 4 hover tokens creados (--danger-hover, --success-hover, --warning-hover, --info-hover)
+- Button.tsx fallbacks hex eliminados
+- 02-design-system.md, VISUAL_CONTRACT.md, CLAUDE.md alineados con tokens.css
+
+### FASE 3: window.confirm → ConfirmDialog
+- ConfirmDialog componente creado (accesible, role="alertdialog")
+- 9 instancias migradas en 6 paginas (CierresPage, AlmacenPage, OCRPage, InventariosPage, ProvidersPage, InvoicesPage, OrdersPage)
+- 4 archivos de test actualizados
+
+### FASE 4: Firestore rules ownership
+- companies: create abierto (onboarding), read/update/delete con ownership (companyId)
+- restaurants: create abierto, read/update/delete con ownership (restaurantIds)
+- invitations: create abierto, read/update/delete con ownership (restaurantIds cruzados)
+
+### FASE 5: Seguridad queries + diagnostico legacy
+- getAll(): limit(500) obligatorio (C-03 resuelto)
+- getWithQuery(): restaurantId obligatorio para colecciones restaurant-filtered (G-05 resuelto)
+- Script diagnoseRestaurantIds.ts creado (cuenta docs sin restaurantId por coleccion)
+
+### FASE 6: Timestamps + aliases + unsafe casts
+- 12 ubicaciones migradas de new Date().toISOString() a Timestamp.now()
+- Tipos actualizados: AppUser, Invitation, PnLManualEntry, VacationRequest aceptan string | Timestamp
+- @context alias corregido en tsconfig.json (apuntaba a directorio inexistente)
+- toRecord() utility creado, 8 instancias de as unknown as eliminadas
+
+### FASE 7: Documentacion
+- README.md reescrito desde cero (CONTEXTO.md como base)
+- COMPONENT_INVENTORY.md actualizado (V2 eliminados, ConfirmDialog anadido)
+- TESTING_CONTRACT.md actualizado (51 → 383 tests)
+- ROUTING_CONTRACT.md actualizado (redirects reales, nota lazy loading)
+- FIREBASE_CONTRACT.md actualizado (hardening #007/#008, indice gastosFijos corregido)
+
+### FASE 8: Verificacion final
+- tsc: 0 errores
+- Build: OK
+- Tests: 359 passing, 24 skipped
+- Todos los hallazgos remediados verificados con grep
+
+### Decisiones de Aitor (8 preguntas):
+1. canAccessDocument legacy bypass: script diagnostico, migrar progresivamente
+2. companies/restaurants ownership: create abierto, read/update/delete con ownership
+3. ItemsService: stub documentado, no arreglar ahora
+4. window.confirm: migrar todas de una vez
+5. README: reescribir desde cero
+6. Lazy loading: prioridad baja
+7. Tokens: tokens.css manda, corregir los demas
+8. Fichajes client-side: aceptar por ahora, CF cuando se inicialice infra
 
 ## Sesion #007 — Fix total (29 marzo 2026)
 
@@ -122,13 +184,15 @@ AppShellV2 con TopbarV2, SidebarNavV2, MobileBottomNav, StickyPageHeader.
 - [ ] Deploy firestore.rules endurecidas: `npx firebase deploy --only firestore:rules --project pylhospitality`
 - [ ] Actualizar PersonalPage + TransfersPage para incluir restaurantId al crear workers/transfers
 - [ ] Migrar useRestaurant hasAccess() a usar AppContext completo (parcialmente hecho)
+- [ ] Tests para 32 componentes shared sin cobertura (C-08 auditoria #008). Sesion dedicada a testing.
 
 ### Media
 - [ ] CI/CD con GitHub Actions
-- [ ] Code splitting con React.lazy en todas las rutas
+- [ ] Code splitting con React.lazy en todas las rutas (prioridad baja, bundle pequeno aun)
 - [ ] Implementar onboarding + formacion
 - [ ] Implementar checklists operativos
-- [ ] Re-crear tests eliminados de Card y Modal en shared (32 tests)
+- [ ] Fichajes: validacion server-side via Cloud Function (reloj cliente manipulable). Implementar junto con infra CF para OCR.
+- [ ] ItemsService (familias, subfamilias, terminales, mediosPago, plataformasDelivery, personas): STUB en memoria, no persiste a Firestore. Implementar persistencia cuando los modulos que lo consumen esten completos.
 
 ### Baja
 - [ ] Informes diarios automaticos

@@ -43,3 +43,4 @@ build_output*.txt
 test_output*.txt
 e2e_error*.txt
 nul
+wizard_test_error.txt

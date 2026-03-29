@@ -12,16 +12,18 @@ React 19 + TypeScript 5.9 + Vite 7.2 + Firebase (pylhospitality) + Tailwind CSS 
 Single app (puerto 3004). Feature-based: src/core (infra), src/shared (design system), src/features (modulos), src/pages (composicion).
 
 ## Estado (29 marzo 2026)
-- 7 sesiones completadas
-- Plan TURMIX completo (14 fases) + Fix total (8 fases)
+- 8 sesiones completadas
+- Plan TURMIX completo (14 fases) + Fix total (8 fases) + Auditoria implacable (8 fases remediacion)
 - tsc: 0 errores
 - Build: OK (Tailwind CSS 4 + @tailwindcss/postcss)
-- Tests: 381 (357 passing, 24 skipped integration)
-- 0 `any`, 0 `console.log`, 0 `export default`, 0 catch sin tipo en produccion
+- Tests: 383 (359 passing, 24 skipped integration)
+- 0 `any`, 0 `console.log`, 0 `export default`, 0 catch sin tipo, 0 `as unknown as` en produccion
 - Auth: Firebase Auth real (onAuthStateChanged en AppContext)
-- Firestore rules: endurecidas con restaurantId (15 colecciones)
+- Firestore rules: endurecidas con restaurantId (15 colecciones) + ownership en companies/restaurants/invitations
 - Tokens: crypto.getRandomValues()
-- Timestamps: Timestamp.now() en writes, formatDateOnly() para display
+- Timestamps: Timestamp.now() en writes (12 ubicaciones migradas en #008)
+- tokens.css: fuente de verdad unica (duplicados eliminados de index.css en #008)
+- window.confirm: ELIMINADO (9 instancias migradas a ConfirmDialog en #008)
 - src/components/ legacy ELIMINADO, V2 suffixes ELIMINADOS
 - 8 modulos existentes + 4 previstos
 
