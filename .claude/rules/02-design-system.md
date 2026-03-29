@@ -19,33 +19,33 @@ All design tokens are defined in `src/shared/styles/tokens.css` as CSS custom pr
 | Token            | Value     | Usage                                |
 |------------------|-----------|--------------------------------------|
 | `--primary`      | `#111827` | Gray 900 -- primary text, headings   |
-| `--primary-light`| `#374151` | Gray 700 -- secondary text           |
+| `--primary-hover`| `#374151` | Gray 700 -- hover state for primary  |
+| `--primary-light`| `#f3f4f6` | Gray 100 -- primary ghost backgrounds|
 | `--accent`       | `#e11d48` | Rose 600 -- CTAs, active states      |
 | `--accent-hover` | `#be123c` | Rose 700 -- hover state for accent   |
-| `--accent-light` | `#fff1f2` | Rose 50 -- accent backgrounds        |
 
 ### Semantic Colors
 
 | Token              | Value     | Usage                            |
 |--------------------|-----------|----------------------------------|
-| `--success`        | `#16a34a` | Green 600 -- positive states     |
-| `--success-light`  | `#f0fdf4` | Green 50 -- success backgrounds  |
-| `--warning`        | `#d97706` | Amber 600 -- caution states      |
-| `--warning-light`  | `#fffbeb` | Amber 50 -- warning backgrounds  |
-| `--danger`         | `#dc2626` | Red 600 -- destructive, errors   |
-| `--danger-light`   | `#fef2f2` | Red 50 -- error backgrounds      |
-| `--info`           | `#2563eb` | Blue 600 -- informational        |
-| `--info-light`     | `#eff6ff` | Blue 50 -- info backgrounds      |
+| `--success`        | `#10b981` | Emerald 500 -- positive states   |
+| `--success-bg`     | `#ecfdf5` | Emerald 50 -- success backgrounds|
+| `--warning`        | `#f59e0b` | Amber 500 -- caution states      |
+| `--warning-bg`     | `#fffbeb` | Amber 50 -- warning backgrounds  |
+| `--danger`         | `#ef4444` | Red 500 -- destructive, errors   |
+| `--danger-bg`      | `#fef2f2` | Red 50 -- error backgrounds      |
+| `--info`           | `#3b82f6` | Blue 500 -- informational        |
+| `--info-bg`        | `#eff6ff` | Blue 50 -- info backgrounds      |
 
 ### Surface Colors
 
 | Token              | Value     | Usage                            |
 |--------------------|-----------|----------------------------------|
-| `--bg`             | `#ffffff` | Page background                  |
-| `--bg-subtle`      | `#f9fafb` | Gray 50 -- secondary background  |
-| `--bg-muted`       | `#f3f4f6` | Gray 100 -- muted background     |
+| `--background`     | `#f3f4f6` | Gray 100 -- app background       |
+| `--surface`        | `#ffffff` | White -- cards, modals, panels   |
+| `--surface-muted`  | `#f9fafb` | Gray 50 -- secondary background  |
 | `--border`         | `#e5e7eb` | Gray 200 -- borders, dividers    |
-| `--border-strong`  | `#d1d5db` | Gray 300 -- emphasized borders   |
+| `--border-focus`   | `#d1d5db` | Gray 300 -- emphasized borders   |
 
 ### ZERO TOLERANCE Rules
 
@@ -62,15 +62,19 @@ All design tokens are defined in `src/shared/styles/tokens.css` as CSS custom pr
 
 ### Type Scale
 
-| Token          | Size   | Weight | Usage                    |
-|----------------|--------|--------|--------------------------|
-| `--text-xs`    | 12px   | 400    | Captions, metadata       |
-| `--text-sm`    | 14px   | 400    | Secondary text, labels   |
-| `--text-base`  | 16px   | 400    | Body text                |
-| `--text-lg`    | 18px   | 500    | Subheadings              |
-| `--text-xl`    | 20px   | 600    | Section titles           |
-| `--text-2xl`   | 24px   | 700    | Page titles              |
-| `--text-3xl`   | 30px   | 700    | Hero headings            |
+| Token              | Size   | Weight | Usage                    |
+|--------------------|--------|--------|--------------------------|
+| `--font-size-2xs`  | 10px   | 400    | Micro labels             |
+| `--font-size-xs`   | 11px   | 400    | Captions, metadata       |
+| `--font-size-sm`   | 12px   | 400    | Secondary text, labels   |
+| `--font-size-13`   | 13px   | 400    | Special intermediate     |
+| `--font-size-base` | 14px   | 400    | Body text                |
+| `--font-size-md`   | 16px   | 400    | Small headings           |
+| `--font-size-lg`   | 18px   | 500    | Subheadings              |
+| `--font-size-xl`   | 20px   | 600    | Section titles           |
+| `--font-size-2xl`  | 24px   | 700    | Page titles              |
+| `--font-size-3xl`  | 28px   | 700    | Hero headings            |
+| `--font-size-4xl`  | 32px   | 700    | Display text             |
 
 **Rule:** Never use arbitrary font sizes like `text-[13px]`. Use the scale tokens.
 
@@ -126,11 +130,13 @@ Use radius tokens for consistency.
 
 | Token            | Value | Usage                      |
 |------------------|-------|----------------------------|
-| `--radius-sm`    | 4px   | Small elements, badges     |
+| `--radius-xs`    | 4px   | Tiny elements, badges      |
+| `--radius-sm`    | 6px   | Small elements             |
 | `--radius`       | 8px   | Default (cards, inputs)    |
-| `--radius-md`    | 12px  | Medium elements            |
-| `--radius-lg`    | 16px  | Large containers, modals   |
-| `--radius-full`  | 9999px| Circular (avatars, pills)  |
+| `--radius-md`    | 10px  | Medium elements            |
+| `--radius-lg`    | 12px  | Large containers           |
+| `--radius-xl`    | 16px  | Large containers, modals   |
+| `--radius-full`  | 50%   | Circular (avatars, pills)  |
 
 ## Spacing
 

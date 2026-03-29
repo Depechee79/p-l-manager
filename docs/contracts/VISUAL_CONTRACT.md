@@ -21,7 +21,7 @@
 | Token | Value | Usage |
 |-------|-------|-------|
 | `--text-main` | `#111827` (Gray 900) | Headings, primary content |
-| `--text-secondary` | `#4b5563` (Gray 600) | Descriptions, secondary info. WCAG AA compliant. |
+| `--text-secondary` | `#6b7280` (Gray 500) | Descriptions, secondary info. WCAG AA compliant. |
 | `--text-light` | `#9ca3af` (Gray 400) | Placeholders, timestamps, metadata |
 
 ### 1.3 Borders
@@ -80,18 +80,21 @@ Loaded via Google Fonts: `Public+Sans:wght@300;400;500;600;700`.
 
 ### 2.2 Font Size Scale
 
-| CSS Token | Value | TS Constant | Usage |
-|-----------|-------|-------------|-------|
-| `--font-size-xs` | `10px` | `FONT_SIZE_XS` (11px*) | Micro labels, badges |
-| `--font-size-sm` | `12px` | `FONT_SIZE_SM` (13px*) | Labels, secondary text, filters |
-| `--font-size-base` | `14px` | `FONT_SIZE_BASE` (15px*) | Body, tabs, inputs |
-| `--font-size-md` | `16px` | `FONT_SIZE_MD` (17px*) | Small headings |
-| `--font-size-lg` | `20px` | `FONT_SIZE_LG` (21px*) | Section titles |
-| `--font-size-xl` | `24px` | `FONT_SIZE_XL` (28px*) | Page titles |
-| `--font-size-2xl` | `32px` | `FONT_SIZE_2XL` (36px*) | Hero headings |
-| `--font-size-3xl` | `40px` | `FONT_SIZE_3XL` (48px*) | Display text |
+| CSS Token | Value | Usage |
+|-----------|-------|-------|
+| `--font-size-2xs` | `10px` | Micro labels |
+| `--font-size-xs` | `11px` | Badges, captions |
+| `--font-size-sm` | `12px` | Labels, secondary text, filters |
+| `--font-size-13` | `13px` | Special intermediate |
+| `--font-size-base` | `14px` | Body, tabs, inputs |
+| `--font-size-md` | `16px` | Small headings |
+| `--font-size-lg` | `18px` | Section titles |
+| `--font-size-xl` | `20px` | Page titles |
+| `--font-size-2xl` | `24px` | Hero headings |
+| `--font-size-3xl` | `28px` | Display text |
+| `--font-size-4xl` | `32px` | Large display text |
 
-> *Note: CSS tokens and TS tokens have slight discrepancies. CSS tokens (in `index.css`) are the authoritative values for rendering. TS tokens are used for programmatic/inline style calculations.
+> Source of truth: `src/shared/styles/tokens.css`. TS token constants in `src/shared/tokens/` may differ slightly for programmatic use.
 
 ### 2.3 Font Weights
 
@@ -157,10 +160,13 @@ Loaded via Google Fonts: `Public+Sans:wght@300;400;500;600;700`.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `RADIUS_SM` / `--radius` (8px context) | `8px` | Buttons, inputs, small elements |
-| `RADIUS` / `--radius` | `12px` | Cards, modals, panels |
-| `RADIUS_LG` | `16px` | Large containers, hero sections |
-| `RADIUS_FULL` | `50%` | Avatars, circular badges |
+| `--radius-xs` | `4px` | Tiny elements, badges |
+| `--radius-sm` | `6px` | Small elements |
+| `--radius` | `8px` | Default (buttons, inputs) |
+| `--radius-md` | `10px` | Medium elements |
+| `--radius-lg` | `12px` | Cards, modals, panels |
+| `--radius-xl` | `16px` | Large containers, hero sections |
+| `--radius-full` | `50%` | Avatars, circular badges |
 
 ---
 
@@ -182,7 +188,7 @@ Loaded via Google Fonts: `Public+Sans:wght@300;400;500;600;700`.
 | Token | Value | Usage |
 |-------|-------|-------|
 | `--height-input` | `44px` | Inputs, default buttons (44px touch target) |
-| `--height-button-sm` | `36px` | Small/compact buttons |
+| `--height-button-sm` | `32px` (desktop), `36px` (mobile) | Small/compact buttons |
 | `HEIGHT_MOBILE_HEADER` | `60px` | Mobile top bar |
 | `SIZE_STEP_NUMBER` | `36px` | Wizard step indicators |
 

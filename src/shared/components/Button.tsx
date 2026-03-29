@@ -57,19 +57,19 @@ const variantClasses: Record<ButtonVariant, { base: string; hover: string }> = {
   },
   danger: {
     base: 'bg-[var(--danger)] text-white border-transparent',
-    hover: 'hover:bg-[var(--danger-hover,#b91c1c)]',
+    hover: 'hover:bg-[var(--danger-hover)]',
   },
   success: {
     base: 'bg-[var(--success)] text-white border-transparent',
-    hover: 'hover:bg-[var(--success-hover,#059669)]',
+    hover: 'hover:bg-[var(--success-hover)]',
   },
   warning: {
     base: 'bg-[var(--warning)] text-white border-transparent',
-    hover: 'hover:bg-[var(--warning-hover,#d97706)]',
+    hover: 'hover:bg-[var(--warning-hover)]',
   },
   info: {
     base: 'bg-[var(--info)] text-white border-transparent',
-    hover: 'hover:bg-[var(--info-hover,#1d4ed8)]',
+    hover: 'hover:bg-[var(--info-hover)]',
   },
   outline: {
     base: 'bg-transparent text-text-main border border-border',

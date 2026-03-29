@@ -66,22 +66,30 @@
 
     --success: #10b981;
     /* Emerald 500 */
+    --success-hover: #059669;
+    /* Emerald 600 */
     --success-bg: #ecfdf5;
     --success-border: #d1fae5;
 
     --warning: #f59e0b;
     /* Amber 500 */
+    --warning-hover: #d97706;
+    /* Amber 600 */
     --warning-bg: #fffbeb;
     --warning-border: #fef3c7;
 
     --danger: #ef4444;
     /* Red 500 */
+    --danger-hover: #dc2626;
+    /* Red 600 */
     --danger-bg: #fef2f2;
     --danger-border: #fecaca;
     --danger-border-hover: #fca5a5;
 
     --info: #3b82f6;
     /* Blue 500 */
+    --info-hover: #2563eb;
+    /* Blue 600 */
     --info-bg: #eff6ff;
     --info-border: #dbeafe;
 

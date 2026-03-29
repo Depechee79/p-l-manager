@@ -4,94 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* App Shell and component-specific tokens. Base design tokens are in shared/styles/tokens.css */
 :root {
-  /* ═══════════════════════════════════════════════════════════════════════
-   * CANONICAL DESIGN TOKENS - P&L Antigravity
-   * AUDIT-FIX: P2.3 - All tokens consolidated here (single source of truth)
-   * See docs/01_CANON/TOKENS_REFERENCE.md for documentation
-   * ═══════════════════════════════════════════════════════════════════════ */
-
-  /* Modern Dashboard Palette (Light Theme) */
-  --background: #f3f4f6;
-  /* Cool Gray 100 */
-  --surface: #ffffff;
-  --surface-muted: #f9fafb;
-  /* Cool Gray 50 */
-
-  --text-main: #111827;
-  /* Gray 900 */
-  --text-secondary: #4b5563;
-  /* Gray 600 - WCAG AA compliant */
-  --text-light: #9ca3af;
-  /* Gray 400 */
-
-  --border: #e5e7eb;
-  /* Gray 200 */
-  --border-focus: #d1d5db;
-  /* Gray 300 */
-
-  /* Accents - Matching the photo's reddish vibe but accessible */
-  --primary: #111827;
-  /* Gray 900 */
-  --primary-hover: #374151;
-  /* Gray 700 */
-  --primary-light: #f3f4f6;
-  /* Gray 100 */
-
-  --accent: #e11d48;
-  /* Rose 600 */
-  --accent-hover: #be123c;
-  /* Rose 700 */
-
-  --success: #10b981;
-  /* Emerald 500 */
-  --warning: #f59e0b;
-  /* Amber 500 */
-  --danger: #ef4444;
-  /* Red 500 */
-
-  /* Modern Soft Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
-  --radius: 12px;
-  /* More rounded, like the photo */
-
-  /* Spacing */
-  --spacing-xs: 6px;
-  --spacing-sm: 12px;
-  --spacing-md: 20px;
-  --spacing-lg: 32px;
-  --spacing-xl: 48px;
-  --spacing-2xl: 64px;
-
-  /* Font Sizes - Simplified Scale */
-  --font-size-xs: 10px;
-  /* Micro labels, badges */
-  --font-size-sm: 12px;
-  /* Labels, secondary text, filters */
-  --font-size-base: 14px;
-  /* Body, tabs, inputs */
-  --font-size-md: 16px;
-  /* Small headings */
-  --font-size-lg: 20px;
-  /* Section titles */
-  --font-size-xl: 24px;
-  /* Page titles */
-  --font-size-2xl: 32px;
-  /* Hero headings */
-  --font-size-3xl: 40px;
-  /* Display */
-
-  --font-heading: 'Public Sans', sans-serif;
-  --font-body: 'Public Sans', sans-serif;
-
-  /* Component Heights - Mobile First (44px touch targets) */
-  --height-input: 44px;
-  --height-button-sm: 36px;
-
   /* ═══════════════════════════════════════════════════════════════════════════
    * APP SHELL V2 TOKENS - Canon Stitch Layout
    * Used by AppShellV2, TopbarV2, SidebarNavV2, PageHeaderV2
@@ -346,13 +260,13 @@ h6 {
 .step.active .step-number {
   background-color: var(--accent);
   border-color: var(--accent);
-  color: #ffffff;
+  color: var(--surface);
 }
 
 .step.completed .step-number {
   background-color: var(--success);
   border-color: var(--success);
-  color: #ffffff;
+  color: var(--surface);
 }
 
 .step-label {
@@ -430,9 +344,9 @@ button.secondary:hover,
 
 button.danger,
 .btn-danger {
-  background-color: #fef2f2;
+  background-color: var(--danger-bg);
   color: var(--danger);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--danger-border);
 }
 
 /* Button Component Classes */
@@ -476,32 +390,32 @@ button.danger,
 }
 
 .btn-danger {
-  background-color: #fef2f2;
+  background-color: var(--danger-bg);
   color: var(--danger);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--danger-border);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: #fee2e2;
-  border-color: #fca5a5;
+  background-color: var(--danger-bg);
+  border-color: var(--danger-border-hover);
 }
 
 .btn-success {
-  background-color: #ecfdf5;
+  background-color: var(--success-bg);
   color: var(--success);
-  border: 1px solid #d1fae5;
+  border: 1px solid var(--success-border);
 }
 
 .btn-warning {
-  background-color: #fffbeb;
+  background-color: var(--warning-bg);
   color: var(--warning);
-  border: 1px solid #fef3c7;
+  border: 1px solid var(--warning-border);
 }
 
 .btn-info {
-  background-color: #eff6ff;
-  color: #3b82f6;
-  border: 1px solid #dbeafe;
+  background-color: var(--info-bg);
+  color: var(--info);
+  border: 1px solid var(--info-border);
 }
 
 .btn-small {
