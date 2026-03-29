@@ -1,174 +1,112 @@
-# P&L Manager - Sistema de Gestión Hostelería
+# P&L Antigravity
 
-Sistema completo de gestión de pérdidas y ganancias para restaurantes y cafeterías con diseño moderno y profesional.
+Gestor de operaciones diarias de hosteleria para restaurantes en Espana. Cierres de caja, albaranes, inventarios, escandallos, gestion de personal, horarios e informes. Pensado para directores de restaurante que quieren saber que pasa en su negocio sin estar fisicamente, y para encargados y camareros que necesitan herramientas moviles rapidas en sala.
 
-## 🎯 Características
+## Tech Stack
 
-- **OCR Profesional**: Extracción automática de datos desde facturas (PDF e imágenes)
-- **Gestión de Cierres**: Sistema compacto con tabla desplegable por método de pago
-- **Escandallos**: Cálculo de costes de platos con ingredientes y márgenes
-- **P&L Completo**: Cuenta de explotación profesional con KPIs
-- **Diseño Moderno**: Sistema UX/UI con paleta corporativa y tipografía Inter
-- **🔥 Firebase Sync**: Sincronización automática con Firestore
-- **📱 Offline First**: Funciona sin conexión, sincroniza cuando hay internet
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19 + TypeScript 5.9 |
+| Build | Vite 7.2 |
+| Styling | Tailwind CSS 4 |
+| Database | Firebase Firestore (project: pylhospitality) |
+| Auth | Firebase Authentication |
+| Routing | React Router DOM 7 |
+| State | Context API + custom hooks |
+| Testing | Vitest + React Testing Library |
 
-## 🚀 Tecnologías
+## Getting Started
 
-- **Frontend**: React 19 + TypeScript 5.9
-- **Build**: Vite 7.2 
-- **Testing**: Vitest 4.0 + React Testing Library (319 tests ✅)
-- **Database**: Firebase Firestore (cloud sync)
-- **Routing**: React Router DOM 7
-- **State**: Context API + Custom Hooks
-- **OCR**: Tesseract.js + PDF.js
-- **Storage**: localStorage + Firestore
-
-## 📦 Instalación
-
-1. Clona el repositorio:
 ```bash
-git clone https://github.com/Depechee79/p-l-manager.git
+git clone <repo-url>
 cd p-l-manager
-```
-
-2. Instala dependencias:
-```bash
 npm install
+cp .env.example .env   # add Firebase credentials
+npm run dev             # http://localhost:3004
 ```
 
-3. Configura Firebase (opcional, para sincronización en la nube):
-```bash
-cp .env.example .env
-# Edita .env con tus credenciales de Firebase
-```
-   Ver [FIREBASE_SETUP.md](FIREBASE_SETUP.md) para instrucciones detalladas
+## Available Scripts
 
-4. Ejecuta el proyecto:
-```bash
-npm run dev          # Desarrollo
-npm run build        # Producción
-npm test             # Tests (319 tests)
-```
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server (port 3004) |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm test` | Run tests (Vitest) |
+| `npm run test:ui` | Tests with UI |
+| `npm run test:coverage` | Coverage report |
 
-## 📂 Estructura
+## Project Structure
 
 ```
-P&L/
-├── src/
-│   ├── components/      # Componentes React (66 tests)
-│   ├── pages/           # Páginas principales (61 tests)
-│   ├── hooks/           # Custom hooks (50 tests)
-│   ├── services/        # Servicios de negocio (88 tests)
-│   ├── context/         # Estado global (9 tests)
-│   ├── utils/           # Utilidades (37 tests)
-│   ├── types/           # Tipos TypeScript
-│   ├── config/          # Configuración Firebase
-│   └── App.tsx          # Aplicación principal (8 tests)
-├── .env.example         # Plantilla variables entorno
-├── FIREBASE_SETUP.md    # Guía configuración Firebase
-└── README.md
+src/
+├── core/              # Infrastructure (services, contexts, core hooks)
+│   ├── context/       # AppContext, DatabaseContext, RestaurantContext
+│   ├── hooks/         # useDatabase, useRestaurant
+│   ├── services/      # AuthService, DatabaseService, FirestoreService, CompanyService
+│   └── utils/         # migration.ts
+├── shared/            # Design system + reusable components
+│   ├── components/    # 40+ components (Button, Card, Input, Modal, Badge, Select...)
+│   │   ├── layout/    # AppShellV2, TopbarV2, SidebarNavV2, MobileBottomNav
+│   │   └── ConfigLayout/
+│   ├── config/        # systemRoles.ts (6 roles, 18 modules, 33 permissions)
+│   ├── hooks/         # Shared generic hooks
+│   ├── styles/        # tokens.css (visual source of truth)
+│   ├── types/         # Shared UI types
+│   └── utils/         # Generic utilities
+├── features/          # Business modules (feature-based architecture)
+│   ├── cierres/       # Cash register closing (4-step wizard)
+│   ├── dashboard/     # Main dashboard with KPIs
+│   ├── escandallos/   # Recipes and cost calculation
+│   ├── inventarios/   # Stock control
+│   ├── invoices/      # Invoices and delivery notes
+│   ├── ocr/           # Document recognition (Claude API Vision, planned)
+│   ├── orders/        # Supplier orders
+│   ├── personal/      # HR, payroll, schedules
+│   ├── config/        # Restaurant configuration
+│   ├── providers/     # Supplier management
+│   └── users/         # Users and permissions
+├── pages/             # Top-level page composition
+├── types/             # Domain TypeScript types
+├── config/            # Firebase config
+└── App.tsx            # Routing + providers
 ```
 
-## 🎨 Módulos
+## Modules
 
-### 📸 OCR - Registro Manual
-- Tipos: Factura Proveedor, Albarán, Cierre de Caja, Delivery
-- Soporte: JPG, PNG, WEBP, BMP, TIFF, PDF
-- Preprocesado de imagen + Tesseract.js
-- Confianza de extracción (alta/media/baja)
+| Module | Route | Description |
+|--------|-------|-------------|
+| Dashboard | `/` | Control panel with KPIs |
+| Almacen | `/almacen` | 6 tabs: Existencias, Inventarios, Mermas, Pedidos, Proveedores, Traspasos |
+| Cierres | `/cierres` | Cash register closing (wizard with payment methods) |
+| Documentos | `/docs` | Document recognition (Claude API Vision, planned) |
+| P&L | `/pnl` | 2 tabs: Resultados, Gastos Fijos |
+| Escandallos | `/escandallos` | Recipes, cost calculation, margins |
+| Personal | `/equipo` | Staff, payroll, schedules |
+| Configuracion | `/configuracion` | Restaurant settings (requires configuracion.edit permission) |
 
-### 💰 Cierres
-- Conteo de efectivo (billetes y monedas)
-- Datafonos múltiples
-- Otros medios de pago
-- Comparación POS vs Real
-- Detección automática de descuadres
-- **Nuevo:** Filtro por meses y barras de totales en tiempo real
+## Design System
 
-### 📦 Compras (Facturas & Albaranes)
-- Registro manual o vía OCR
-- Búsqueda por proveedor y fechas
-- Verificación contra facturas
+- **Font:** Public Sans (headings and body)
+- **Source of truth:** `src/shared/styles/tokens.css` -- all colors, shadows, z-index, and spacing are defined as CSS custom properties
+- **Mobile-first:** 44px minimum touch targets (designed for waiters using phones in dining rooms)
+- **Components:** 40+ shared components with named exports, one per file
 
-### 📝 Proveedores
-- Gestión completa de proveedores
-- Tipos: Compra, Gasto, Ambos
-- Condiciones de pago y frecuencia
+## Firebase
 
-### 🍽️ Productos & Escandallos
-- Catálogo de productos
-- Cálculo de coste por unidad
-- Ingredientes con cantidades
-- Product Cost % automático
+- **Project:** pylhospitality
+- **Services:** Firestore (15 collections) + Authentication (onAuthStateChanged)
+- **Region:** europe-west1
+- **Cloud Functions:** planned, not yet implemented
+- **Security rules:** deny-by-default with canAccessDocument() + hasRestaurantAccess() checks
 
-### 📊 Inventario
-- Control de stock
-- Valoración a coste unitario
+## Testing
 
-### 🚚 Delivery
-- Registro de pedidos
-- Plataformas múltiples
-- Comisiones y costes
+- **383 tests total** (359 passing, 24 skipped integration tests)
+- **Framework:** Vitest + React Testing Library
+- **Strategy:** behavior over implementation; 3 states minimum per component (ideal, empty, error)
+- **Mocks:** Firebase services mocked, business logic tested directly
 
-### 📈 P&L (Pérdidas y Ganancias)
-- Cuenta de explotación completa y detallada (OPEX desglosado)
-- KPIs principales compactos (Product Cost, EBITDA, etc.)
-- Alertas automáticas
-- Comparación temporal con selector de mes
+## License
 
-## ⚙️ Configuración
-
-El sistema no requiere configuración adicional. Los datos se guardan automáticamente en localStorage del navegador.
-
-### Mes Actual
-Se puede cambiar desde el selector en el sidebar.
-
-## 📝 Uso
-
-1. **Seleccionar Mes**: Usa el selector del sidebar
-2. **Navegar por Módulos**: Click en los botones del menú lateral
-3. **Registrar Datos**: 
-   - Manualmente: Formularios tradicionales
-   - OCR: Sube imagen/PDF y revisa datos extraídos
-4. **Revisar P&L**: Todos los cálculos se actualizan automáticamente
-
-## 🔒 Privacidad
-
-- **100% Local**: No hay servidor backend
-- **Sin envío de datos**: Todo se procesa en el navegador
-- **localStorage**: Los datos permanecen en tu dispositivo
-
-## 📜 Versión
-
-**v4.23** - Sistema de Diseño UX/UI Moderno (Noviembre 2025)
-
-### Últimas Mejoras
-- ✅ Sistema de diseño moderno con paleta corporativa (#1171ef, #34c759, #ff3b30)
-- ✅ Tipografía Inter integrada con pesos 400-700
-- ✅ Cards con hover effects y elevación suave
-- ✅ Inputs con focus rings y transiciones 0.2s
-- ✅ Componentes consistentes en todos los módulos
-- ✅ Sidebar oscuro profesional (#1d3041)
-- ✅ Toast notifications con 4 variantes (success, error, info, warning)
-- ✅ Modales con backdrop blur y border-radius 16px
-- ✅ Sistema de cierres compacto con tabla desplegable
-- ✅ OCR con soporte PDF (hasta 10MB)
-- ✅ Preprocesado de imagen (contraste, escala de grises)
-- ✅ Tesseract.js con configuración optimizada
-- ✅ Resumen en tiempo real en formularios
-
-## 🤝 Contribuir
-
-Este es un proyecto personal. Si encuentras bugs o tienes sugerencias, abre un issue.
-
-## 📄 Licencia
-
-MIT License - Uso libre
-
-## 👤 Autor
-
-Sistema desarrollado para gestión profesional de hostelería.
-
----
-
-**Nota**: Este sistema está diseñado para ser utilizado en navegadores modernos (Chrome, Firefox, Edge). No requiere instalación de dependencias externas.
+Private.

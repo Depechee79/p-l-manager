@@ -31,7 +31,7 @@
 | `mermas` | Waste/shrinkage records | `restaurantId`, `fecha`, `producto`, `cantidad`, `motivo` | `restaurantId` ASC + `fecha` DESC |
 | `orders` | Purchase orders | `restaurantId`, `fecha`, `proveedorId`, `productos[]`, `estado` | `restaurantId` ASC + `fecha` DESC |
 | `transfers` | Inter-location transfers | `restaurantId`, `fecha`, `origen`, `destino`, `productos[]` | `restaurantId` ASC + `fecha` DESC |
-| `gastosFijos` | Fixed expenses | `restaurantId`, `tipo`, `importe`, `periodo`, `descripcion` | `restaurantId` ASC + `fecha` DESC |
+| `gastosFijos` | Fixed expenses | `restaurantId`, `tipo`, `importe`, `periodo`, `descripcion` | `restaurantId` ASC + `tipo` ASC |
 | `pnl_adjustments` | P&L manual adjustments | `restaurantId`, `fecha`, `tipo`, `importe`, `descripcion` | (same pattern) |
 
 ### 1.3 Shared Data Collections
@@ -120,23 +120,26 @@ service cloud.firestore {
 
 ### 3.3 Current Rules Pattern
 
-Operations collections follow this pattern:
+> **NOTA (Sesion #007):** Las reglas fueron endurecidas. Las colecciones operativas ya usan `canAccessDocument()` + `hasRestaurantAccess()` en lugar del patron basico `isAuthenticated()`. Sesion #008 anadio ownership checks en `companies`, `restaurants` e `invitations`.
+
+Operations collections follow this pattern (post-hardening):
 ```
-allow read: if isAuthenticated();
-allow create: if isAuthenticated();
-allow update: if isAuthenticated();
-allow delete: if isDirector();
+allow read: if canAccessDocument();
+allow create: if hasRestaurantAccess(request.resource.data.restaurantId);
+allow update: if canAccessDocument();
+allow delete: if isDirector() && canAccessDocument();
 ```
 
 Sensitive collections (nominas) are Director-only for writes:
 ```
-allow read: if isAuthenticated();
-allow create, update, delete: if isDirector();
+allow read: if canAccessDocument();
+allow create, update, delete: if isDirector() && canAccessDocument();
 ```
 
-### 3.4 Future Hardening (Planned)
+Configuration collections (`companies`, `restaurants`, `invitations`) tienen ownership checks adicionales (Sesion #008).
 
-- Replace blanket `isAuthenticated()` reads with `canAccessDocument()` on all operations collections.
+### 3.4 Remaining Hardening (Planned)
+
 - Add field-level validation with `hasRequiredFields()` on creates.
 - Add `restaurantId` immutability check on updates (`request.resource.data.restaurantId == resource.data.restaurantId`).
 

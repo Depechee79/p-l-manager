@@ -92,24 +92,24 @@ function ProductDetail() {
 
 ### Application Routes
 
-| Path               | Component        | Description                    | Auth Required | Code Split |
-| ------------------ | ---------------- | ------------------------------ | ------------- | ---------- |
-| `/`                | Dashboard        | Main dashboard with KPIs       | Yes           | Yes        |
-| `/almacen`         | Almacen          | Inventory (6 tabs)             | Yes           | Yes        |
-| `/cierres`         | Cierres          | Cash closings                  | Yes           | Yes        |
-| `/docs`            | DocumentOCR      | Document scanning/OCR          | Yes           | Yes        |
-| `/pnl`             | PnL              | Profit & Loss (2 tabs)         | Yes           | Yes        |
-| `/escandallos`     | Escandallos      | Recipe costing                 | Yes           | Yes        |
-| `/equipo`          | Equipo           | Staff/personnel management     | Yes           | Yes        |
-| `/configuracion`   | Configuracion    | Settings                       | Yes           | Yes        |
+| Path               | Component              | Description                    | Auth Required | Code Split |
+| ------------------ | ---------------------- | ------------------------------ | ------------- | ---------- |
+| `/`                | DashboardPage          | Main dashboard with KPIs       | Yes           | No         |
+| `/almacen`         | AlmacenPage            | Inventory (6 tabs)             | Yes           | No         |
+| `/cierres`         | CierresPage            | Cash closings                  | Yes           | No         |
+| `/docs`            | OCRPage                | Document scanning/OCR          | Yes           | No         |
+| `/pnl`             | PnLPage                | Profit & Loss (2 tabs)         | Yes (pnl.view) | No       |
+| `/escandallos`     | EscandallosPage        | Recipe costing                 | Yes           | No         |
+| `/equipo`          | PersonalPage           | Staff/personnel management     | Yes           | No         |
+| `/configuracion`   | RestaurantConfigPage   | Settings                       | Yes (configuracion.edit) | No |
 
 ### Auth Routes
 
-| Path               | Component        | Description                    | Auth Required | Code Split |
-| ------------------ | ---------------- | ------------------------------ | ------------- | ---------- |
-| `/login`           | Login            | Email/password login           | No            | No         |
-| `/crear-negocio`   | CreateBusiness   | New business onboarding        | Yes (new)     | Yes        |
-| `/registro`        | Register         | Invitation-based registration  | No            | Yes        |
+| Path               | Component              | Description                    | Auth Required | Code Split |
+| ------------------ | ---------------------- | ------------------------------ | ------------- | ---------- |
+| `/login`           | LoginPage              | Email/password login           | No            | No         |
+| `/crear-negocio`   | SignUpPage             | New business onboarding        | No (pre-auth) | No         |
+| `/registro`        | InvitationSignUpPage   | Invitation-based registration  | No            | No         |
 
 ### Route Hierarchy
 
@@ -250,38 +250,20 @@ const ALMACEN_TABS = [
 
 ## Code Splitting
 
-### Every Route is Lazy-Loaded (Except Login)
+### Code Splitting Status
+
+> **NOTA:** Code splitting con `React.lazy()` es prioridad baja y no esta implementado actualmente. Todas las rutas se importan sincronamente en `App.tsx`. Los ejemplos a continuacion muestran el patron objetivo para cuando se implemente.
 
 ```tsx
+// Patron objetivo (NO implementado actualmente):
 import { lazy, Suspense } from "react";
 
-// Login: NOT lazy (must be immediately available)
-import Login from "./pages/Login";
-
-// All other pages: lazy-loaded
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Almacen = lazy(() => import("./pages/Almacen"));
-const Cierres = lazy(() => import("./pages/Cierres"));
-const DocumentOCR = lazy(() => import("./pages/DocumentOCR"));
-const PnL = lazy(() => import("./pages/PnL"));
-const Escandallos = lazy(() => import("./pages/Escandallos"));
-const Equipo = lazy(() => import("./pages/Equipo"));
-const Configuracion = lazy(() => import("./pages/Configuracion"));
-const CreateBusiness = lazy(() => import("./pages/CreateBusiness"));
-const Register = lazy(() => import("./pages/Register"));
-```
+// etc.
 
-### Suspense Boundary
-
-```tsx
-// Wrap ALL lazy routes in a single Suspense boundary
 <Suspense fallback={<PageSkeleton />}>
   <Routes>
-    <Route path="/login" element={<Login />} />
-    <Route element={<ProtectedRoute />}>
-      <Route path="/" element={<Dashboard />} />
-      {/* ... lazy routes */}
-    </Route>
+    {/* ... lazy routes */}
   </Routes>
 </Suspense>
 ```
@@ -292,43 +274,23 @@ const Register = lazy(() => import("./pages/Register"));
 
 ### ProtectedRoute Component
 
-```tsx
-import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-
-function ProtectedRoute() {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) {
-    return <PageSkeleton />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
-  }
-
-  return <Outlet />;
-}
-```
-
-### Permission Checking
+> **NOTA:** El patron actual en `App.tsx` NO usa `<Outlet>`. La autenticacion se resuelve a nivel de `AppContent`: si el usuario no esta autenticado, se muestra un router separado con solo `/login`, `/crear-negocio`, `/registro` y catch-all a `/login`. Las rutas autenticadas se renderizan directamente dentro de `<AppShellV2>`. `ProtectedRoute` se usa solo para rutas que requieren permisos especificos, con la prop `element` (no Outlet).
 
 ```tsx
-// For role-based access within protected routes
-function ProtectedRoute({ requiredPermission }: { requiredPermission?: Permission }) {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) return <PageSkeleton />;
-  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
-
-  if (requiredPermission && !hasPermission(user, requiredPermission)) {
-    return <Navigate to="/" replace />; // Redirect to dashboard if no permission
+// Patron ACTUAL en App.tsx:
+// Rutas con permisos especificos usan ProtectedRoute con element prop:
+<Route
+  path="/pnl"
+  element={
+    <ProtectedRoute
+      element={<PnLPage />}
+      requiredPermissions={['pnl.view']}
+    />
   }
+/>
 
-  return <Outlet />;
-}
+// Rutas sin permisos especificos se renderizan directamente:
+<Route path="/" element={<DashboardPage />} />
 ```
 
 ### Protection Rules
@@ -391,14 +353,23 @@ import { Link } from "react-router-dom";
 
 ### Old Route Redirects
 
-Document all redirects in `App.tsx` for traceability.
+Redirects actuales en `App.tsx`:
 
 ```tsx
-// Redirect old routes to new locations
+<Route path="/ocr" element={<Navigate to="/docs" replace />} />
+<Route path="/proveedores" element={<Navigate to="/almacen?tab=proveedores" replace />} />
+<Route path="/transferencias" element={<Navigate to="/almacen?tab=traspasos" replace />} />
+<Route path="/gastos-fijos" element={<Navigate to="/pnl?tab=gastos-fijos" replace />} />
 <Route path="/inventario" element={<Navigate to="/almacen" replace />} />
-<Route path="/recetas" element={<Navigate to="/escandallos" replace />} />
+<Route path="/inventarios" element={<Navigate to="/almacen" replace />} />
+<Route path="/mermas" element={<Navigate to="/almacen?tab=mermas" replace />} />
+<Route path="/pedidos" element={<Navigate to="/almacen?tab=pedidos" replace />} />
+<Route path="/nominas" element={<Navigate to="/equipo" replace />} />
+<Route path="/roles" element={<Navigate to="/configuracion?tab=roles" replace />} />
+<Route path="/ingenieria-menu" element={<Navigate to="/escandallos?tab=analisis" replace />} />
 <Route path="/personal" element={<Navigate to="/equipo" replace />} />
-<Route path="/ajustes" element={<Navigate to="/configuracion" replace />} />
+<Route path="/usuarios" element={<Navigate to="/equipo" replace />} />
+<Route path="*" element={<Navigate to="/" replace />} />
 ```
 
 ### 404 Handling

@@ -3,7 +3,7 @@
 > **Framework:** Vitest 4.0 + Testing Library React 16 + jsdom
 > **Config:** `vitest.config.ts`
 > **Setup:** `src/test/setup.ts`
-> **Current state:** 51 tests, coverage incomplete. Expansion required.
+> **Current state:** 383 tests (359 passing, 24 skipped integration), coverage incomplete. Expansion required.
 > **Enforced by:** Supreme Rule Section "TESTING"
 
 ---

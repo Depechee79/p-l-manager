@@ -1,26 +1,19 @@
 # P&L Manager — Inventario de Componentes
 
 > Catalogo de componentes exportados desde `src/shared/components/index.ts`.
-> Ultima actualizacion: 2026-03-27 (Sesion #005)
-
-## Nota sobre duplicacion V1/V2
-
-Existen componentes duplicados que requieren consolidacion:
-- **Button.tsx + ButtonV2.tsx** — Dos implementaciones de boton. Consolidar en uno solo.
-
-Esta consolidacion esta en el backlog como tarea de prioridad alta.
+> Ultima actualizacion: 2026-03-29 (Sesion #008)
 
 ## Core Components
 
 | Componente | Archivo | Descripcion |
 |------------|---------|-------------|
 | `Checkbox` | `Checkbox.tsx` | Checkbox con label |
-| `Button` | `Button.tsx` | Boton primario (V1) |
-| `ButtonV2` | `ButtonV2.tsx` | Boton mejorado con soporte iconos (V2) |
+| `Button` | `Button.tsx` | Boton consolidado (todas las variantes, iconos, loading) |
 | `Switch` | `Switch.tsx` | Toggle switch |
 | `Card` | `Card.tsx` | Contenedor de contenido |
 | `Input` | `Input.tsx` | Campo de texto |
-| `Modal` | `Modal.tsx` | Dialogo overlay (V1) |
+| `Modal` | `Modal.tsx` | Dialogo overlay |
+| `ConfirmDialog` | `ConfirmDialog.tsx` | Dialogo de confirmacion para acciones destructivas |
 | `Table` | `Table.tsx` | Tabla de datos |
 
 ## Form Components
@@ -67,22 +60,21 @@ Esta consolidacion esta en el backlog como tarea de prioridad alta.
 |------------|---------|-------------|
 | `TabsHorizontal` | `TabsHorizontal.tsx` | Navegacion por tabs |
 
-## V2 Design System Components
+## Design System Components
 
-Componentes del sistema de diseno V2, basados en referencia Almacen (36px height, 8px radius, filtros compactos).
+Componentes del sistema de diseno (renombrados en Sesion #007 — el sufijo V2 fue eliminado).
 
 | Componente | Archivo | Descripcion |
 |------------|---------|-------------|
-| `TabsNavV2` | `TabsNavV2.tsx` | Navegacion tabs V2 |
-| `ButtonV2` | `ButtonV2.tsx` | Boton V2 con iconos izquierda/derecha |
-| `ActionHeaderV2` | `ActionHeaderV2.tsx` | Cabecera de acciones V2 |
-| `FilterCardV2` | `FilterCardV2.tsx` | Tarjeta de filtros V2 |
-| `FilterInputV2` | `FilterCardV2.tsx` | Input de filtro V2 |
-| `FilterTextInput` | `FilterCardV2.tsx` | Input de texto para filtro |
-| `FilterSelect` | `FilterCardV2.tsx` | Select para filtro |
-| `DataCardV2` | `DataCardV2.tsx` | Tarjeta de datos/KPIs V2 |
-| `PageLayoutV2` | `PageLayoutV2.tsx` | Layout de pagina V2 |
-| `SelectV2` | `SelectV2.tsx` | Select mejorado V2 |
+| `TabsNav` | `TabsNav.tsx` | Navegacion tabs |
+| `ActionHeader` | `ActionHeader.tsx` | Cabecera de acciones |
+| `FilterCard` | `FilterCard.tsx` | Tarjeta de filtros |
+| `FilterInput` | `FilterCard.tsx` | Input de filtro |
+| `FilterTextInput` | `FilterCard.tsx` | Input de texto para filtro |
+| `FilterSelect` | `FilterCard.tsx` | Select para filtro |
+| `DataCard` | `DataCard.tsx` | Tarjeta de datos/KPIs |
+| `PageLayout` | `PageLayout.tsx` | Layout de pagina |
+| `Select` | `Select.tsx` | Select mejorado |
 
 ## Security Components
 
@@ -108,12 +100,12 @@ Componentes del sistema de diseno V2, basados en referencia Almacen (36px height
 
 ## Totales
 
-- **Core:** 8 componentes
+- **Core:** 8 componentes (Button consolidado, +ConfirmDialog)
 - **Form:** 6 componentes
 - **Feedback:** 12 componentes (incluyendo 8 variantes Skeleton)
 - **Layout:** 5 componentes
 - **Navigation:** 1 componente
-- **V2 Design System:** 10 componentes
+- **Design System:** 9 componentes (renombrados sin sufijo V2, ButtonV2 consolidado en Button)
 - **Security:** 1 componente
 - **Layout Shell:** 11 componentes
-- **TOTAL:** ~54 componentes shared
+- **TOTAL:** ~53 componentes shared
