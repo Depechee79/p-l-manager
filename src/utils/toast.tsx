@@ -35,7 +35,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Math.random().toString(36).substring(2, 11);
+    const id = crypto.randomUUID();
     const newToast: Toast = {
       ...toast,
       id,

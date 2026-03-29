@@ -49,7 +49,7 @@ class ToastServiceClass {
    * Generar ID único
    */
   private generateId(): string {
-    return `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `toast_${Date.now()}_${crypto.randomUUID().substring(0, 9)}`;
   }
 
   /**
