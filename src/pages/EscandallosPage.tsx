@@ -1,16 +1,16 @@
 /**
  * EscandallosPage - Recipes and Menu Engineering
  *
- * Session 007: Updated with V2 design system
+ * Session 007: Updated with design system
  * - Removed StickyPageHeader (title shown in topbar breadcrumb)
- * - Using PageLayoutV2 for sticky tabs/filters
- * - ActionHeaderV2 with tabs
+ * - Using PageLayout for sticky tabs/filters
+ * - ActionHeader with tabs
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ClipboardList, BarChart3, Plus } from 'lucide-react';
 import { EscandalloList, EscandalloWizard, EscandalloFormData, MenuAnalysisTab } from '../features/escandallos';
-import { PageContainer, PageLayoutV2, ActionHeaderV2, ButtonV2, type TabV2 } from '@shared/components';
+import { PageContainer, PageLayout, ActionHeader, Button, type Tab } from '@shared/components';
 import { useToast } from '../utils/toast';
 import { EscandalloService } from '../services/escandallo-service';
 import type { Escandallo } from '@types';
@@ -19,8 +19,8 @@ import { logger } from '@core/services/LoggerService';
 
 type TabId = 'recetas' | 'analisis';
 
-// V2 tabs with icons
-const TABS: TabV2[] = [
+// Tabs with icons
+const TABS: Tab[] = [
   { id: 'recetas', label: 'Escandallos', icon: <ClipboardList size={16} /> },
   { id: 'analisis', label: 'Análisis Menú', icon: <BarChart3 size={16} /> },
 ];
@@ -166,16 +166,16 @@ export const EscandallosPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <PageLayoutV2
+      <PageLayout
         header={
-          <ActionHeaderV2
+          <ActionHeader
             tabs={TABS}
             activeTab={activeTab}
             onTabChange={(id) => handleTabChange(id as TabId)}
             actions={activeTab === 'recetas' ? (
-              <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={() => handleOpenForm()}>
+              <Button variant="primary" icon={<Plus size={16} />} onClick={() => handleOpenForm()}>
                 Nuevo Escandallo
-              </ButtonV2>
+              </Button>
             ) : undefined}
           />
         }
@@ -193,7 +193,7 @@ export const EscandallosPage: React.FC = () => {
         ) : (
           <MenuAnalysisTab />
         )}
-      </PageLayoutV2>
+      </PageLayout>
     </PageContainer>
   );
 };

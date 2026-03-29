@@ -1,10 +1,10 @@
 /**
  * PersonalPage - Team Management
  *
- * Session 007: Updated with V2 design system
+ * Session 007: Updated with design system
  * - Removed StickyPageHeader (title shown in topbar breadcrumb)
- * - Using PageLayoutV2 for sticky tabs/filters
- * - ActionHeaderV2 with tabs
+ * - Using PageLayout for sticky tabs/filters
+ * - ActionHeader with tabs
  */
 import React, { useState, useMemo } from 'react';
 import {
@@ -24,7 +24,7 @@ import {
     Palmtree,
     Receipt
 } from 'lucide-react';
-import { Button, Input, Select, Table, Card, FormSection, PageContainer, PageLayoutV2, ActionHeaderV2, ButtonV2, FilterCardV2, FilterInputV2, FilterTextInput, type TabV2 } from '@shared/components';
+import { Button, Input, Select, Table, Card, FormSection, PageContainer, PageLayout, ActionHeader, FilterCard, FilterInput, FilterTextInput, type Tab } from '@shared/components';
 import { useWorkers } from './hooks/useWorkers';
 import { HorariosPage } from './components/HorariosPage';
 import { FichajesPage } from './components/FichajesPage';
@@ -39,8 +39,8 @@ import type { Worker, AppUser, TimeEntry, VacationRequest, Absence } from '@type
 
 type TabId = 'staff' | 'schedule' | 'time' | 'incidences' | 'vacations' | 'nominas';
 
-// V2 tabs with icons (16px for V2)
-const PERSONAL_TABS: TabV2[] = [
+// Tabs with icons (16px)
+const PERSONAL_TABS: Tab[] = [
     { id: 'staff', label: 'Plantilla', icon: <Users size={16} /> },
     { id: 'schedule', label: 'Horarios', icon: <Calendar size={16} /> },
     { id: 'time', label: 'Fichajes', icon: <Clock size={16} /> },
@@ -354,32 +354,32 @@ export const PersonalPage: React.FC = () => {
 
     return (
         <PageContainer>
-            <PageLayoutV2
+            <PageLayout
                 header={
-                    <ActionHeaderV2
+                    <ActionHeader
                         tabs={PERSONAL_TABS}
                         activeTab={activeTab}
                         onTabChange={(id: string) => { setActiveTab(id as TabId); setViewMode('list'); }}
                         actions={activeTab === 'staff' ? (
-                            <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={handleOpenForm}>
+                            <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenForm}>
                                 Añadir Persona
-                            </ButtonV2>
+                            </Button>
                         ) : undefined}
                     />
                 }
             >
                 {activeTab === 'staff' && (
                     <>
-                        <FilterCardV2 columns={1}>
-                            <FilterInputV2 label="Buscar">
+                        <FilterCard columns={1}>
+                            <FilterInput label="Buscar">
                                 <FilterTextInput
                                     value={searchQuery}
                                     onChange={setSearchQuery}
                                     placeholder="Buscar por nombre, cargo o email..."
                                     icon={<Search size={14} />}
                                 />
-                            </FilterInputV2>
-                        </FilterCardV2>
+                            </FilterInput>
+                        </FilterCard>
 
                         <Card style={{ padding: 0, overflow: 'hidden', marginTop: 'var(--spacing-md)' }}>
                             <Table
@@ -531,7 +531,7 @@ export const PersonalPage: React.FC = () => {
                 )}
 
                 {activeTab === 'nominas' && <NominasTab />}
-            </PageLayoutV2>
+            </PageLayout>
         </PageContainer>
     );
 };

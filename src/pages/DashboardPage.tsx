@@ -1,15 +1,15 @@
 /**
  * DashboardPage - Multi-Restaurant Dashboard
  *
- * Session 007: Updated with V2 design system
+ * Session 007: Updated with design system
  * - Removed StickyPageHeader (route shown in topbar breadcrumb)
- * - Using PageLayoutV2 for sticky filters
+ * - Using PageLayout for sticky filters
  *
  * @audit AUDIT-02 - Added restaurant ranking and selector
  * @audit OPS-02 - Replaced Math.random() with real data from cierres
  */
 import React, { useMemo } from 'react';
-import { PageContainer, PageLayoutV2, ActionHeaderV2, FilterCardV2, FilterInputV2, FilterSelect, type TabV2 } from '@shared/components';
+import { PageContainer, PageLayout, ActionHeader, FilterCard, FilterInput, FilterSelect, type Tab } from '@shared/components';
 import { logger } from '@core/services/LoggerService';
 import {
   useDashboardMetrics,
@@ -24,7 +24,7 @@ import { useRestaurantContext, useDatabase } from '@core';
 import { useUserPermissions } from '@shared/hooks/useUserPermissions';
 import type { Cierre, Invoice } from '@/types';
 
-const PERIOD_TABS: TabV2[] = [
+const PERIOD_TABS: Tab[] = [
   { id: 'day', label: 'Día' },
   { id: 'week', label: 'Semana' },
   { id: 'month', label: 'Mes' },
@@ -146,11 +146,11 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <PageLayoutV2
+      <PageLayout
         header={
           <>
             {/* Period Tabs */}
-            <ActionHeaderV2
+            <ActionHeader
               tabs={PERIOD_TABS}
               activeTab={selectedPeriod}
               onTabChange={(id) => setSelectedPeriod(id as typeof selectedPeriod)}
@@ -158,8 +158,8 @@ export const DashboardPage: React.FC = () => {
 
             {/* Restaurant Filter (only if multiple) */}
             {hasMultipleRestaurants && (
-              <FilterCardV2 columns={1}>
-                <FilterInputV2 label="Restaurante">
+              <FilterCard columns={1}>
+                <FilterInput label="Restaurante">
                   <FilterSelect
                     value={viewMode === 'consolidated' ? 'all' : String(currentRestaurant?.id || '')}
                     onChange={(value) => {
@@ -172,8 +172,8 @@ export const DashboardPage: React.FC = () => {
                     }}
                     options={restaurantOptions}
                   />
-                </FilterInputV2>
-              </FilterCardV2>
+                </FilterInput>
+              </FilterCard>
             )}
           </>
         }
@@ -207,7 +207,7 @@ export const DashboardPage: React.FC = () => {
           {/* Alerts Section */}
           <AlertsPanel alerts={alerts} />
         </div>
-      </PageLayoutV2>
+      </PageLayout>
     </PageContainer>
   );
 };

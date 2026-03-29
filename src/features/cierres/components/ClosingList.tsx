@@ -1,9 +1,9 @@
 /**
  * ClosingList - Cash Closings List Component
  *
- * Session 007: Updated with V2 design system
- * - FilterCardV2 for period filter
- * - DataCardV2 for table and empty state
+ * Session 007: Updated with design system
+ * - FilterCard for period filter
+ * - DataCard for table and empty state
  */
 import type { FC, MouseEvent } from 'react';
 import {
@@ -20,9 +20,9 @@ import {
 import {
   Button,
   Table,
-  FilterCardV2,
-  FilterInputV2,
-  DataCardV2,
+  FilterCard,
+  FilterInput,
+  DataCard,
 } from '@shared/components';
 import { formatCurrency, formatDate } from '@utils/formatters';
 import type { Cierre } from '@types';
@@ -70,35 +70,35 @@ Sent from P&L Manager`;
   return (
     <div className="flex flex-col gap-md">
       {/* Period Filter */}
-      <FilterCardV2 columns={2}>
-        <FilterInputV2 label="Periodo">
+      <FilterCard columns={2}>
+        <FilterInput label="Periodo">
           <input
             type="month"
             value={effectiveFilterPeriod}
             onChange={(e) => onFilterChange(e.target.value)}
             className="w-full h-[var(--app-filter-input-h)] px-3 bg-surface-muted border-none rounded-[var(--app-interactive-radius)] text-[var(--app-filter-input-size)] text-text-main outline-none"
           />
-        </FilterInputV2>
+        </FilterInput>
         <div />
-      </FilterCardV2>
+      </FilterCard>
 
       {/* Data Card */}
       {loading ? (
-        <DataCardV2
+        <DataCard
           isEmpty
           emptyTitle="Cargando cierres..."
           emptyDescription="Por favor espera mientras se cargan los datos."
           emptyIcon={<Wallet size={32} color="var(--text-light)" strokeWidth={1.5} />}
         />
       ) : closings.length === 0 ? (
-        <DataCardV2
+        <DataCard
           isEmpty
           emptyTitle="No hay cierres registrados"
           emptyDescription="Crea un nuevo cierre para comenzar a registrar la caja."
           emptyIcon={<Wallet size={32} color="var(--text-light)" strokeWidth={1.5} />}
         />
       ) : (
-        <DataCardV2
+        <DataCard
           kpis={[
             { label: 'Cierres', value: closings.length },
             { label: 'Total Periodo', value: formatCurrency(totalReal) },
@@ -222,7 +222,7 @@ Sent from P&L Manager`;
               </div>
             )}
           />
-        </DataCardV2>
+        </DataCard>
       )}
     </div>
   );

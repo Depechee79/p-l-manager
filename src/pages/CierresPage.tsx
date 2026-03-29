@@ -1,15 +1,15 @@
 /**
  * CierresPage - Cash Closings Management
  *
- * Session 007: Updated with V2 design system
- * - PageLayoutV2 for proper scroll behavior
- * - ActionHeaderV2 with buttons
- * - FilterCardV2 for period filter
- * - DataCardV2 for empty/loading states
+ * Session 007: Updated with design system
+ * - PageLayout for proper scroll behavior
+ * - ActionHeader with buttons
+ * - FilterCard for period filter
+ * - DataCard for empty/loading states
  */
 import { useState, useEffect, type FC } from 'react';
 import { Plus } from 'lucide-react';
-import { PageContainer, PageLayoutV2, ActionHeaderV2, ButtonV2 } from '@shared/components';
+import { PageContainer, PageLayout, ActionHeader, Button } from '@shared/components';
 import { logger } from '@core/services/LoggerService';
 import { useFinance } from '../hooks/useFinance';
 import { useDatabase } from '@core';
@@ -89,7 +89,7 @@ export const CierresPage: FC = () => {
     }
   };
 
-  // Form view - outside PageLayoutV2 since it has its own header
+  // Form view - outside PageLayout since it has its own header
   if (viewMode === 'form') {
     return (
       <PageContainer>
@@ -104,13 +104,13 @@ export const CierresPage: FC = () => {
 
   return (
     <PageContainer>
-      <PageLayoutV2
+      <PageLayout
         header={
-          <ActionHeaderV2
+          <ActionHeader
             actions={
-              <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={handleOpenForm}>
+              <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenForm}>
                 Nuevo Cierre
-              </ButtonV2>
+              </Button>
             }
           />
         }
@@ -118,9 +118,9 @@ export const CierresPage: FC = () => {
         {error && (
           <div className="px-4 py-3 mb-4 bg-[var(--danger-light)] border border-[var(--border)] rounded-lg flex justify-between items-center">
             <span className="text-danger">{error}</span>
-            <ButtonV2 variant="ghost" onClick={clearError}>
+            <Button variant="ghost" onClick={clearError}>
               ✕
-            </ButtonV2>
+            </Button>
           </div>
         )}
 
@@ -132,7 +132,7 @@ export const CierresPage: FC = () => {
           onEditClosing={handleEdit}
           onDeleteClosing={handleDelete}
         />
-      </PageLayoutV2>
+      </PageLayout>
     </PageContainer>
   );
 };

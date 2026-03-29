@@ -1,5 +1,5 @@
 import React from 'react';
-import { ButtonV2, Badge } from '@/shared/components'; // Asumiendo imports
+import { Button, Badge } from '@/shared/components'; // Asumiendo imports
 import { ArrowLeft } from 'lucide-react';
 
 interface ConfigListHeaderProps {
@@ -66,9 +66,9 @@ export const ConfigDetailHeader: React.FC<ConfigDetailHeaderProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             {/* Grupo Izquierda: Atrás + Título + Badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <ButtonV2 variant="ghost" icon={<ArrowLeft size={18} />} onClick={onBack}>
+                <Button variant="ghost" icon={<ArrowLeft size={18} />} onClick={onBack}>
                     Atrás
-                </ButtonV2>
+                </Button>
 
                 <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {title}

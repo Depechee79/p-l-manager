@@ -62,7 +62,7 @@ export const AppShellV2: React.FC<AppShellV2Props> = ({ children, user, onLogout
         />
       )}
 
-      {/* Main Content Area - NO scroll here, PageLayoutV2 handles scroll */}
+      {/* Main Content Area - NO scroll here, PageLayout handles scroll */}
       <main
         className="app-shell-main"
         style={{

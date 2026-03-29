@@ -13,7 +13,7 @@ import React, { useState, useEffect } from 'react';
 import {
 
     Card,
-    ButtonV2,
+    Button,
     Modal,
     Input,
     Checkbox
@@ -227,22 +227,22 @@ export const RolesTab: React.FC<RolesTabProps> = ({ onRegisterActions }) => {
                         </div>
 
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <ButtonV2
+                            <Button
                                 variant="secondary"
                                 onClick={handleBackToList}
                                 disabled={isSaving}
                                 icon={<ArrowLeft size={16} />}
                             >
                                 Volver
-                            </ButtonV2>
+                            </Button>
                             {hasChanges && (
-                                <ButtonV2
+                                <Button
                                     variant="primary"
                                     onClick={handleSavePermissions}
                                     disabled={isSaving}
                                 >
                                     {isSaving ? 'Guardando...' : 'Guardar'}
-                                </ButtonV2>
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -331,9 +331,9 @@ export const RolesTab: React.FC<RolesTabProps> = ({ onRegisterActions }) => {
                             style={{ margin: 0 }}
                         />
                     </div>
-                    <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={openCreateModal}>
+                    <Button variant="primary" icon={<Plus size={16} />} onClick={openCreateModal}>
                         Nuevo Rol
-                    </ButtonV2>
+                    </Button>
                 </div>
 
                 {/* Lista Vertical con Scroll Interno */}
@@ -376,7 +376,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({ onRegisterActions }) => {
                                 </div>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <ButtonV2
+                                    <Button
                                         variant="ghost"
                                         icon={<Pencil size={16} />}
                                         onClick={(e) => {
@@ -385,9 +385,9 @@ export const RolesTab: React.FC<RolesTabProps> = ({ onRegisterActions }) => {
                                         }}
                                     >
                                         Editar
-                                    </ButtonV2>
+                                    </Button>
 
-                                    <ButtonV2
+                                    <Button
                                         variant="ghost"
                                         style={{
                                             color: 'var(--danger)',
@@ -402,7 +402,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({ onRegisterActions }) => {
                                         title="Eliminar Rol"
                                     >
                                         <Trash2 size={16} />
-                                    </ButtonV2>
+                                    </Button>
                                 </div>
                             </div>
                         );
@@ -430,10 +430,10 @@ export const RolesTab: React.FC<RolesTabProps> = ({ onRegisterActions }) => {
                         autoFocus
                     />
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                        <ButtonV2 variant="ghost" onClick={() => setIsNewRoleModalOpen(false)}>Cancelar</ButtonV2>
-                        <ButtonV2 variant="primary" onClick={handleCreateSubmit} disabled={!newRoleName.trim()}>
+                        <Button variant="ghost" onClick={() => setIsNewRoleModalOpen(false)}>Cancelar</Button>
+                        <Button variant="primary" onClick={handleCreateSubmit} disabled={!newRoleName.trim()}>
                             Crear y Configurar
-                        </ButtonV2>
+                        </Button>
                     </div>
                 </div>
             </Modal>
@@ -463,15 +463,15 @@ export const RolesTab: React.FC<RolesTabProps> = ({ onRegisterActions }) => {
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                        <ButtonV2 variant="ghost" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</ButtonV2>
-                        <ButtonV2
+                        <Button variant="ghost" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</Button>
+                        <Button
                             variant="primary"
                             onClick={handleDeleteRole}
                             disabled={isSaving}
                             className="bg-danger border-danger hover:bg-danger-dark"
                         >
                             {isSaving ? 'Eliminando...' : 'Eliminar Rol'}
-                        </ButtonV2>
+                        </Button>
                     </div>
                 </div>
             </Modal>

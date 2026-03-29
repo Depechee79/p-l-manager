@@ -1,10 +1,10 @@
 /**
  * RestaurantConfigPage - Restaurant Management
  *
- * Session 007: Updated with V2 design system
+ * Session 007: Updated with design system
  * - Removed StickyPageHeader (title shown in topbar breadcrumb)
- * - Using PageLayoutV2 for sticky tabs/filters
- * - ActionHeaderV2 with tabs
+ * - Using PageLayout for sticky tabs/filters
+ * - ActionHeader with tabs
  *
  * @audit AUDIT-07 - Full restaurant CRUD
  * @audit AUDIT-03 - Code generation & Hours field
@@ -12,7 +12,7 @@
  * @rules R-01, R-02, R-04, R-13, R-UI-GLASS
  */
 import React, { useState, useEffect } from 'react';
-import { Card, Input, Button, PageLayoutV2, ActionHeaderV2, ButtonV2, Modal, type TabV2, Badge, Table, Switch, PageContainer } from '@/shared/components';
+import { Card, Input, Button, PageLayout, ActionHeader, Modal, type Tab, Badge, Table, Switch, PageContainer } from '@/shared/components';
 import { Save, Building2, Plus, Check, X, Store, Phone, Mail, MapPin, Globe, FileText, Pencil, Trash2, AlertTriangle, Settings, Shield, User2, Clock } from 'lucide-react';
 import type { Restaurant, Company } from '@types';
 import { useRestaurant } from '@core';
@@ -32,11 +32,11 @@ const glassCardStyle: React.CSSProperties = {
     overflow: 'hidden'
 };
 
-// Tab configuration - V2 with 16px icons
+// Tab configuration with 16px icons
 // Order: Holding → Restaurantes → Responsables → Roles
 type ConfigTabId = 'group' | 'restaurants' | 'responsables' | 'roles';
 
-const CONFIG_TABS: TabV2[] = [
+const CONFIG_TABS: Tab[] = [
     { id: 'group', label: 'Holding / Grupo', icon: <Building2 size={16} /> },
     { id: 'restaurants', label: 'Restaurantes', icon: <Store size={16} /> },
     { id: 'responsables', label: 'Responsables', icon: <Settings size={16} /> },
@@ -232,7 +232,9 @@ export const RestaurantConfigPage: React.FC = () => {
 
     // Helper: Generate random code if missing
     const generateCode = () => {
-        return 'RES-' + Math.floor(1000 + Math.random() * 9000).toString();
+        const bytes = crypto.getRandomValues(new Uint8Array(2));
+        const num = 1000 + ((bytes[0] * 256 + bytes[1]) % 9000);
+        return 'RES-' + num.toString();
     };
 
     const handleSave = async () => {
@@ -362,10 +364,10 @@ export const RestaurantConfigPage: React.FC = () => {
 
     return (
         <PageContainer>
-            <PageLayoutV2
+            <PageLayout
                 disableScroll={true}
                 header={
-                    <ActionHeaderV2
+                    <ActionHeader
                         tabs={CONFIG_TABS}
                         activeTab={activeTab}
                         onTabChange={(tabId) => {
@@ -382,18 +384,18 @@ export const RestaurantConfigPage: React.FC = () => {
                             activeTab === 'group' ? (
                                 isEditingGroup ? (
                                     <>
-                                        <ButtonV2 variant="ghost" onClick={handleCancelEdit}>
+                                        <Button variant="ghost" onClick={handleCancelEdit}>
                                             <X size={18} style={{ marginRight: '8px' }} /> Cancelar
-                                        </ButtonV2>
-                                        <ButtonV2 variant="primary" onClick={handleSave} disabled={isSaving}>
+                                        </Button>
+                                        <Button variant="primary" onClick={handleSave} disabled={isSaving}>
                                             <Save size={18} style={{ marginRight: '8px' }} />
                                             {isSaving ? 'Guardando...' : 'Guardar'}
-                                        </ButtonV2>
+                                        </Button>
                                     </>
                                 ) : (
-                                    <ButtonV2 variant="secondary" onClick={() => setIsEditingGroup(true)}>
+                                    <Button variant="secondary" onClick={() => setIsEditingGroup(true)}>
                                         <Pencil size={18} style={{ marginRight: '8px' }} /> Editar
-                                    </ButtonV2>
+                                    </Button>
                                 )
                             ) : activeTab === 'roles' ? (
                                 roleActions
@@ -559,9 +561,9 @@ export const RestaurantConfigPage: React.FC = () => {
                                             style={{ margin: 0 }}
                                         />
                                     </div>
-                                    <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={handleNewRestaurant}>
+                                    <Button variant="primary" icon={<Plus size={16} />} onClick={handleNewRestaurant}>
                                         Nuevo Restaurante
-                                    </ButtonV2>
+                                    </Button>
                                 </div>
 
                                 {/* Table Container */}
@@ -596,7 +598,7 @@ export const RestaurantConfigPage: React.FC = () => {
                                                 header: '',
                                                 render: (_, r: Restaurant) => (
                                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                        <ButtonV2
+                                                        <Button
                                                             variant="ghost"
                                                             icon={<Pencil size={16} />}
                                                             onClick={() => handleSelectRestaurant(String(r.id))}
@@ -645,28 +647,28 @@ export const RestaurantConfigPage: React.FC = () => {
                                     </div>
 
                                     <div style={{ display: 'flex', gap: '12px' }}>
-                                        <ButtonV2 variant="secondary" onClick={() => setRestaurantView('list')}>
+                                        <Button variant="secondary" onClick={() => setRestaurantView('list')}>
                                             <X size={16} /> Volver
-                                        </ButtonV2>
+                                        </Button>
 
                                         {mode === 'edit' && currentRestaurant && (
-                                            <ButtonV2 variant="ghost" className="text-danger hover:bg-danger-light" onClick={() => setIsDeleteModalOpen(true)} disabled={isSaving}>
+                                            <Button variant="ghost" className="text-danger hover:bg-danger-light" onClick={() => setIsDeleteModalOpen(true)} disabled={isSaving}>
                                                 <Trash2 size={16} />
-                                            </ButtonV2>
+                                            </Button>
                                         )}
                                         {isEditingRestaurant ? (
                                             <>
-                                                <ButtonV2 variant="ghost" onClick={handleCancelEdit}>
+                                                <Button variant="ghost" onClick={handleCancelEdit}>
                                                     Cancelar
-                                                </ButtonV2>
-                                                <ButtonV2 variant="primary" onClick={handleSave} disabled={isSaving}>
+                                                </Button>
+                                                <Button variant="primary" onClick={handleSave} disabled={isSaving}>
                                                     {isSaving ? 'Guardando...' : 'Guardar'}
-                                                </ButtonV2>
+                                                </Button>
                                             </>
                                         ) : (
-                                            <ButtonV2 variant="secondary" onClick={() => setIsEditingRestaurant(true)}>
+                                            <Button variant="secondary" onClick={() => setIsEditingRestaurant(true)}>
                                                 <Pencil size={16} style={{ marginRight: '8px' }} /> Editar
-                                            </ButtonV2>
+                                            </Button>
                                         )}
                                     </div>
                                 </div>
@@ -830,7 +832,7 @@ export const RestaurantConfigPage: React.FC = () => {
                     )
                 )}
 
-            </PageLayoutV2>
+            </PageLayout>
 
             {/* Modal Borrado (Fuera del layout) */}
             <Modal

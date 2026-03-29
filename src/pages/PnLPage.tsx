@@ -1,10 +1,10 @@
 /**
  * PnLPage - Complete P&L Statement (Cuenta de Explotación)
  *
- * Session 007: Updated with V2 design system
+ * Session 007: Updated with design system
  * - Removed StickyPageHeader (title shown in topbar breadcrumb)
- * - Using PageLayoutV2 for sticky tabs/filters
- * - ActionHeaderV2 with tabs
+ * - Using PageLayout for sticky tabs/filters
+ * - ActionHeader with tabs
  *
  * Tabs: Resultados | Gastos Fijos
  * KPIs: Food Cost %, Labor Cost %, Prime Cost %, EBITDA %
@@ -29,13 +29,12 @@ import {
   FormSection,
   Table,
   PageContainer,
-  PageLayoutV2,
-  ActionHeaderV2,
-  ButtonV2,
+  PageLayout,
+  ActionHeader,
   Select,
   Input,
   Modal,
-  type TabV2
+  type Tab
 } from '@shared/components';
 import { useDatabase, useRestaurant } from '@core';
 import { logger } from '@core/services/LoggerService';
@@ -50,7 +49,7 @@ import { GastosFijosPage } from './GastosFijosPage';
 // Tab configuration
 type PnLTabId = 'resultados' | 'gastos-fijos';
 
-const PNL_TABS: TabV2[] = [
+const PNL_TABS: Tab[] = [
   { id: 'resultados', label: 'Resultados', icon: <BarChart3 size={16} /> },
   { id: 'gastos-fijos', label: 'Gastos Fijos', icon: <FileText size={16} /> },
 ];
@@ -408,25 +407,25 @@ export const PnLPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <PageLayoutV2
+      <PageLayout
         header={
-          <ActionHeaderV2
+          <ActionHeader
             tabs={PNL_TABS}
             activeTab={activeTab}
             onTabChange={(tabId) => setActiveTab(tabId as PnLTabId)}
             actions={activeTab === 'resultados' ? (
               <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
-                <ButtonV2 variant="secondary" icon={<Plus size={16} />} onClick={() => setIsManualModalOpen(true)}>
+                <Button variant="secondary" icon={<Plus size={16} />} onClick={() => setIsManualModalOpen(true)}>
                   Ajuste Manual
-                </ButtonV2>
+                </Button>
                 {pnlData && (
-                  <ButtonV2 variant="secondary" icon={<Download size={16} />} onClick={handleExport}>
+                  <Button variant="secondary" icon={<Download size={16} />} onClick={handleExport}>
                     Exportar
-                  </ButtonV2>
+                  </Button>
                 )}
-                <ButtonV2 variant="primary" icon={<Calendar size={16} />} onClick={handleCalculate}>
+                <Button variant="primary" icon={<Calendar size={16} />} onClick={handleCalculate}>
                   Actualizar
-                </ButtonV2>
+                </Button>
               </div>
             ) : undefined}
           />
@@ -715,7 +714,7 @@ export const PnLPage: React.FC = () => {
       )}
         </>
       )}
-      </PageLayoutV2>
+      </PageLayout>
     </PageContainer>
   );
 };

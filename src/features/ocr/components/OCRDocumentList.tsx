@@ -1,10 +1,10 @@
 /**
  * OCRDocumentList - Document List Component
  *
- * Session 007: Updated with V2 design system
- * - ActionHeaderV2 with TabsNavV2
- * - FilterCardV2 with search
- * - DataCardV2 for empty state
+ * Session 007: Updated with design system
+ * - ActionHeader with TabsNav
+ * - FilterCard with search
+ * - DataCard for empty state
  *
  * Displays a list of OCR-scanned documents with filtering and search.
  * Supports both desktop table view and mobile card view.
@@ -28,14 +28,13 @@ import {
 import {
   Button,
   Table,
-  type TabV2,
-  ActionHeaderV2,
-  FilterCardV2,
-  FilterInputV2,
+  type Tab,
+  ActionHeader,
+  FilterCard,
+  FilterInput,
   FilterTextInput,
   FilterSelect,
-  DataCardV2,
-  ButtonV2,
+  DataCard,
 } from '@shared/components';
 import { formatDate, formatCurrency } from '@utils/formatters';
 
@@ -67,7 +66,7 @@ export interface OCRDocumentListProps {
   onDeleteDocument: (doc: OCRDocument) => void;
 }
 
-const FILTER_TABS: TabV2[] = [
+const FILTER_TABS: Tab[] = [
   { id: 'all', label: 'Todos', icon: <FileText size={16} /> },
   { id: 'recent', label: 'Recientes', icon: <Clock size={16} /> },
   { id: 'facturas', label: 'Facturas', icon: <Receipt size={16} /> },
@@ -105,28 +104,28 @@ export const OCRDocumentList: React.FC<OCRDocumentListProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
       {/* Action Header with Tabs and New Button */}
-      <ActionHeaderV2
+      <ActionHeader
         tabs={FILTER_TABS}
         activeTab={filter}
         onTabChange={onFilterChange}
         actions={
-          <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={onNewDocument}>
+          <Button variant="primary" icon={<Plus size={16} />} onClick={onNewDocument}>
             Nuevo Doc
-          </ButtonV2>
+          </Button>
         }
       />
 
       {/* Search and Filter Row - 3 columns */}
-      <FilterCardV2 columns={3}>
-        <FilterInputV2 label="Buscar" grow>
+      <FilterCard columns={3}>
+        <FilterInput label="Buscar" grow>
           <FilterTextInput
             value={searchQuery}
             onChange={onSearchChange}
             placeholder="Nombre, referencia..."
             icon={<Search size={14} />}
           />
-        </FilterInputV2>
-        <FilterInputV2 label="Tipo">
+        </FilterInput>
+        <FilterInput label="Tipo">
           <FilterSelect
             value={filter}
             onChange={onFilterChange}
@@ -138,8 +137,8 @@ export const OCRDocumentList: React.FC<OCRDocumentListProps> = ({
               { value: 'cierres', label: 'Cierres' },
             ]}
           />
-        </FilterInputV2>
-        <FilterInputV2 label="Fecha">
+        </FilterInput>
+        <FilterInput label="Fecha">
           <FilterSelect
             value="thisMonth"
             onChange={() => { }}
@@ -150,27 +149,27 @@ export const OCRDocumentList: React.FC<OCRDocumentListProps> = ({
               { value: 'all', label: 'Todos' },
             ]}
           />
-        </FilterInputV2>
-      </FilterCardV2>
+        </FilterInput>
+      </FilterCard>
 
       {/* Documents List/Table */}
       {documents.length === 0 ? (
-        <DataCardV2
+        <DataCard
           isEmpty
           emptyTitle="No hay documentos"
           emptyDescription="Escanea un documento para comenzar la gestión documental."
           emptyIcon={<FileText size={32} color="var(--text-light)" strokeWidth={1.5} />}
           emptyAction={
-            <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={onNewDocument}>
+            <Button variant="primary" icon={<Plus size={16} />} onClick={onNewDocument}>
               Nuevo Documento
-            </ButtonV2>
+            </Button>
           }
         />
       ) : (
         <>
           {/* Desktop Table */}
           <div className="hidden-mobile">
-            <DataCardV2 noPadding>
+            <DataCard noPadding>
               <Table
                 data={documents}
                 columns={[
@@ -281,7 +280,7 @@ export const OCRDocumentList: React.FC<OCRDocumentListProps> = ({
                   </div>
                 )}
               />
-            </DataCardV2>
+            </DataCard>
           </div>
 
           {/* Mobile Cards */}

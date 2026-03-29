@@ -1,10 +1,10 @@
 /**
  * AlmacenPage - Warehouse/Inventory Hub
  *
- * Session 007: Updated with V2 design system
- * - ActionHeaderV2 with TabsNavV2
- * - FilterCardV2 with compact inputs
- * - DataCardV2 with KPI header
+ * Session 007: Updated with design system
+ * - ActionHeader with TabsNav
+ * - FilterCard with compact inputs
+ * - DataCard with KPI header
  * - No page title (context from breadcrumb)
  *
  * Tabs: Existencias | Inventarios | Mermas | Pedidos | Proveedores | Traspasos
@@ -23,16 +23,16 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import {
-  type TabV2,
+  type Tab,
   PageContainer,
-  PageLayoutV2,
-  ActionHeaderV2,
-  FilterCardV2,
-  FilterInputV2,
+  PageLayout,
+  ActionHeader,
+  FilterCard,
+  FilterInput,
   FilterTextInput,
   FilterSelect,
-  DataCardV2,
-  ButtonV2,
+  DataCard,
+  Button,
   Table,
   Badge,
 } from '@shared/components';
@@ -52,7 +52,7 @@ import type { Order, OrderFormData } from '@features/orders';
 
 type TabId = 'existencias' | 'inventarios' | 'mermas' | 'pedidos' | 'proveedores' | 'traspasos';
 
-const TABS: TabV2[] = [
+const TABS: Tab[] = [
   { id: 'existencias', label: 'Existencias', icon: <Package size={16} /> },
   { id: 'inventarios', label: 'Inventarios', icon: <ClipboardCheck size={16} /> },
   { id: 'mermas', label: 'Mermas', icon: <WasteIcon size={16} /> },
@@ -85,10 +85,10 @@ export const AlmacenPage: React.FC = () => {
       case 'existencias':
         return (
           <>
-            <ButtonV2 variant="primary" icon={<Plus size={16} />}>
+            <Button variant="primary" icon={<Plus size={16} />}>
               Nuevo Producto
-            </ButtonV2>
-            <ButtonV2 variant="secondary" icon={<Download size={16} />} iconOnly />
+            </Button>
+            <Button variant="secondary" icon={<Download size={16} />} iconOnly />
           </>
         );
       case 'pedidos':
@@ -100,9 +100,9 @@ export const AlmacenPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <PageLayoutV2
+      <PageLayout
         header={
-          <ActionHeaderV2
+          <ActionHeader
             tabs={TABS}
             activeTab={activeTab}
             onTabChange={(id) => setActiveTab(id as TabId)}
@@ -117,14 +117,14 @@ export const AlmacenPage: React.FC = () => {
         {activeTab === 'pedidos' && <PedidosTab />}
         {activeTab === 'proveedores' && <ProvidersPageContent />}
         {activeTab === 'traspasos' && <TransfersPageContent />}
-      </PageLayoutV2>
+      </PageLayout>
     </PageContainer>
   );
 };
 
 /**
  * ExistenciasTab - Stock list with filters
- * Uses V2 components: FilterCardV2, DataCardV2
+ * Uses FilterCard, DataCard
  */
 const ExistenciasTab: React.FC = () => {
   const { db } = useDatabase();
@@ -224,40 +224,40 @@ const ExistenciasTab: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
       {/* Filters */}
-      <FilterCardV2 columns={4}>
-          <FilterInputV2 label="Buscar" grow>
+      <FilterCard columns={4}>
+          <FilterInput label="Buscar" grow>
             <FilterTextInput
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Código, nombre..."
               icon={<Search size={14} />}
             />
-          </FilterInputV2>
-          <FilterInputV2 label="Familia">
+          </FilterInput>
+          <FilterInput label="Familia">
             <FilterSelect
               value={familiaFilter}
               onChange={setFamiliaFilter}
               options={FAMILIA_OPTIONS}
             />
-          </FilterInputV2>
-          <FilterInputV2 label="Sección">
+          </FilterInput>
+          <FilterInput label="Sección">
             <FilterSelect
               value={seccionFilter}
               onChange={setSeccionFilter}
               options={SECCION_OPTIONS}
             />
-          </FilterInputV2>
-          <FilterInputV2 label="Proveedor">
+          </FilterInput>
+          <FilterInput label="Proveedor">
             <FilterSelect
               value={proveedorFilter}
               onChange={setProveedorFilter}
               options={proveedorOptions}
             />
-          </FilterInputV2>
-      </FilterCardV2>
+          </FilterInput>
+      </FilterCard>
 
       {/* Data Card with KPIs and Table */}
-      <DataCardV2
+      <DataCard
         kpis={[
           { label: 'Productos', value: filteredProductos.length.toLocaleString() },
           { label: 'Stock Bajo', value: stockBajo, variant: stockBajo > 0 ? 'danger' : 'default' },
@@ -269,9 +269,9 @@ const ExistenciasTab: React.FC = () => {
         emptyIcon={<Package size={32} color="var(--text-light)" strokeWidth={1.5} />}
         emptyAction={
           hasFilters ? (
-            <ButtonV2 variant="ghost" icon={<RefreshCw size={14} />} onClick={clearFilters}>
+            <Button variant="ghost" icon={<RefreshCw size={14} />} onClick={clearFilters}>
               Limpiar filtros
-            </ButtonV2>
+            </Button>
           ) : undefined
         }
         noPadding
@@ -344,7 +344,7 @@ const ExistenciasTab: React.FC = () => {
           striped
           emptyText="No hay productos que coincidan con los filtros"
         />
-      </DataCardV2>
+      </DataCard>
     </div>
   );
 };
@@ -396,7 +396,7 @@ const TransfersPageContent: React.FC = () => {
 
 /**
  * PedidosTab - Orders management with full CRUD
- * Uses V2 components
+ * Uses FilterCard, DataCard
  */
 const PedidosTab: React.FC = () => {
   const { db } = useDatabase();
@@ -488,16 +488,16 @@ const PedidosTab: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
       {/* Filters and Actions */}
-      <FilterCardV2 columns={3}>
-        <FilterInputV2 label="Buscar" grow>
+      <FilterCard columns={3}>
+        <FilterInput label="Buscar" grow>
           <FilterTextInput
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Proveedor o notas..."
             icon={<Search size={14} />}
           />
-        </FilterInputV2>
-        <FilterInputV2 label="Estado">
+        </FilterInput>
+        <FilterInput label="Estado">
           <FilterSelect
             value={filterEstado}
             onChange={setFilterEstado}
@@ -509,13 +509,13 @@ const PedidosTab: React.FC = () => {
               { value: 'cancelado', label: 'Cancelado' },
             ]}
           />
-        </FilterInputV2>
+        </FilterInput>
         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-          <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={() => setMode('create')}>
+          <Button variant="primary" icon={<Plus size={16} />} onClick={() => setMode('create')}>
             Nuevo Pedido
-          </ButtonV2>
+          </Button>
         </div>
-      </FilterCardV2>
+      </FilterCard>
 
       {/* Orders List */}
       <OrdersList
