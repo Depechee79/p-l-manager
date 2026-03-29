@@ -83,14 +83,8 @@ export const InvitationSignUpPage: React.FC = () => {
         });
 
         if (result.success) {
-            // Store user in localStorage for app to pick up
-            localStorage.setItem('app_user', JSON.stringify({
-                name: result.user?.nombre,
-                roleId: result.user?.rolId,
-                uid: result.user?.uid,
-            }));
-            // Redirect to app
-            window.location.href = '/';
+            // Firebase Auth state change will be detected by AppContext automatically.
+            // Keep loading state — the app will re-render when auth state changes.
         } else {
             setError(result.error || 'Error al crear la cuenta');
             setIsSubmitting(false);

@@ -122,6 +122,7 @@ export async function signUpBusinessOwner(data: SignUpData): Promise<SignUpResul
         await updateProfile(firebaseUser, { displayName: data.nombre });
 
         const now = new Date().toISOString();
+        const tsNow = Timestamp.now();
         let companyId: string | undefined;
         let restaurantId: string;
 
@@ -134,8 +135,8 @@ export async function signUpBusinessOwner(data: SignUpData): Promise<SignUpResul
                 cif: '',
                 direccion: '',
                 restaurantes: [],
-                createdAt: now,
-                updatedAt: now,
+                createdAt: tsNow,
+                updatedAt: tsNow,
             };
             await setDoc(companyRef, companyData);
 
@@ -155,8 +156,8 @@ export async function signUpBusinessOwner(data: SignUpData): Promise<SignUpResul
                     ivaTakeaway: 10,
                 },
                 trabajadores: [firebaseUser.uid],
-                createdAt: now,
-                updatedAt: now,
+                createdAt: tsNow,
+                updatedAt: tsNow,
             };
             await setDoc(restaurantRef, restaurantData);
 
@@ -180,8 +181,8 @@ export async function signUpBusinessOwner(data: SignUpData): Promise<SignUpResul
                     ivaTakeaway: 10,
                 },
                 trabajadores: [firebaseUser.uid],
-                createdAt: now,
-                updatedAt: now,
+                createdAt: tsNow,
+                updatedAt: tsNow,
             };
             await setDoc(restaurantRef, restaurantData);
         }
@@ -244,6 +245,7 @@ export async function loginUser(email: string, password: string): Promise<LoginR
             logger.warn('User not found in Firestore, creating profile', { uid: firebaseUser.uid });
 
             const now = new Date().toISOString();
+            const tsNow = Timestamp.now();
             const newUserProfile: Omit<AppUser, 'id'> = {
                 uid: firebaseUser.uid,
                 nombre: firebaseUser.displayName || email.split('@')[0],
@@ -271,8 +273,8 @@ export async function loginUser(email: string, password: string): Promise<LoginR
                     ivaTakeaway: 10,
                 },
                 trabajadores: [firebaseUser.uid],
-                createdAt: now,
-                updatedAt: now,
+                createdAt: tsNow,
+                updatedAt: tsNow,
             });
 
             await updateDoc(doc(db, 'usuarios', firebaseUser.uid), {
@@ -322,8 +324,6 @@ export async function loginUser(email: string, password: string): Promise<LoginR
 export async function logoutUser(): Promise<void> {
     const auth = getAuthInstance();
     await signOut(auth);
-    // Clear localStorage
-    localStorage.removeItem('app_user');
 }
 
 // ============================================================================
@@ -524,22 +524,34 @@ export function onAuthStateChange(
     const auth = getAuthInstance();
     const db = getFirestoreInstance();
 
-    return onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        if (!firebaseUser) {
-            callback(null);
-            return;
-        }
+    return onAuthStateChanged(
+        auth,
+        async (firebaseUser: FirebaseUser | null) => {
+            try {
+                if (!firebaseUser) {
+                    callback(null);
+                    return;
+                }
 
-        // Get full user profile
-        const userDoc = await getDoc(doc(db, 'usuarios', firebaseUser.uid));
-        if (!userDoc.exists()) {
-            callback(null);
-            return;
-        }
+                // Get full user profile
+                const userDoc = await getDoc(doc(db, 'usuarios', firebaseUser.uid));
+                if (!userDoc.exists()) {
+                    callback(null);
+                    return;
+                }
 
-        const userData = { id: firebaseUser.uid, ...userDoc.data() } as AppUser;
-        callback(userData);
-    });
+                const userData = { id: firebaseUser.uid, ...userDoc.data() } as AppUser;
+                callback(userData);
+            } catch (error: unknown) {
+                logger.error('Error in onAuthStateChange callback', error);
+                callback(null);
+            }
+        },
+        (error: Error) => {
+            logger.error('Firebase auth state error', error);
+            callback(null);
+        }
+    );
 }
 
 // ============================================================================
@@ -550,7 +562,9 @@ export function onAuthStateChange(
  * Generate a random restaurant code
  */
 function generateRestaurantCode(): string {
-    return `REST-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const randomBytes = crypto.getRandomValues(new Uint8Array(4));
+    const hex = Array.from(randomBytes).map(b => b.toString(36)).join('').substring(0, 4).toUpperCase();
+    return `REST-${Date.now().toString(36).toUpperCase()}-${hex}`;
 }
 
 /**
@@ -558,9 +572,16 @@ function generateRestaurantCode(): string {
  */
 function generateInvitationToken(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charLen = chars.length; // 62
+    const maxValid = 256 - (256 % charLen); // 248 — rejection threshold eliminates modulo bias
     let token = '';
-    for (let i = 0; i < 32; i++) {
-        token += chars.charAt(Math.floor(Math.random() * chars.length));
+    while (token.length < 32) {
+        const randomValues = crypto.getRandomValues(new Uint8Array(32));
+        for (let i = 0; i < randomValues.length && token.length < 32; i++) {
+            if (randomValues[i] < maxValid) {
+                token += chars.charAt(randomValues[i] % charLen);
+            }
+        }
     }
     return token;
 }

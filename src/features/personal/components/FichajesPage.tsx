@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Square } from 'lucide-react';
 import { Button, Card, Table } from '@shared/components';
+import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useRestaurantContext, useDatabase, useApp } from '@core';
 import { logger } from '@core/services/LoggerService';
 import { useToast } from '@utils/toast';
@@ -37,7 +38,7 @@ export const FichajesPage: React.FC = () => {
     useEffect(() => {
         const entries = (db.fichajes as TimeEntry[]).filter((f: TimeEntry) =>
             f.restaurantId === String(currentRestaurant?.id) &&
-            f.date === new Date().toISOString().split('T')[0]
+            f.date === formatDateOnly(new Date())
         );
         setTodayEntries(entries);
 
@@ -80,9 +81,9 @@ export const FichajesPage: React.FC = () => {
             const now = new Date();
             const newEntry: TimeEntry = {
                 id: Date.now(), // Firestore will replace this ID usually, or we use uuid
-                workerId: user?.name || 'unknown',
+                workerId: user?.uid || 'unknown',
                 restaurantId: String(currentRestaurant?.id || ''),
-                date: now.toISOString().split('T')[0],
+                date: formatDateOnly(now),
                 entryTime: now.toISOString(),
                 breaks: [],
                 status: 'activo',

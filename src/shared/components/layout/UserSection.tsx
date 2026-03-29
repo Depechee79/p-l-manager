@@ -4,10 +4,8 @@
  */
 import React from 'react';
 import { LogOut, User as UserIcon } from 'lucide-react';
-import type { User } from '@/core';
-
 export interface UserSectionProps {
-    user: User;
+    user: { name: string };
     onLogout?: () => void;
 }
 

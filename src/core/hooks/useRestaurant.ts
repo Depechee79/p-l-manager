@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import { useDatabase } from './useDatabase';
+import { useApp } from '../context/AppContext';
 import { RestaurantService } from '../services/RestaurantService';
 import { CompanyService } from '../services/CompanyService';
 import { logger } from '../services/LoggerService';
@@ -8,6 +9,7 @@ import type { Restaurant, Company, AppUser, Role } from '@types';
 
 export const useRestaurant = () => {
   const { db } = useDatabase();
+  const { user } = useApp();
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
@@ -51,8 +53,13 @@ export const useRestaurant = () => {
       const allRestaurants = restaurantService.getAllRestaurants();
       setRestaurants(allRestaurants);
 
-      // Try to load from localStorage
-      const savedRestaurantId = localStorage.getItem('current_restaurant_id');
+      // Try to load from sessionStorage (tab-scoped, no cross-tab leaking)
+      let savedRestaurantId: string | null = null;
+      try {
+        savedRestaurantId = sessionStorage.getItem('current_restaurant_id');
+      } catch {
+        // sessionStorage can throw in private/incognito mode
+      }
       if (savedRestaurantId && allRestaurants.length > 0) {
         const saved = allRestaurants.find(r => String(r.id) === savedRestaurantId);
         if (saved) {
@@ -60,12 +67,12 @@ export const useRestaurant = () => {
         } else if (allRestaurants.length > 0) {
           // Fallback to first restaurant
           setCurrentRestaurant(allRestaurants[0]);
-          localStorage.setItem('current_restaurant_id', String(allRestaurants[0].id));
+          try { sessionStorage.setItem('current_restaurant_id', String(allRestaurants[0].id)); } catch { /* private mode */ }
         }
       } else if (allRestaurants.length > 0) {
         // Default to first restaurant
         setCurrentRestaurant(allRestaurants[0]);
-        localStorage.setItem('current_restaurant_id', String(allRestaurants[0].id));
+        try { sessionStorage.setItem('current_restaurant_id', String(allRestaurants[0].id)); } catch { /* private mode */ }
       }
       setLoading(false);
     };
@@ -76,7 +83,7 @@ export const useRestaurant = () => {
 
   const switchRestaurant = useCallback((restaurant: Restaurant) => {
     setCurrentRestaurant(restaurant);
-    localStorage.setItem('current_restaurant_id', String(restaurant.id));
+    try { sessionStorage.setItem('current_restaurant_id', String(restaurant.id)); } catch { /* private mode */ }
   }, []);
 
   const updateRestaurant = useCallback(async (data: Partial<Restaurant>) => {
@@ -120,7 +127,7 @@ export const useRestaurant = () => {
 
     // Auto-switch to new restaurant
     setCurrentRestaurant(newRestaurant);
-    localStorage.setItem('current_restaurant_id', String(newRestaurant.id));
+    try { sessionStorage.setItem('current_restaurant_id', String(newRestaurant.id)); } catch { /* private mode */ }
 
     return newRestaurant;
   }, [restaurantService, updateCompany, currentCompany]);
@@ -131,7 +138,7 @@ export const useRestaurant = () => {
       setRestaurants(prev => prev.filter(r => String(r.id) !== id));
       if (String(currentRestaurant?.id) === id) {
         setCurrentRestaurant(null);
-        localStorage.removeItem('current_restaurant_id');
+        try { sessionStorage.removeItem('current_restaurant_id'); } catch { /* private mode */ }
       }
     }
     return success;
@@ -146,15 +153,11 @@ export const useRestaurant = () => {
   }, [restaurantService]);
 
   const hasAccess = useCallback((restaurantId: string): boolean => {
-    const appUserString = localStorage.getItem('app_user');
-    if (!appUserString) return false;
+    if (!user?.uid) return false;
 
     try {
-      const userData: { name?: string } = JSON.parse(appUserString);
-      if (!userData.name) return false;
-
       const usuarios = (db.usuarios ?? []) as AppUser[];
-      const fullUser = usuarios.find((u) => u.nombre === userData.name);
+      const fullUser = usuarios.find((u) => (u.uid || String(u.id)) === user.uid);
       if (!fullUser) return false;
 
       const roles = (db.roles ?? []) as Role[];
@@ -170,7 +173,7 @@ export const useRestaurant = () => {
       logger.error('Error checking restaurant access', error);
       return false;
     }
-  }, [db]);
+  }, [db, user]);
 
   return {
     currentRestaurant,

@@ -11,7 +11,7 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 
-import { Card, ButtonV2, Table, Input, Select, Modal, FormSection, Badge, Checkbox } from '@shared/components';
+import { Card, Button, Table, Input, Select, Modal, FormSection, Badge, Checkbox } from '@shared/components';
 import type { TableColumn } from '@shared/components';
 import { Mail, MessageCircle, Edit2, Plus, User2, Check, UserX, UserCheck, Copy, ArrowLeft } from 'lucide-react';
 import { useDatabase, useApp, useRestaurant, createInvitation } from '@core';
@@ -86,9 +86,9 @@ export const ResponsablesTab: React.FC = () => {
 
     // Resolve the current authenticated user's full AppUser from the database
     const currentAppUser = useMemo((): AppUser | null => {
-        if (!user?.name) return null;
+        if (!user?.uid) return null;
         const allUsers = (db.usuarios || []) as AppUser[];
-        return allUsers.find((u) => u.nombre === user.name) ?? null;
+        return allUsers.find((u) => (u.uid || u.id) === user.uid) ?? null;
     }, [user, db.usuarios]);
 
     // Cargar usuarios y roles
@@ -347,15 +347,15 @@ export const ResponsablesTab: React.FC = () => {
                     {row.activo && (
                         <>
                             {row.telefono && (
-                                <ButtonV2 variant="ghost" icon={<MessageCircle size={14} />} onClick={() => handleWhatsApp(row.telefono)} title="WhatsApp" />
+                                <Button variant="ghost" icon={<MessageCircle size={14} />} onClick={() => handleWhatsApp(row.telefono)} title="WhatsApp" />
                             )}
                             {row.email && (
-                                <ButtonV2 variant="ghost" icon={<Mail size={14} />} onClick={() => handleEmail(row.email)} title="Email" />
+                                <Button variant="ghost" icon={<Mail size={14} />} onClick={() => handleEmail(row.email)} title="Email" />
                             )}
-                            <ButtonV2 variant="secondary" icon={<Edit2 size={14} />} onClick={() => handleEdit(row)}>Editar</ButtonV2>
+                            <Button variant="secondary" icon={<Edit2 size={14} />} onClick={() => handleEdit(row)}>Editar</Button>
                         </>
                     )}
-                    <ButtonV2
+                    <Button
                         variant="secondary"
                         icon={row.activo ? <UserX size={14} /> : <UserCheck size={14} />}
                         onClick={() => handleToggleActive(row)}
@@ -397,9 +397,9 @@ export const ResponsablesTab: React.FC = () => {
                                     />
                                 </div>
                             </div>
-                            <ButtonV2 variant="primary" icon={<Plus size={16} />} onClick={handleOpenInvite}>
+                            <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenInvite}>
                                 Nuevo Responsable
-                            </ButtonV2>
+                            </Button>
                         </div>
 
                         {/* Table Container */}
@@ -446,21 +446,21 @@ export const ResponsablesTab: React.FC = () => {
                             </div>
 
                             <div style={{ display: 'flex', gap: '12px' }}>
-                                <ButtonV2
+                                <Button
                                     variant="secondary"
                                     onClick={handleBackToList}
                                     disabled={isSaving}
                                     icon={<ArrowLeft size={16} />}
                                 >
                                     Volver
-                                </ButtonV2>
-                                <ButtonV2
+                                </Button>
+                                <Button
                                     variant="primary"
                                     onClick={handleSaveEdit}
                                     disabled={isSaving}
                                 >
                                     {isSaving ? 'Guardando...' : 'Guardar'}
-                                </ButtonV2>
+                                </Button>
                             </div>
                         </div>
 
@@ -510,13 +510,13 @@ export const ResponsablesTab: React.FC = () => {
                 size="md"
                 footer={
                     inviteResult ? (
-                        <ButtonV2 variant="primary" onClick={() => setIsInviteModalOpen(false)}>Cerrar</ButtonV2>
+                        <Button variant="primary" onClick={() => setIsInviteModalOpen(false)}>Cerrar</Button>
                     ) : (
                         <>
-                            <ButtonV2 variant="ghost" onClick={() => setIsInviteModalOpen(false)}>Cancelar</ButtonV2>
-                            <ButtonV2 variant="primary" onClick={handleGenerateInvitation} disabled={isSaving}>
+                            <Button variant="ghost" onClick={() => setIsInviteModalOpen(false)}>Cancelar</Button>
+                            <Button variant="primary" onClick={handleGenerateInvitation} disabled={isSaving}>
                                 {isSaving ? 'Generando...' : 'Generar Link de Registro'}
-                            </ButtonV2>
+                            </Button>
                         </>
                     )
                 }
@@ -549,7 +549,7 @@ export const ResponsablesTab: React.FC = () => {
                             <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '13px', textAlign: 'left' }}>
                                 {inviteResult.link}
                             </div>
-                            <ButtonV2
+                            <Button
                                 variant="secondary"
                                 icon={<Copy size={14} />}
                                 onClick={() => {
@@ -558,7 +558,7 @@ export const ResponsablesTab: React.FC = () => {
                                 }}
                             >
                                 Copiar
-                            </ButtonV2>
+                            </Button>
                         </div>
                         <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                             * El enlace expira en 7 días y es de un solo uso.

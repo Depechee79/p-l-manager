@@ -15,7 +15,7 @@ import { logger } from '@core/services/LoggerService';
 
 // App content with routing
 const AppContent: React.FC = () => {
-  const { user, logout, isAuthenticated } = useApp();
+  const { user, logout, isAuthenticated, authLoading } = useApp();
   const { db } = useDatabase();
 
   // Run migration on mount if needed
@@ -29,6 +29,32 @@ const AppContent: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [db]);
+
+  // Show loading while Firebase Auth resolves initial state
+  if (authLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--background)',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid var(--border)',
+            borderTopColor: 'var(--primary)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto var(--spacing-md)',
+          }} />
+          <p style={{ color: 'var(--text-secondary)' }}>Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show auth pages if not authenticated
   if (!isAuthenticated) {

@@ -1,11 +1,24 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+import { onAuthStateChange, logoutUser } from '../services/AuthService';
+import { isFirebaseConfigured } from '../../config/firebase.config';
 import { logger } from '../services/LoggerService';
-import type { Role } from '@types';
+import type { Role, RoleId } from '@types';
 
 export interface User {
+  /** Firebase Auth UID — stable identifier */
+  uid: string;
+  /** Display name (alias for AppUser.nombre) */
   name: string;
-  roleId?: string | number;
+  /** Email address */
+  email: string;
+  /** Role identifier (alias for AppUser.rolId) */
+  roleId: RoleId | string | number;
+  /** Restaurant IDs the user has access to */
+  restaurantIds: string[];
+  /** Company ID (for director_operaciones) */
+  companyId?: string;
+  /** Resolved role object (populated by useUserPermissions) */
   role?: Role;
 }
 
@@ -13,10 +26,10 @@ export interface User {
 interface AppContextValue {
   user: User | null;
   isAuthenticated: boolean;
+  authLoading: boolean;
   error: string | null;
   setError: (error: string | null) => void;
   clearError: () => void;
-  login: (userName: string) => void;
   logout: () => void;
 }
 
@@ -28,31 +41,55 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load user from localStorage on mount
+  // Subscribe to Firebase Auth state changes
   useEffect(() => {
-    const storedUser = localStorage.getItem('app_user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-      } catch (error: unknown) {
-        logger.error('Failed to parse stored user data', error);
-        localStorage.removeItem('app_user');
-      }
+    if (!isFirebaseConfigured()) {
+      logger.warn('Firebase not configured — auth disabled');
+      setAuthLoading(false);
+      return;
     }
+
+    const unsubscribe = onAuthStateChange((appUser) => {
+      try {
+        if (appUser) {
+          if (!appUser.restaurantIds || appUser.restaurantIds.length === 0) {
+            logger.warn('User has no restaurantIds assigned', {
+              uid: appUser.uid || appUser.id,
+            });
+          }
+          const mappedUser: User = {
+            uid: appUser.uid || appUser.id as string,
+            name: appUser.nombre,
+            email: appUser.email || '',
+            roleId: appUser.rolId,
+            restaurantIds: appUser.restaurantIds || [],
+            companyId: appUser.companyId,
+          };
+          setUser(mappedUser);
+        } else {
+          setUser(null);
+        }
+      } catch (error: unknown) {
+        logger.error('Error processing auth state change', error);
+        setUser(null);
+      } finally {
+        setAuthLoading(false);
+      }
+    });
+
+    return unsubscribe;
   }, []);
 
-  const login = (userName: string) => {
-    const newUser: User = { name: userName };
-    setUser(newUser);
-    localStorage.setItem('app_user', JSON.stringify(newUser));
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('app_user');
+  const logout = async () => {
+    try {
+      await logoutUser();
+      setUser(null);
+    } catch (error: unknown) {
+      logger.error('Logout failed', error);
+    }
   };
 
   const clearError = () => {
@@ -62,10 +99,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const value: AppContextValue = {
     user,
     isAuthenticated: user !== null,
+    authLoading,
     error,
     setError,
     clearError,
-    login,
     logout,
   };
 
