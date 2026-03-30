@@ -377,39 +377,146 @@ export const ResponsablesTab: React.FC = () => {
                         style={{ flex: 1, minHeight: 0, padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
                         bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
                     >
-                        {/* Header */}
-                        <div style={{ flex: '0 0 auto', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                                <div style={{ width: '300px' }}>
-                                    <Input
-                                        placeholder="Buscar responsable..."
-                                        icon={<User2 size={18} />}
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        style={{ margin: 0 }}
-                                    />
+                        {/* Header — responsive */}
+                        <div style={{ flex: '0 0 auto', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                            <div className="hidden md:flex" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                                    <div style={{ width: '300px' }}>
+                                        <Input
+                                            placeholder="Buscar responsable..."
+                                            icon={<User2 size={18} />}
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            style={{ margin: 0 }}
+                                        />
+                                    </div>
+                                    <div style={{ width: '200px' }}>
+                                        <Select
+                                            value={roleFilter}
+                                            onChange={(val) => setRoleFilter(val)}
+                                            options={roleFilterOptions}
+                                        />
+                                    </div>
                                 </div>
-                                <div style={{ width: '200px' }}>
-                                    <Select
-                                        value={roleFilter}
-                                        onChange={(val) => setRoleFilter(val)}
-                                        options={roleFilterOptions}
-                                    />
+                                <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenInvite}>
+                                    Nuevo Responsable
+                                </Button>
+                            </div>
+                            {/* Mobile header: stacked */}
+                            <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <Input
+                                    placeholder="Buscar responsable..."
+                                    icon={<User2 size={18} />}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    fullWidth
+                                    style={{ margin: 0 }}
+                                />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <Select
+                                            value={roleFilter}
+                                            onChange={(val) => setRoleFilter(val)}
+                                            options={roleFilterOptions}
+                                        />
+                                    </div>
+                                    <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenInvite} style={{ minHeight: '44px' }}>
+                                        Nuevo
+                                    </Button>
                                 </div>
                             </div>
-                            <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenInvite}>
-                                Nuevo Responsable
-                            </Button>
                         </div>
 
-                        {/* Table Container */}
-                        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                        {/* Desktop Table */}
+                        <div className="hidden md:flex" style={{ flex: 1, overflow: 'hidden', flexDirection: 'column' }}>
                             <Table<AppUser>
                                 data={filteredResponsables}
                                 columns={columns}
                                 emptyText="No se encontraron responsables con los filtros actuales"
                                 containerStyle={{ borderRadius: 0, border: 'none' }}
                             />
+                        </div>
+
+                        {/* Mobile Cards */}
+                        <div className="md:hidden" style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+                            {filteredResponsables.length === 0 ? (
+                                <div style={{ padding: 'var(--spacing-xl)', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                    No se encontraron responsables
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+                                    {filteredResponsables.map(row => (
+                                        <div
+                                            key={String(row.id)}
+                                            style={{
+                                                background: 'var(--surface)',
+                                                borderRadius: 'var(--radius)',
+                                                padding: 'var(--spacing-md)',
+                                                border: '1px solid var(--border)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 'var(--spacing-sm)',
+                                                opacity: row.activo ? 1 : 0.6,
+                                            }}
+                                        >
+                                            {/* Name + Avatar */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{
+                                                    width: '36px', height: '36px', borderRadius: '50%',
+                                                    background: row.activo ? 'var(--primary-light)' : 'var(--surface-muted)',
+                                                    color: row.activo ? 'var(--primary)' : 'var(--text-secondary)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, flexShrink: 0,
+                                                }}>
+                                                    {row.nombre?.charAt(0).toUpperCase() || 'U'}
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                        <span style={{ wordBreak: 'break-word' }}>{row.nombre}</span>
+                                                        {!row.activo && <Badge variant="secondary" size="sm">Inactivo</Badge>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {/* Role badge */}
+                                            <div>
+                                                <Badge variant="info">
+                                                    {getRolNombre(String(row.rolId))}
+                                                </Badge>
+                                            </div>
+                                            {/* Email */}
+                                            {row.email && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                                    <Mail size={12} /> {row.email}
+                                                </div>
+                                            )}
+                                            {/* Restaurant count */}
+                                            {(row.restaurantIds as string[] | undefined)?.length ? (
+                                                <Badge variant="secondary">{(row.restaurantIds as string[]).length} restaurantes</Badge>
+                                            ) : null}
+                                            {/* Actions */}
+                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', paddingTop: 'var(--spacing-xs)', borderTop: '1px solid var(--border)' }}>
+                                                {row.activo && (
+                                                    <>
+                                                        {row.telefono && (
+                                                            <Button variant="ghost" icon={<MessageCircle size={14} />} onClick={() => handleWhatsApp(row.telefono)} title="WhatsApp" style={{ minHeight: '44px', minWidth: '44px' }} />
+                                                        )}
+                                                        {row.email && (
+                                                            <Button variant="ghost" icon={<Mail size={14} />} onClick={() => handleEmail(row.email)} title="Email" style={{ minHeight: '44px', minWidth: '44px' }} />
+                                                        )}
+                                                        <Button variant="secondary" icon={<Edit2 size={14} />} onClick={() => handleEdit(row)} style={{ minHeight: '44px' }}>Editar</Button>
+                                                    </>
+                                                )}
+                                                <Button
+                                                    variant="secondary"
+                                                    icon={row.activo ? <UserX size={14} /> : <UserCheck size={14} />}
+                                                    onClick={() => handleToggleActive(row)}
+                                                    title={row.activo ? 'Desactivar' : 'Reactivar'}
+                                                    style={{ minHeight: '44px', minWidth: '44px' }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </Card>
                 </div>

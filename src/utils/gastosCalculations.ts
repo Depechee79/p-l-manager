@@ -1,3 +1,5 @@
+import React from 'react';
+import { Home, Zap, Phone, Shield, Megaphone, Sparkles, Package } from 'lucide-react';
 import type { GastoFijo, GastoFijoTipo, GastosFijosSummary } from '../types/gastos.types';
 
 /**
@@ -14,16 +16,16 @@ export const GASTO_FIJO_LABELS: Record<GastoFijoTipo, string> = {
 };
 
 /**
- * Icons for expense types (emoji for mobile-friendly display)
+ * Icons for expense types as Lucide React components
  */
-export const GASTO_FIJO_ICONS: Record<GastoFijoTipo, string> = {
-    alquiler: '🏠',
-    suministros: '💡',
-    servicios: '📞',
-    seguros: '🛡️',
-    marketing: '📢',
-    limpieza: '🧹',
-    otros: '📦',
+export const GASTO_FIJO_ICONS: Record<GastoFijoTipo, React.ReactNode> = {
+    alquiler: React.createElement(Home, { size: 18 }),
+    suministros: React.createElement(Zap, { size: 18 }),
+    servicios: React.createElement(Phone, { size: 18 }),
+    seguros: React.createElement(Shield, { size: 18 }),
+    marketing: React.createElement(Megaphone, { size: 18 }),
+    limpieza: React.createElement(Sparkles, { size: 18 }),
+    otros: React.createElement(Package, { size: 18 }),
 };
 
 /**

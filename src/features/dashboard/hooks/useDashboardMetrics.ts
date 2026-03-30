@@ -168,7 +168,7 @@ export const useDashboardMetrics = () => {
                 subtitle: f.proveedor || 'Proveedor desconocido',
                 date: new Date(f.fecha || ''),
                 icon: 'Receipt',
-                link: '/ocr',
+                link: '/docs',
             });
         });
 
@@ -234,7 +234,7 @@ export const useDashboardMetrics = () => {
                     type: 'warning',
                     title: `${diasSinInventariar} días sin inventariar`,
                     message: `Último inventario: ${formatDate(ultimoInventario.fecha.toISOString())}`,
-                    link: '/inventarios',
+                    link: '/almacen',
                 });
             }
         } else {
@@ -242,7 +242,7 @@ export const useDashboardMetrics = () => {
                 type: 'warning',
                 title: 'Ningún inventario registrado',
                 message: 'Crea tu primer inventario para comenzar',
-                link: '/inventarios',
+                link: '/almacen',
             });
         }
 
@@ -258,7 +258,7 @@ export const useDashboardMetrics = () => {
                 type: 'warning',
                 title: `${stockBajo.length} producto${stockBajo.length > 1 ? 's' : ''} con stock bajo`,
                 message: 'Revisa el inventario para reponer productos',
-                link: '/inventario',
+                link: '/almacen',
             });
         }
 
@@ -268,7 +268,7 @@ export const useDashboardMetrics = () => {
                 type: 'info',
                 title: `${facturasPendientes.length} documentos pendientes de procesar`,
                 message: 'Revisa los documentos escaneados',
-                link: '/ocr',
+                link: '/docs',
             });
         }
 

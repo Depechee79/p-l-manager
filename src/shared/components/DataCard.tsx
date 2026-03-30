@@ -72,7 +72,7 @@ export const DataCard: React.FC<DataCardProps> = ({
         >
           {kpis.map((kpi, idx) => (
             <div key={idx} className="flex flex-col">
-              <span className="text-[9px] font-bold text-text-light uppercase tracking-widest mb-[2px]">
+              <span className="text-[9px] font-bold text-text-light tracking-widest mb-[2px]">
                 {kpi.label}
               </span>
               <span

@@ -158,10 +158,11 @@ export const TabsNav: React.FC<TabsNavProps> = ({
             top: 0,
             right: 0,
             bottom: 0,
-            width: '32px',
-            background: 'linear-gradient(to right, transparent, rgba(241, 245, 249, 0.9))',
+            width: '40px',
+            background: 'linear-gradient(to right, rgba(241, 245, 249, 0), rgba(241, 245, 249, 1))',
             borderRadius: '0 var(--app-interactive-radius) var(--app-interactive-radius) 0',
             pointerEvents: 'none',
+            zIndex: 1,
           }}
         />
       )}

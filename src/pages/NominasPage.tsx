@@ -326,8 +326,8 @@ export const NominasPage: React.FC = () => {
                         />
                     </div>
 
-                    {/* Summary Cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--spacing-sm)' }}>
+                    {/* Summary Cards — grid-cols-2 on mobile, auto-fit on desktop */}
+                    <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: 'var(--spacing-sm)' }}>
                         <Card>
                             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>Coste Personal Total</p>
                             <p style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent)' }}>{formatCurrency(summary.totalCostePersonal)}</p>
@@ -355,63 +355,123 @@ export const NominasPage: React.FC = () => {
                         fullWidth
                     />
 
-                    {/* List */}
-                    <Card>
+                    {/* List — Desktop table */}
+                    <div className="hidden md:block">
+                        <Card>
+                            {filteredNominas.length === 0 ? (
+                                <div style={{ padding: 'var(--spacing-xl)', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                    No hay nóminas para {MESES[filterMes - 1]} {filterAnio}
+                                </div>
+                            ) : (
+                                <Table<Record<string, React.ReactNode>>
+                                    columns={[
+                                        { key: 'trabajador', header: 'Trabajador' },
+                                        { key: 'bruto', header: 'Bruto' },
+                                        { key: 'coste', header: 'Coste Total' },
+                                        { key: 'status', header: 'Estado' },
+                                        { key: 'acciones', header: '' }
+                                    ]}
+                                    data={filteredNominas.map(n => ({
+                                        id: n.id,
+                                        trabajador: (
+                                            <div>
+                                                <div style={{ fontWeight: '600' }}>{n.workerNombre}</div>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                                    {MESES[n.mes - 1]} {n.anio}
+                                                </div>
+                                            </div>
+                                        ),
+                                        bruto: formatCurrency(n.salarioBruto),
+                                        coste: (
+                                            <span style={{ fontWeight: '600' }}>
+                                                {formatCurrency(n.salarioBruto + n.seguridadSocialEmpresa)}
+                                            </span>
+                                        ),
+                                        status: (
+                                            <Badge
+                                                variant={n.status === 'pagada' ? 'success' : n.status === 'pendiente' ? 'warning' : 'secondary'}
+                                            >
+                                                {NOMINA_STATUS_LABELS[n.status]}
+                                            </Badge>
+                                        ),
+                                        acciones: (
+                                            <div style={{ display: 'flex', gap: 'var(--spacing-xs)', justifyContent: 'flex-end' }}>
+                                                {n.status === 'pendiente' && (
+                                                    <Button variant="success" size="sm" onClick={() => handleMarkPaid(n)} title="Marcar pagada">
+                                                        <Check size={14} />
+                                                    </Button>
+                                                )}
+                                                <Button variant="secondary" size="sm" onClick={() => handleEdit(n)}>
+                                                    <Edit size={14} />
+                                                </Button>
+                                                <Button variant="danger" size="sm" onClick={() => handleDelete(n)}>
+                                                    <Trash2 size={14} />
+                                                </Button>
+                                            </div>
+                                        )
+                                    }))}
+                                />
+                            )}
+                        </Card>
+                    </div>
+
+                    {/* List — Mobile cards */}
+                    <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
                         {filteredNominas.length === 0 ? (
                             <div style={{ padding: 'var(--spacing-xl)', textAlign: 'center', color: 'var(--text-secondary)' }}>
                                 No hay nóminas para {MESES[filterMes - 1]} {filterAnio}
                             </div>
                         ) : (
-                            <Table<Record<string, React.ReactNode>>
-                                columns={[
-                                    { key: 'trabajador', header: 'Trabajador' },
-                                    { key: 'bruto', header: 'Bruto' },
-                                    { key: 'coste', header: 'Coste Total' },
-                                    { key: 'status', header: 'Estado' },
-                                    { key: 'acciones', header: '' }
-                                ]}
-                                data={filteredNominas.map(n => ({
-                                    id: n.id,
-                                    trabajador: (
-                                        <div>
-                                            <div style={{ fontWeight: '600' }}>{n.workerNombre}</div>
-                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                                {MESES[n.mes - 1]} {n.anio}
-                                            </div>
-                                        </div>
-                                    ),
-                                    bruto: formatCurrency(n.salarioBruto),
-                                    coste: (
-                                        <span style={{ fontWeight: '600' }}>
-                                            {formatCurrency(n.salarioBruto + n.seguridadSocialEmpresa)}
-                                        </span>
-                                    ),
-                                    status: (
+                            filteredNominas.map(n => (
+                                <div
+                                    key={String(n.id)}
+                                    style={{
+                                        background: 'var(--surface)',
+                                        borderRadius: 'var(--radius)',
+                                        padding: 'var(--spacing-md)',
+                                        border: '1px solid var(--border)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 'var(--spacing-sm)',
+                                    }}
+                                >
+                                    {/* Row 1: Name + Status */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontWeight: '600', fontSize: 'var(--font-size-base)' }}>{n.workerNombre}</div>
                                         <Badge
                                             variant={n.status === 'pagada' ? 'success' : n.status === 'pendiente' ? 'warning' : 'secondary'}
                                         >
                                             {NOMINA_STATUS_LABELS[n.status]}
                                         </Badge>
-                                    ),
-                                    acciones: (
-                                        <div style={{ display: 'flex', gap: 'var(--spacing-xs)', justifyContent: 'flex-end' }}>
-                                            {n.status === 'pendiente' && (
-                                                <Button variant="success" size="sm" onClick={() => handleMarkPaid(n)} title="Marcar pagada">
-                                                    <Check size={14} />
-                                                </Button>
-                                            )}
-                                            <Button variant="secondary" size="sm" onClick={() => handleEdit(n)}>
-                                                <Edit size={14} />
-                                            </Button>
-                                            <Button variant="danger" size="sm" onClick={() => handleDelete(n)}>
-                                                <Trash2 size={14} />
-                                            </Button>
+                                    </div>
+                                    {/* Row 2: Period + Amounts */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                                        <span>{MESES[n.mes - 1]} {n.anio}</span>
+                                        <div style={{ display: 'flex', gap: 'var(--spacing-md)' }}>
+                                            <span>Bruto: {formatCurrency(n.salarioBruto)}</span>
+                                            <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>
+                                                Coste: {formatCurrency(n.salarioBruto + n.seguridadSocialEmpresa)}
+                                            </span>
                                         </div>
-                                    )
-                                }))}
-                            />
+                                    </div>
+                                    {/* Row 3: Actions */}
+                                    <div style={{ display: 'flex', gap: 'var(--spacing-xs)', justifyContent: 'flex-end', paddingTop: 'var(--spacing-xs)', borderTop: '1px solid var(--border)' }}>
+                                        {n.status === 'pendiente' && (
+                                            <Button variant="success" size="sm" onClick={() => handleMarkPaid(n)} title="Marcar pagada" style={{ minHeight: '44px', minWidth: '44px' }}>
+                                                <Check size={14} />
+                                            </Button>
+                                        )}
+                                        <Button variant="secondary" size="sm" onClick={() => handleEdit(n)} style={{ minHeight: '44px', minWidth: '44px' }}>
+                                            <Edit size={14} />
+                                        </Button>
+                                        <Button variant="danger" size="sm" onClick={() => handleDelete(n)} style={{ minHeight: '44px', minWidth: '44px' }}>
+                                            <Trash2 size={14} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
                         )}
-                    </Card>
+                    </div>
                 </div>
             ) : (
                 /* Form View */

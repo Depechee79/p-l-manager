@@ -25,7 +25,7 @@ interface QuickAction {
 }
 
 const ALL_ACTIONS: QuickAction[] = [
-    { icon: <ScanLine size={24} />, label: 'Escanear Documento', link: '/ocr', color: 'var(--accent)', requiredPermission: 'ocr.create' },
+    { icon: <ScanLine size={24} />, label: 'Escanear Documento', link: '/docs', color: 'var(--accent)', requiredPermission: 'ocr.create' },
     { icon: <Wallet size={24} />, label: 'Nuevo Cierre', link: '/cierres', color: 'var(--success)', requiredPermission: 'cierres.create' },
     { icon: <Package size={24} />, label: 'Añadir Producto', link: '/almacen', color: 'var(--info)', requiredPermission: 'inventarios.create' },
     { icon: <ClipboardList size={24} />, label: 'Nuevo Escandallo', link: '/escandallos', color: 'var(--warning)', requiredPermission: 'escandallos.create' },

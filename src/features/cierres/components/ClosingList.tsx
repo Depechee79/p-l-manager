@@ -74,7 +74,7 @@ Sent from P&L Manager`;
     <div className="flex flex-col gap-md">
       {/* Period Filter */}
       <FilterCard columns={2}>
-        <FilterInput label="Periodo">
+        <FilterInput label="Período">
           <input
             type="month"
             value={effectiveFilterPeriod}
@@ -109,7 +109,7 @@ Sent from P&L Manager`;
         <DataCard
           kpis={[
             { label: 'Cierres', value: closings.length },
-            { label: 'Total Periodo', value: formatCurrency(totalReal) },
+            { label: 'Total Período', value: formatCurrency(totalReal) },
             {
               label: 'Cuadran',
               value: `${closingsCuadran}/${closings.length}`,

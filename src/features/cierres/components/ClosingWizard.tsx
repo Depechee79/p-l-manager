@@ -65,7 +65,7 @@ export const ClosingWizard: FC<ClosingWizardProps> = ({
     ];
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, overflowY: 'auto' }}>
             <Card style={{ marginBottom: '20px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>

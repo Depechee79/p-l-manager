@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Table, Card } from '@components';
-import { Send, Edit, Trash2, Clock, CheckCircle, X } from 'lucide-react';
+import { Send, Edit, Trash2, Clock, CheckCircle, X, ShoppingCart, Plus } from 'lucide-react';
 import type { Order } from '../orders.types';
 import { formatDate, formatCurrency } from '@utils';
 
@@ -10,6 +10,7 @@ interface OrdersListProps {
     onEdit: (order: Order) => void;
     onDelete: (order: Order) => void;
     onSend: (order: Order) => void;
+    onNew?: () => void;
 }
 
 const getEstadoIcon = (estado: string) => {
@@ -32,12 +33,33 @@ const getEstadoLabel = (estado: string) => {
     }
 };
 
-export const OrdersList: React.FC<OrdersListProps> = ({ orders, loading, onEdit, onDelete, onSend }) => {
+export const OrdersList: React.FC<OrdersListProps> = ({ orders, loading, onEdit, onDelete, onSend, onNew }) => {
     if (loading) {
         return (
             <Card>
                 <div style={{ textAlign: 'center', padding: 'var(--spacing-xl)', color: 'var(--text-secondary)' }}>
                     Cargando pedidos...
+                </div>
+            </Card>
+        );
+    }
+
+    if (orders.length === 0) {
+        return (
+            <Card>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--spacing-xl) var(--spacing-md)', textAlign: 'center' }}>
+                    <ShoppingCart size={48} style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }} />
+                    <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-main)', marginBottom: 'var(--spacing-xs)' }}>
+                        No hay pedidos registrados
+                    </h3>
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>
+                        Crea tu primer pedido a proveedor para empezar a gestionar las compras.
+                    </p>
+                    {onNew && (
+                        <Button variant="primary" onClick={onNew}>
+                            <Plus size={16} style={{ marginRight: 'var(--spacing-xs)' }} /> Nuevo Pedido
+                        </Button>
+                    )}
                 </div>
             </Card>
         );

@@ -32,6 +32,10 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ kpis, period }) => {
     const canViewEscandallos = hasPermission('escandallos.view');
     const canViewPnL = hasPermission('pnl.view');
 
+    // Count visible KPIs to handle orphan card on mobile (2-column grid)
+    const visibleCount = 3 + (canViewOCR ? 1 : 0) + (canViewAlmacen ? 1 : 0) + (canViewEscandallos ? 1 : 0) + (canViewPnL ? 1 : 0);
+    const isOddCount = visibleCount % 2 !== 0;
+
     return (
         <ErrorBoundary>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -134,13 +138,15 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ kpis, period }) => {
                 )}
 
                 {/* Platos Vendidos - Always visible (dashboard.view) */}
-                <KPICard
-                    title="Platos Vendidos"
-                    value={kpis.platosVendidos.toString()}
-                    icon={<UtensilsCrossed size={24} />}
-                    color="var(--accent)"
-                    bgColor="var(--accent-lighter)"
-                />
+                <div className={isOddCount ? 'col-span-2 md:col-span-1' : ''}>
+                    <KPICard
+                        title="Platos Vendidos"
+                        value={kpis.platosVendidos.toString()}
+                        icon={<UtensilsCrossed size={24} />}
+                        color="var(--accent)"
+                        bgColor="var(--accent-lighter)"
+                    />
+                </div>
             </div>
         </ErrorBoundary>
     );

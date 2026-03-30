@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   ArrowRight,
+  ArrowLeftRight,
   CheckCircle,
   X,
   Clock,
@@ -234,7 +235,7 @@ export const TransfersPage: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
           <h1 style={{ margin: 0, fontSize: 'var(--font-size-2xl)', fontWeight: '700', color: 'var(--text-main)' }}>
             Transferencias
@@ -415,6 +416,20 @@ export const TransfersPage: React.FC = () => {
 
           {/* Tabla de Transferencias */}
           <Card>
+            {filteredTransfers.length === 0 && transfers.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--spacing-xl) var(--spacing-md)', textAlign: 'center' }}>
+                <ArrowLeftRight size={48} style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }} />
+                <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-main)', marginBottom: 'var(--spacing-xs)' }}>
+                  No hay transferencias
+                </h3>
+                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>
+                  Gestiona traspasos de productos entre tus restaurantes.
+                </p>
+                <Button variant="primary" onClick={() => setViewMode('form')}>
+                  <Plus size={16} style={{ marginRight: 'var(--spacing-xs)' }} /> Nueva Transferencia
+                </Button>
+              </div>
+            ) : (
             <Table
               data={filteredTransfers}
               columns={[
@@ -503,8 +518,9 @@ export const TransfersPage: React.FC = () => {
               }}
               hoverable
               striped
-              emptyText="No hay transferencias"
+              emptyText="No hay transferencias que coincidan con los filtros"
             />
+            )}
           </Card>
         </>
       )}

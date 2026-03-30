@@ -94,13 +94,19 @@ export const HorariosPage: React.FC = () => {
             </Card>
 
             {/* Calendar Grid */}
+            <div style={{ position: 'relative' }}>
+            <div style={{
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                borderRadius: 'var(--radius)',
+            }}>
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: '200px repeat(7, 1fr)',
+                gridTemplateColumns: '200px repeat(7, minmax(120px, 1fr))',
                 gap: '1px',
                 backgroundColor: 'var(--border)',
-                borderRadius: 'var(--radius)',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                minWidth: '1040px',
             }}>
                 {/* Header Row */}
                 <div style={{ backgroundColor: 'var(--surface)', padding: 'var(--spacing-md)', fontWeight: 600 }}>
@@ -196,6 +202,23 @@ export const HorariosPage: React.FC = () => {
                         ))}
                     </React.Fragment>
                 ))}
+            </div>
+            </div>
+            {/* Scroll fade indicator on right edge */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: '40px',
+                background: 'linear-gradient(to right, rgba(243, 244, 246, 0), rgba(243, 244, 246, 1))',
+                pointerEvents: 'none',
+                zIndex: 1,
+              }}
+              className="md:hidden"
+            />
             </div>
 
             <Modal

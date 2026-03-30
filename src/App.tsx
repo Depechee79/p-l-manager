@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useApp, RestaurantProvider, AppProvider, DatabaseProvider, runMigrationIfNeeded } from '@core';
 import { ProtectedRoute } from '@components';
 import { AppShellV2 } from '@shared/components/layout';
+import { Skeleton, SkeletonKPIGrid } from '@shared/components/LoadingSkeleton';
 import { DashboardPage, AlmacenPage, CierresPage, OCRPage, PnLPage, EscandallosPage, PersonalPage, RestaurantConfigPage, LoginPage, SignUpPage, InvitationSignUpPage } from '@pages';
 import { useDatabase } from '@hooks';
 import { ToastProvider } from '@utils';
@@ -33,24 +34,44 @@ const AppContent: React.FC = () => {
   // Show loading while Firebase Auth resolves initial state
   if (authLoading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--background)',
-      }}>
-        <div style={{ textAlign: 'center' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: 'var(--background)' }}>
+        {/* Topbar skeleton */}
+        <div style={{
+          height: '64px',
+          backgroundColor: 'var(--surface)',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 var(--spacing-lg)',
+          gap: 'var(--spacing-md)',
+        }}>
+          <Skeleton width={120} height={28} />
+          <div style={{ flex: 1 }} />
+          <Skeleton width={32} height={32} borderRadius="50%" />
+        </div>
+        {/* Content area skeleton */}
+        <div style={{ display: 'flex' }}>
+          {/* Sidebar skeleton (desktop) */}
           <div style={{
-            width: '48px',
-            height: '48px',
-            border: '4px solid var(--border)',
-            borderTopColor: 'var(--primary)',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto var(--spacing-md)',
-          }} />
-          <p style={{ color: 'var(--text-secondary)' }}>Cargando...</p>
+            width: '256px',
+            minHeight: 'calc(100vh - 64px)',
+            backgroundColor: 'var(--surface)',
+            borderRight: '1px solid var(--border)',
+            padding: 'var(--spacing-lg)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--spacing-sm)',
+          }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} height={36} borderRadius="var(--radius)" />
+            ))}
+          </div>
+          {/* Main content skeleton */}
+          <div style={{ flex: 1, padding: 'var(--spacing-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
+            <Skeleton height={32} width="30%" />
+            <SkeletonKPIGrid count={4} />
+            <Skeleton height={200} />
+          </div>
         </div>
       </div>
     );

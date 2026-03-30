@@ -200,7 +200,7 @@ export const MermasPage: React.FC = () => {
   return (
     <div style={{ padding: 'var(--spacing-md)', paddingBottom: '80px' }}>
       {/* Header */}
-      <div style={{ marginBottom: 'var(--spacing-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2" style={{ marginBottom: 'var(--spacing-lg)' }}>
         <div>
           <h1 style={{ fontSize: 'var(--font-size-xl)', fontWeight: '700', color: 'var(--text-main)' }}>
             Mermas y Desperdicios

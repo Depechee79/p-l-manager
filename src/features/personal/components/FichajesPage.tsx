@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Play, Square } from 'lucide-react';
 import { Button, Card, Table } from '@shared/components';
 import { formatDateOnly } from '@shared/utils/dateUtils';
@@ -18,6 +18,42 @@ export const FichajesPage: React.FC = () => {
     const [todayEntries, setTodayEntries] = useState<TimeEntry[]>([]);
 
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+
+    // Weekly target hours (default 40h when no config exists)
+    const weeklyTarget = 40;
+
+    // Calculate weekly hours from fichajes entries for the current week
+    const weeklyHours = useMemo(() => {
+        const entries = (db.fichajes as TimeEntry[]).filter((f: TimeEntry) =>
+            f.restaurantId === String(currentRestaurant?.id) &&
+            f.exitTime // Only count completed entries
+        );
+
+        // Get current week boundaries (Monday to Sunday)
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + mondayOffset);
+        monday.setHours(0, 0, 0, 0);
+
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        return entries
+            .filter(f => {
+                const entryDate = new Date(f.entryTime);
+                return entryDate >= monday && entryDate <= sunday;
+            })
+            .reduce((total, f) => {
+                const start = new Date(f.entryTime).getTime();
+                const end = new Date(f.exitTime as string).getTime();
+                return total + (end - start) / (1000 * 60 * 60);
+            }, 0);
+    }, [db.fichajes, currentRestaurant]);
+
+    const weeklyBalance = weeklyHours - weeklyTarget;
 
     // AUDIT-FIX: Ensure data is loaded (R-14)
     useEffect(() => {
@@ -172,15 +208,15 @@ export const FichajesPage: React.FC = () => {
                     <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--spacing-md)' }}>Resumen Semanal</h3>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--spacing-sm) 0', borderBottom: '1px solid var(--border-light)' }}>
                         <span>Horas Trabajadas</span>
-                        <span style={{ fontWeight: 600 }}>38.5h</span>
+                        <span style={{ fontWeight: 600 }}>{weeklyHours.toFixed(1)}h</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--spacing-sm) 0', borderBottom: '1px solid var(--border-light)' }}>
                         <span>Objetivo</span>
-                        <span style={{ fontWeight: 600 }}>40h</span>
+                        <span style={{ fontWeight: 600 }}>{weeklyTarget}h</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--spacing-sm) 0' }}>
                         <span>Balance</span>
-                        <span style={{ fontWeight: 600, color: 'var(--warning)' }}>-1.5h</span>
+                        <span style={{ fontWeight: 600, color: weeklyBalance < 0 ? 'var(--warning)' : 'var(--success)' }}>{weeklyBalance >= 0 ? '+' : ''}{weeklyBalance.toFixed(1)}h</span>
                     </div>
                 </Card>
             </div>

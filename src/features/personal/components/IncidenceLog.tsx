@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Button, Table, Badge } from '@components';
-import { Check, X, AlertOctagon } from 'lucide-react';
+import { Check, X, AlertOctagon, AlertTriangle } from 'lucide-react';
 import type { TimeEntry, Shift } from '@types';
 
 interface IncidenceLogProps {
@@ -89,33 +89,45 @@ export const IncidenceLog: React.FC<IncidenceLogProps> = ({ entries, shifts, onR
                 </div>
             </div>
 
-            <Table
-                columns={[
-                    { header: 'Empleado', key: 'workerName' },
-                    { header: 'Fecha', key: 'date', render: (val) => new Date(val).toLocaleDateString('es-ES') },
-                    {
-                        header: 'Tipo', key: 'type', render: (val) => (
-                            <Badge variant="outline" style={{ textTransform: 'capitalize' }}>
-                                {val.replace('_', ' ')}
-                            </Badge>
-                        )
-                    },
-                    { header: 'Detalles', key: 'details' },
-                    {
-                        header: 'Acciones', key: 'actions', render: (_, row) => (
-                            <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
-                                <Button size="sm" variant="success" onClick={() => onResolveIncidence(row.id, 'justify')}>
-                                    <Check size={14} style={{ marginRight: 'var(--spacing-xs)' }} /> Justificar
-                                </Button>
-                                <Button size="sm" variant="danger" onClick={() => onResolveIncidence(row.id, 'penalize')}>
-                                    <X size={14} style={{ marginRight: 'var(--spacing-xs)' }} /> Sancionar
-                                </Button>
-                            </div>
-                        )
-                    }
-                ]}
-                data={incidences}
-            />
+            {incidences.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--spacing-xl) var(--spacing-md)', textAlign: 'center' }}>
+                    <AlertTriangle size={48} style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }} />
+                    <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-main)', marginBottom: 'var(--spacing-xs)' }}>
+                        No hay incidencias
+                    </h3>
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                        No se han detectado incidencias de fichaje en el período actual.
+                    </p>
+                </div>
+            ) : (
+                <Table
+                    columns={[
+                        { header: 'Empleado', key: 'workerName' },
+                        { header: 'Fecha', key: 'date', render: (val) => new Date(val).toLocaleDateString('es-ES') },
+                        {
+                            header: 'Tipo', key: 'type', render: (val) => (
+                                <Badge variant="outline" style={{ textTransform: 'capitalize' }}>
+                                    {val.replace('_', ' ')}
+                                </Badge>
+                            )
+                        },
+                        { header: 'Detalles', key: 'details' },
+                        {
+                            header: 'Acciones', key: 'actions', render: (_, row) => (
+                                <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                                    <Button size="sm" variant="success" onClick={() => onResolveIncidence(row.id, 'justify')}>
+                                        <Check size={14} style={{ marginRight: 'var(--spacing-xs)' }} /> Justificar
+                                    </Button>
+                                    <Button size="sm" variant="danger" onClick={() => onResolveIncidence(row.id, 'penalize')}>
+                                        <X size={14} style={{ marginRight: 'var(--spacing-xs)' }} /> Sancionar
+                                    </Button>
+                                </div>
+                            )
+                        }
+                    ]}
+                    data={incidences}
+                />
+            )}
         </Card>
     );
 };

@@ -435,7 +435,7 @@ export const RestaurantConfigPage: React.FC = () => {
                     >
                         <Card style={{ ...glassCardStyle, padding: '32px', minHeight: '100%' }}>
                             {/* Grupo 1: Identidad */}
-                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                                 Identidad
                             </h4>
                             <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
@@ -467,7 +467,7 @@ export const RestaurantConfigPage: React.FC = () => {
                             <div style={{ borderBottom: '1px solid var(--border)', margin: '24px 0' }} />
 
                             {/* Grupo 2: Contacto */}
-                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                                 Contacto
                             </h4>
                             <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
@@ -520,7 +520,7 @@ export const RestaurantConfigPage: React.FC = () => {
                             <div style={{ borderBottom: '1px solid var(--border)', margin: '24px 0' }} />
 
                             {/* Grupo 3: Notas */}
-                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                                 Notas
                             </h4>
                             <div>
@@ -570,24 +570,40 @@ export const RestaurantConfigPage: React.FC = () => {
                                 style={{ flex: 1, minHeight: 0, padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
                                 bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
                             >
-                                {/* Header */}
-                                <div style={{ flex: '0 0 auto', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
-                                    <div style={{ width: '300px' }}>
+                                {/* Header — responsive */}
+                                <div style={{ flex: '0 0 auto', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                                    <div className="hidden md:flex" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ width: '300px' }}>
+                                            <Input
+                                                placeholder="Buscar restaurante..."
+                                                icon={<Store size={18} />}
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                style={{ margin: 0 }}
+                                            />
+                                        </div>
+                                        <Button variant="primary" icon={<Plus size={16} />} onClick={handleNewRestaurant}>
+                                            Nuevo Restaurante
+                                        </Button>
+                                    </div>
+                                    {/* Mobile header */}
+                                    <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                         <Input
                                             placeholder="Buscar restaurante..."
                                             icon={<Store size={18} />}
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
+                                            fullWidth
                                             style={{ margin: 0 }}
                                         />
+                                        <Button variant="primary" icon={<Plus size={16} />} onClick={handleNewRestaurant} style={{ minHeight: '44px' }}>
+                                            Nuevo Restaurante
+                                        </Button>
                                     </div>
-                                    <Button variant="primary" icon={<Plus size={16} />} onClick={handleNewRestaurant}>
-                                        Nuevo Restaurante
-                                    </Button>
                                 </div>
 
-                                {/* Table Container */}
-                                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                {/* Desktop Table */}
+                                <div className="hidden md:flex" style={{ flex: 1, overflow: 'hidden', flexDirection: 'column' }}>
                                     <Table
                                         data={filteredRestaurants}
                                         columns={[
@@ -631,6 +647,70 @@ export const RestaurantConfigPage: React.FC = () => {
                                         emptyText="No se encontraron restaurantes"
                                         containerStyle={{ borderRadius: 0, border: 'none' }}
                                     />
+                                </div>
+
+                                {/* Mobile Cards */}
+                                <div className="md:hidden" style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+                                    {filteredRestaurants.length === 0 ? (
+                                        <div style={{ padding: 'var(--spacing-xl)', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                            No se encontraron restaurantes
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+                                            {filteredRestaurants.map((r: Restaurant) => (
+                                                <div
+                                                    key={String(r.id)}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => handleSelectRestaurant(String(r.id))}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            handleSelectRestaurant(String(r.id));
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        background: 'var(--surface)',
+                                                        borderRadius: 'var(--radius)',
+                                                        padding: 'var(--spacing-md)',
+                                                        border: '1px solid var(--border)',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: 'var(--spacing-xs)',
+                                                        cursor: 'pointer',
+                                                        minHeight: '44px',
+                                                        transition: 'background-color 0.2s',
+                                                    }}
+                                                >
+                                                    {/* Row 1: Name + Status */}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span style={{ fontWeight: 600, fontSize: 'var(--font-size-base)', wordBreak: 'break-word' }}>{r.nombre}</span>
+                                                        {r.activo
+                                                            ? <Badge variant="success" size="sm">Activo</Badge>
+                                                            : <Badge variant="secondary" size="sm">Inactivo</Badge>
+                                                        }
+                                                    </div>
+                                                    {/* Row 2: Code + Edit */}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        {r.codigo ? (
+                                                            <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>{r.codigo}</span>
+                                                        ) : (
+                                                            <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>-</span>
+                                                        )}
+                                                        <Button
+                                                            variant="ghost"
+                                                            icon={<Pencil size={16} />}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleSelectRestaurant(String(r.id));
+                                                            }}
+                                                            title="Editar"
+                                                            style={{ minHeight: '44px', minWidth: '44px' }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </Card>
                         </div>

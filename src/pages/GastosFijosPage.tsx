@@ -26,13 +26,13 @@ import { GASTO_FIJO_LABELS, GASTO_FIJO_ICONS, calculateGastosFijosSummary } from
 
 // Type options for the form dropdown
 const TIPO_OPTIONS: { value: GastoFijoTipo; label: string }[] = [
-    { value: 'alquiler', label: '🏠 Alquiler' },
-    { value: 'suministros', label: '💡 Suministros (Luz, Agua, Gas)' },
-    { value: 'servicios', label: '📞 Servicios (Internet, Teléfono)' },
-    { value: 'seguros', label: '🛡️ Seguros' },
-    { value: 'marketing', label: '📢 Marketing y Publicidad' },
-    { value: 'limpieza', label: '🧹 Limpieza' },
-    { value: 'otros', label: '📦 Otros Gastos Fijos' },
+    { value: 'alquiler', label: 'Alquiler' },
+    { value: 'suministros', label: 'Suministros (Luz, Agua, Gas)' },
+    { value: 'servicios', label: 'Servicios (Internet, Teléfono)' },
+    { value: 'seguros', label: 'Seguros' },
+    { value: 'marketing', label: 'Marketing y Publicidad' },
+    { value: 'limpieza', label: 'Limpieza' },
+    { value: 'otros', label: 'Otros Gastos Fijos' },
 ];
 
 export const GastosFijosPage: React.FC = () => {
@@ -258,19 +258,25 @@ export const GastosFijosPage: React.FC = () => {
                     {/* Summary Cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--spacing-sm)' }}>
                         <Card>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>Total Mensual</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>Total Mensual</p>
                             <p style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent)' }}>{formatCurrency(summary.total)}</p>
                         </Card>
                         <Card>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>🏠 Alquiler</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {GASTO_FIJO_ICONS.alquiler} Alquiler
+                            </p>
                             <p style={{ fontSize: '16px', fontWeight: '600' }}>{formatCurrency(summary.alquiler)}</p>
                         </Card>
                         <Card>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>💡 Suministros</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {GASTO_FIJO_ICONS.suministros} Suministros
+                            </p>
                             <p style={{ fontSize: '16px', fontWeight: '600' }}>{formatCurrency(summary.suministros)}</p>
                         </Card>
                         <Card>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>🛡️ Seguros</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {GASTO_FIJO_ICONS.seguros} Seguros
+                            </p>
                             <p style={{ fontSize: '16px', fontWeight: '600' }}>{formatCurrency(summary.seguros)}</p>
                         </Card>
                     </div>
@@ -308,7 +314,7 @@ export const GastosFijosPage: React.FC = () => {
                                     id: g.id,
                                     tipo: (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
-                                            <span style={{ fontSize: '18px' }}>{GASTO_FIJO_ICONS[g.tipo]}</span>
+                                            <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>{GASTO_FIJO_ICONS[g.tipo]}</span>
                                             <span style={{
                                                 fontWeight: '500',
                                                 opacity: g.activo ? 1 : 0.5,

@@ -341,18 +341,22 @@ export const PnLPage: React.FC = () => {
       key: 'concepto' as const,
       header: 'Concepto',
       render: (_: unknown, row: TableRow) => (
-        <span style={{ fontWeight: row.isTotal ? '700' : '400' }}>{row.concepto}</span>
+        <span className="text-xs md:text-sm" style={{ fontWeight: row.isTotal ? '700' : '400', wordBreak: 'break-word' }}>{row.concepto}</span>
       )
     },
     {
       key: 'importe' as const,
       header: 'Importe',
-      render: (_: unknown, row: TableRow) => formatCurrency(row.importe)
+      render: (_: unknown, row: TableRow) => (
+        <span className="text-xs md:text-sm">{formatCurrency(row.importe)}</span>
+      )
     },
     {
       key: 'porcentaje' as const,
       header: '% Ventas',
-      render: (_: unknown, row: TableRow) => formatPercentage(row.porcentaje)
+      render: (_: unknown, row: TableRow) => (
+        <span className="text-xs md:text-sm">{formatPercentage(row.porcentaje)}</span>
+      )
     },
   ];
 
@@ -416,15 +420,15 @@ export const PnLPage: React.FC = () => {
             onTabChange={(tabId) => setActiveTab(tabId as PnLTabId)}
             actions={activeTab === 'resultados' ? (
               <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
-                <Button variant="secondary" icon={<Plus size={16} />} onClick={() => setIsManualModalOpen(true)}>
+                <Button variant="secondary" icon={<Plus size={16} />} onClick={() => setIsManualModalOpen(true)} aria-label="Ajuste Manual">
                   <span className="hidden md:inline">Ajuste Manual</span>
                 </Button>
                 {pnlData && (
-                  <Button variant="secondary" icon={<Download size={16} />} onClick={handleExport}>
+                  <Button variant="secondary" icon={<Download size={16} />} onClick={handleExport} aria-label="Exportar">
                     <span className="hidden md:inline">Exportar</span>
                   </Button>
                 )}
-                <Button variant="primary" icon={<Calendar size={16} />} onClick={handleCalculate}>
+                <Button variant="primary" icon={<Calendar size={16} />} onClick={handleCalculate} aria-label="Actualizar">
                   <span className="hidden md:inline">Actualizar</span>
                 </Button>
               </div>
@@ -578,7 +582,7 @@ export const PnLPage: React.FC = () => {
           </div>
 
           {/* P&L Sections */}
-          <Card>
+          <Card style={{ overflowX: 'auto' }}>
             {/* Section 1: Ingresos */}
             <FormSection title="1. Ingresos Operativos">
               <Table<TableRow>

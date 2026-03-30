@@ -8,9 +8,10 @@ import {
     Modal,
     Input,
     FormSection,
-    Checkbox
+    Checkbox,
+    ConfirmDialog
 } from '@shared/components';
-import { Save, Shield, Lock, Plus } from 'lucide-react';
+import { Save, Shield, Lock, Plus, Trash2 } from 'lucide-react';
 import { useDatabase } from '@core';
 import { PERMISSION_GROUPS } from '@shared/config';
 import { getAllSystemRoles } from '@shared/config/systemRoles';
@@ -48,6 +49,10 @@ export const RolesAdminPage: React.FC = () => {
     // New Role Modal State
     const [isNewRoleModalOpen, setIsNewRoleModalOpen] = useState(false);
     const [newRoleName, setNewRoleName] = useState('');
+
+    // Delete Role Confirm State
+    const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Valid system role names (canonical)
     const VALID_ROLE_NAMES = [
@@ -128,6 +133,38 @@ export const RolesAdminPage: React.FC = () => {
         }
     };
 
+    const handleDeleteRole = async () => {
+        if (!roleToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await db.delete('roles', roleToDelete.id);
+            setRoles(prev => prev.filter(r => r.id !== roleToDelete.id));
+
+            // If the deleted role was selected, clear selection
+            if (selectedRole?.id === roleToDelete.id) {
+                setSelectedRole(null);
+                setEditedPermissions([]);
+            }
+
+            showToast({
+                type: 'success',
+                title: 'Rol eliminado',
+                message: `El rol "${roleToDelete.nombre}" ha sido eliminado`
+            });
+        } catch (error: unknown) {
+            logger.error('Error eliminando rol', error instanceof Error ? error.message : String(error));
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: 'No se pudo eliminar el rol'
+            });
+        } finally {
+            setIsDeleting(false);
+            setRoleToDelete(null);
+        }
+    };
+
     const togglePermission = (permission: Permission) => {
         if (editedPermissions.includes(permission)) {
             setEditedPermissions(editedPermissions.filter(p => p !== permission));
@@ -183,13 +220,13 @@ export const RolesAdminPage: React.FC = () => {
                 }
             />
 
-            <div style={{
-                display: 'grid',
+            {/* Desktop: side-by-side grid */}
+            <div className="hidden md:grid" style={{
                 gridTemplateColumns: 'minmax(250px, 300px) 1fr',
                 gap: 'var(--spacing-lg)',
                 alignItems: 'start',
                 marginTop: 'var(--spacing-lg)'
-            }} className="roles-grid">
+            }}>
                 {/* Roles List */}
                 <Card style={{ padding: '0', overflow: 'hidden' }}>
                     <div style={{ padding: 'var(--spacing-md)', borderBottom: '1px solid var(--border)' }}>
@@ -226,6 +263,20 @@ export const RolesAdminPage: React.FC = () => {
                                 <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 'var(--font-size-sm)' }}>
                                     {role.nombre}
                                 </div>
+                                {!VALID_ROLE_NAMES.includes(role.nombre) && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRoleToDelete(role);
+                                        }}
+                                        aria-label={`Eliminar rol ${role.nombre}`}
+                                        style={{ padding: '4px', minWidth: 'auto' }}
+                                    >
+                                        <Trash2 size={14} style={{ color: 'var(--danger)' }} />
+                                    </Button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -324,6 +375,126 @@ export const RolesAdminPage: React.FC = () => {
                 )}
             </div>
 
+            {/* Mobile: stacked vertical layout */}
+            <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)', marginTop: 'var(--spacing-md)' }}>
+                {/* If editing a role on mobile, show permissions */}
+                {selectedRole ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                        <Button variant="ghost" onClick={() => setSelectedRole(null)} style={{ alignSelf: 'flex-start' }}>
+                            ← Volver a roles
+                        </Button>
+                        <Card style={{ padding: 'var(--spacing-md)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-md)' }}>
+                                <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, margin: 0 }}>
+                                    {selectedRole.nombre}
+                                </h3>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', margin: 0 }}>
+                                    {selectedRole.descripcion}
+                                </p>
+                                {hasChanges && (
+                                    <Button variant="primary" onClick={handleSave} disabled={isSaving} style={{ alignSelf: 'stretch', minHeight: '44px' }}>
+                                        <Save size={16} style={{ marginRight: '8px' }} />
+                                        {isSaving ? 'Guardando...' : 'Guardar Permisos'}
+                                    </Button>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                                {PERMISSION_GROUPS.map(group => (
+                                    <div
+                                        key={group.label}
+                                        style={{
+                                            padding: 'var(--spacing-md)',
+                                            backgroundColor: 'var(--surface-muted)',
+                                            borderRadius: 'var(--radius)',
+                                            border: '1px solid var(--border-light)'
+                                        }}
+                                    >
+                                        <h4 style={{
+                                            fontWeight: 600,
+                                            marginBottom: 'var(--spacing-sm)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 'var(--spacing-xs)',
+                                            color: 'var(--text-main)',
+                                            fontSize: 'var(--font-size-sm)'
+                                        }}>
+                                            <Lock size={14} />
+                                            {group.label}
+                                        </h4>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {group.permissions.map(perm => {
+                                                const isEnabled = editedPermissions.includes(perm);
+                                                const permName = perm.split('.').pop() || perm;
+                                                const friendlyName = {
+                                                    'view': 'Ver / Acceder',
+                                                    'create': 'Crear registros',
+                                                    'edit': 'Editar / Modificar',
+                                                    'delete': 'Eliminar / Borrar',
+                                                    'export': 'Exportar datos'
+                                                }[permName] || permName;
+
+                                                return (
+                                                    <Checkbox
+                                                        key={perm}
+                                                        checked={isEnabled}
+                                                        onChange={() => togglePermission(perm)}
+                                                        label={friendlyName}
+                                                        style={{
+                                                            padding: '4px 8px',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            background: isEnabled ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                                                            transition: 'all 0.2s',
+                                                            minHeight: '44px',
+                                                        }}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    </div>
+                ) : (
+                    /* Role cards list on mobile */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+                        {roles.map(role => (
+                            <div
+                                key={String(role.id)}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => handleSelectRole(role)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        handleSelectRole(role);
+                                    }
+                                }}
+                                style={{
+                                    background: 'var(--surface)',
+                                    borderRadius: 'var(--radius)',
+                                    border: '1px solid var(--border)',
+                                    padding: 'var(--spacing-md)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 'var(--spacing-xs)',
+                                    minHeight: '44px',
+                                    transition: 'background-color 0.2s',
+                                }}
+                            >
+                                <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 'var(--font-size-base)', wordBreak: 'break-word' }}>
+                                    {role.nombre}
+                                </div>
+                                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                                    {role.permisos.length} permisos
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             {/* Modal Crear Rol */}
             <Modal
                 open={isNewRoleModalOpen}
@@ -354,6 +525,18 @@ export const RolesAdminPage: React.FC = () => {
                     </FormSection>
                 </div>
             </Modal>
+
+            {/* Confirm Delete Role Dialog */}
+            <ConfirmDialog
+                open={roleToDelete !== null}
+                onClose={() => setRoleToDelete(null)}
+                onConfirm={handleDeleteRole}
+                title="Eliminar Rol"
+                description={`¿Estás seguro de que deseas eliminar el rol "${roleToDelete?.nombre || ''}"? Esta acción no se puede deshacer.`}
+                confirmLabel="Eliminar Rol"
+                variant="danger"
+                loading={isDeleting}
+            />
         </PageContainer>
     );
 };

@@ -164,7 +164,6 @@ export const CashCountingStep: FC<CashCountingStepProps> = ({
             display: 'flex',
             flexDirection: 'column',
             minHeight: '100%',
-            paddingBottom: '100px', // Space for sticky footer
         }}>
             <Card style={{ padding: 'var(--spacing-lg)', flex: 1 }}>
                 <h3 style={{
@@ -292,12 +291,10 @@ export const CashCountingStep: FC<CashCountingStepProps> = ({
                 </div>
             </Card>
 
-            {/* STICKY NAVIGATION FOOTER - Fixed at bottom */}
+            {/* STICKY NAVIGATION FOOTER - Sticky within scroll container */}
             <div style={{
-                position: 'fixed',
+                position: 'sticky',
                 bottom: 0,
-                left: 0,
-                right: 0,
                 padding: 'var(--spacing-md)',
                 backgroundColor: 'var(--surface)',
                 borderTop: '1px solid var(--border)',
@@ -306,6 +303,7 @@ export const CashCountingStep: FC<CashCountingStepProps> = ({
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 zIndex: 'var(--z-sticky)',
+                marginTop: 'auto',
             }}>
                 <Button onClick={onBack} variant="secondary">
                     <ArrowLeft size={16} style={{ marginRight: '8px' }} /> Anterior

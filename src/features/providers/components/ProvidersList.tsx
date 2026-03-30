@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Pencil, Trash2, Search } from 'lucide-react';
+import { Pencil, Trash2, Search, Truck, Plus } from 'lucide-react';
 import { Button, Input, Table, TableColumn } from '@shared/components';
 import type { Provider } from '@types';
 
@@ -116,6 +116,32 @@ export const ProvidersList: React.FC<ProvidersListProps> = ({
         </div>
     );
 
+    if (providers.length === 0 && !loading) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ margin: 0, fontSize: 'var(--font-size-lg)', color: 'var(--text-main)' }}>Proveedores</h2>
+                </div>
+                <div style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    padding: 'var(--spacing-xl) var(--spacing-md)', textAlign: 'center',
+                    backgroundColor: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)',
+                }}>
+                    <Truck size={48} style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }} />
+                    <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-main)', marginBottom: 'var(--spacing-xs)' }}>
+                        No hay proveedores registrados
+                    </h3>
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>
+                        Registra tus proveedores para gestionar pedidos y albaranes.
+                    </p>
+                    <Button variant="primary" onClick={onNew}>
+                        <Plus size={16} style={{ marginRight: 'var(--spacing-xs)' }} /> Nuevo Proveedor
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
             <div
@@ -127,7 +153,7 @@ export const ProvidersList: React.FC<ProvidersListProps> = ({
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0, fontSize: 'var(--font-size-lg)', color: 'var(--text-main)' }}>Proveedores</h2>
-                    <Button onClick={onNew} variant="primary">
+                    <Button onClick={onNew} variant="primary" aria-label="Nuevo proveedor">
                         <span className="hidden-mobile">Nuevo Proveedor</span>
                         <span className="visible-mobile">+</span>
                     </Button>
@@ -153,7 +179,7 @@ export const ProvidersList: React.FC<ProvidersListProps> = ({
                     loading={loading}
                     hoverable
                     striped
-                    emptyText="No hay proveedores registrados"
+                    emptyText="No hay proveedores que coincidan con la búsqueda"
                     expandedRowRender={renderExpandedRow}
                     onRowClick={(provider) => onEdit(provider)}
                 />
@@ -196,8 +222,11 @@ export const ProvidersList: React.FC<ProvidersListProps> = ({
                     </div>
                 ))}
                 {filteredProviders.length === 0 && !loading && (
-                    <div style={{ padding: 'var(--spacing-lg)', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        No hay proveedores registrados
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 'var(--spacing-xl)', textAlign: 'center' }}>
+                        <Truck size={40} style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-sm)' }} />
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                            No hay proveedores que coincidan con la búsqueda
+                        </p>
                     </div>
                 )}
             </div>

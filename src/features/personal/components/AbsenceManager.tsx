@@ -30,11 +30,13 @@ export const AbsenceManager: React.FC<AbsenceManagerProps> = ({ requests, absenc
     };
 
     // Calculate balances
-    const TOTAL_VACATION_DAYS = 30;
+    // TODO: totalVacationDays should come from worker/restaurant config.
+    // Until configured, show 0 instead of a hardcoded fake number.
+    const totalVacationDays = 0;
     const usedDays = requests
         .filter(r => r.status === 'aprobado')
         .reduce((sum, r) => sum + (r.daysCount || 0), 0);
-    const availableDays = TOTAL_VACATION_DAYS - usedDays;
+    const availableDays = Math.max(0, totalVacationDays - usedDays);
     const pendingCount = requests.filter(r => r.status === 'pendiente').length;
 
     const combinedList = [

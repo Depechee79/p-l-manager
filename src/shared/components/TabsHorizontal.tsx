@@ -144,9 +144,10 @@ export const TabsHorizontal: React.FC<TabsHorizontalProps> = ({
             top: 0,
             right: 0,
             bottom: 0,
-            width: '32px',
-            background: 'linear-gradient(to right, transparent, var(--background))',
+            width: '40px',
+            background: 'linear-gradient(to right, rgba(243, 244, 246, 0), rgba(243, 244, 246, 1))',
             pointerEvents: 'none',
+            zIndex: 1,
           }}
         />
       )}
