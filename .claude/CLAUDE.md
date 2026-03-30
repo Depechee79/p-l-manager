@@ -124,7 +124,7 @@ Zonas de inventario por rol (bar, cocina, camara, almacen).
 --background: #f3f4f6       /* Cool Gray 100 */
 --surface: #ffffff
 --text-main: #111827
---text-secondary: #6b7280   /* Gray 500, WCAG AA compliant */
+--text-secondary: #4b5563   /* Gray 600, WCAG AA compliant */
 --border: #e5e7eb
 
 /* Semanticos */
