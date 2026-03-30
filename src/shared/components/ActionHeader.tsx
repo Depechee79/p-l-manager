@@ -33,7 +33,7 @@ export const ActionHeader: React.FC<ActionHeaderProps> = ({
   activeTab,
   onTabChange,
   actions,
-  gap = '16px',
+  gap = 'var(--spacing-md)',
   sticky = false,
 }) => {
   const hasTabs = !!(tabs && activeTab && onTabChange);
@@ -43,7 +43,7 @@ export const ActionHeader: React.FC<ActionHeaderProps> = ({
       className={`
         flex flex-col md:flex-row items-stretch md:items-center flex-wrap
         ${hasTabs ? 'justify-between' : 'justify-end'}
-        ${sticky ? 'sticky top-0 z-10 bg-background pb-md' : 'mb-6'}
+        ${sticky ? 'sticky top-0 z-10 bg-background pb-md' : 'mb-md'}
         ${hasTabs ? 'pt-0 pb-0' : 'pt-1 pb-2'}
       `.replace(/\s+/g, ' ').trim()}
       style={{ gap }}

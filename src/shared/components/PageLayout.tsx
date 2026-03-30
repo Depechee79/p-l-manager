@@ -42,7 +42,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
 
       {/* Scrollable Content Area */}
       <div
-        className={`page-layout-v2-content flex flex-col flex-1 min-h-0 overflow-x-hidden ${disableScroll ? 'overflow-y-hidden' : 'overflow-y-auto'}`}
+        className={`page-layout-v2-content flex flex-col flex-1 min-h-0 overflow-x-hidden pb-6 ${disableScroll ? 'overflow-y-hidden' : 'overflow-y-auto'}`}
       >
         {children}
       </div>

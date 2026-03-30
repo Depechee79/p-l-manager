@@ -131,7 +131,7 @@ export function Table<T extends Record<string, any>>({
   ].filter(Boolean).join(' ');
 
   return (
-    <div className="w-full relative rounded-[var(--radius)] overflow-x-auto bg-surface border border-border" style={containerStyle}>
+    <div className="w-full relative rounded-[var(--radius)] overflow-x-auto bg-surface" style={containerStyle}>
       <table className={tableClasses}>
         <thead>
           <tr className="border-b border-border bg-surface text-text-secondary uppercase text-[length:var(--font-size-2xs)] tracking-wider font-semibold">

@@ -105,7 +105,7 @@ export const DataCard: React.FC<DataCardProps> = ({
           )}
         </div>
       ) : (
-        <div className={noPadding ? '' : 'p-5'}>
+        <div className={noPadding ? '' : 'p-4'}>
           {children}
         </div>
       )}

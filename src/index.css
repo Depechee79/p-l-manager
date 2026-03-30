@@ -163,7 +163,7 @@ h6 {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  padding: 20px;
+  padding: var(--spacing-md);
   transition: all 0.2s ease;
 }
 
@@ -172,18 +172,18 @@ h6 {
 }
 
 .card-header {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-md);
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-main);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-sm);
 }
 
 .card-footer {
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
   border-top: 1px solid var(--border);
 }
 
@@ -210,21 +210,21 @@ h6 {
 }
 
 .card-padding-small {
-  padding: 16px;
+  padding: var(--spacing-sm);
 }
 
 .card-padding-large {
-  padding: 24px;
+  padding: var(--spacing-lg);
 }
 
-/* Asegurar que cards no tengan padding excesivo */
+/* Card padding responsive */
 .card {
-  padding: 20px;
+  padding: var(--spacing-md);
 }
 
 @media (max-width: 768px) {
   .card {
-    padding: 16px;
+    padding: var(--spacing-sm);
   }
 }
 
@@ -237,7 +237,7 @@ h6 {
   font-size: var(--font-size-xl);
   font-weight: 600;
   color: var(--text-main);
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-xs);
   font-family: var(--font-heading);
 }
 
@@ -326,11 +326,11 @@ button {
   transition: all 0.2s ease;
   border-radius: var(--radius);
   border: 1px solid transparent;
-  padding: 10px 20px;
+  padding: var(--spacing-xs) var(--spacing-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--spacing-xs);
 }
 
 button:active {
@@ -451,7 +451,7 @@ button.danger,
 .input-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--spacing-xs);
 }
 
 .input-label {
@@ -471,7 +471,7 @@ textarea {
   /* Filled style */
   border: 1px solid transparent;
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-sm);
   /* 12px - Unified with filter inputs */
   color: var(--text-main);
@@ -495,7 +495,7 @@ textarea:focus {
   background-color: var(--surface-muted);
   border: 1px solid transparent;
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-base);
   color: var(--text-main);
   transition: all 0.2s ease;
@@ -964,7 +964,7 @@ input[type="time"]::-webkit-datetime-edit-minute-field {
 }
 
 .modal-header {
-  padding: 20px 24px;
+  padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -995,7 +995,7 @@ input[type="time"]::-webkit-datetime-edit-minute-field {
 }
 
 .modal-body {
-  padding: 24px;
+  padding: var(--spacing-lg);
 }
 
 .modal-footer {
