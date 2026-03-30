@@ -43,8 +43,10 @@ export const AppShellV2: React.FC<AppShellV2Props> = ({ children, user, onLogout
     <div
       className="app-shell-v2"
       style={{
-        minHeight: '100vh',
+        height: '100dvh',
+        overflow: 'hidden',
         backgroundColor: 'var(--background)',
+        position: 'relative',
       }}
     >
       {/* Fixed Topbar */}
@@ -70,7 +72,7 @@ export const AppShellV2: React.FC<AppShellV2Props> = ({ children, user, onLogout
           left: isMobile ? 0 : 'var(--app-sidebar-w)',
           top: 'var(--app-topbar-h)',
           right: 0,
-          bottom: isMobile ? '80px' : 0,
+          bottom: isMobile ? 'calc(70px + env(safe-area-inset-bottom, 0px))' : 0,
           padding: isMobile
             ? 'var(--app-content-pad)'
             : 'var(--app-content-pad-lg)',

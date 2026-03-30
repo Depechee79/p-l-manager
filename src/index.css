@@ -80,20 +80,41 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
- * GLOBAL SCROLLBAR HIDING - Clean aesthetic
+ * DOCUMENT LOCK - Prevents iOS Safari address bar from moving on scroll
+ * Only PageLayout content area scrolls, never the document itself
  * ═══════════════════════════════════════════════════════════════════════════ */
-*::-webkit-scrollbar {
+html {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SCROLLBAR HIDING - Only on shell elements, NOT on content areas
+ * PageLayout and scrollable-content keep their own scrollbar rules
+ * ═══════════════════════════════════════════════════════════════════════════ */
+body::-webkit-scrollbar,
+.app-shell-v2::-webkit-scrollbar,
+.sidebar-v2::-webkit-scrollbar {
   display: none;
 }
 
-* {
+body,
+.app-shell-v2,
+.sidebar-v2 {
   scrollbar-width: none;
-  /* Firefox */
   -ms-overflow-style: none;
-  /* IE and Edge */
 }
 
 body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   font-family: var(--font-body);
   background-color: var(--background);
   color: var(--text-main);
@@ -988,55 +1009,6 @@ input[type="time"]::-webkit-datetime-edit-minute-field {
   border-bottom-right-radius: var(--radius);
 }
 
-/* ============================================================
-   HIDDEN SCROLLBARS (Session 003)
-   Oculta scrollbars pero mantiene funcionalidad de scroll
-   ============================================================ */
-
-/* Global scrollbar hiding */
-html,
-body,
-.layout-container,
-main,
-aside {
-  scrollbar-width: none;
-  /* Firefox */
-  -ms-overflow-style: none;
-  /* IE/Edge */
-}
-
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
-.layout-container::-webkit-scrollbar,
-main::-webkit-scrollbar,
-aside::-webkit-scrollbar {
-  display: none;
-  /* Chrome/Safari/Opera */
-}
-
-/* Specific sidebar scrollbar hiding */
-aside[style*="overflow"] {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-aside[style*="overflow"]::-webkit-scrollbar {
-  display: none;
-}
-
-/* Main content area scrollbar hiding */
-.main-content,
-[style*="overflowY: 'auto'"],
-[style*="overflow-y: auto"] {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.main-content::-webkit-scrollbar,
-[style*="overflowY: 'auto'"]::-webkit-scrollbar,
-[style*="overflow-y: auto"]::-webkit-scrollbar {
-  display: none;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    STICKY PAGE HEADER - Session 005
