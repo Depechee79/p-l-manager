@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, Input, Table } from '@shared/components';
-import { Search, Edit, Package } from 'lucide-react';
+import { Button, Input, Table, DataCard } from '@shared/components';
+import { Search, Edit, Package, Plus, ClipboardList } from 'lucide-react';
 import { formatCurrency } from '@utils/formatters';
 import type { Escandallo } from '@types';
 
@@ -8,6 +8,7 @@ interface EscandalloListProps {
     escandallos: Escandallo[];
     loading?: boolean;
     onEdit: (escandallo: Escandallo) => void;
+    onNew?: () => void;
     searchQuery: string;
     onSearchChange: (q: string) => void;
     monthFilter: string;
@@ -18,11 +19,14 @@ export const EscandalloList: React.FC<EscandalloListProps> = ({
     escandallos,
     loading = false,
     onEdit,
+    onNew,
     searchQuery,
     onSearchChange,
     monthFilter,
     onMonthFilterChange,
 }) => {
+    const hasFilters = searchQuery.trim() !== '';
+
     return (
         <div className="escandallo-list" style={{ marginTop: 'var(--spacing-md)' }}>
             <div
@@ -64,6 +68,21 @@ export const EscandalloList: React.FC<EscandalloListProps> = ({
                 </div>
             </div>
 
+            {!loading && escandallos.length === 0 ? (
+                <DataCard
+                    isEmpty
+                    emptyTitle={hasFilters ? 'Sin resultados' : 'No hay escandallos registrados'}
+                    emptyDescription={hasFilters
+                        ? 'No se encontraron escandallos con los filtros aplicados.'
+                        : 'Crea tu primer escandallo para calcular costes y márgenes de tus platos.'}
+                    emptyIcon={<ClipboardList size={32} color="var(--text-light)" strokeWidth={1.5} />}
+                    emptyAction={!hasFilters && onNew ? (
+                        <Button variant="primary" icon={<Plus size={16} />} onClick={onNew}>
+                            Nuevo Escandallo
+                        </Button>
+                    ) : undefined}
+                />
+            ) : (
             <Table
                 data={escandallos}
                 loading={loading}
@@ -233,6 +252,7 @@ export const EscandalloList: React.FC<EscandalloListProps> = ({
                     </div>
                 )}
             />
+            )}
         </div>
     );
 };

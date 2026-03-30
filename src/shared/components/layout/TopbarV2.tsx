@@ -167,9 +167,10 @@ export const TopbarV2: React.FC<TopbarV2Props> = ({ user, onLogout }) => {
                 lineHeight: 1.2,
               }}
             >
-              P&L Manager
+              P&L<span className="topbar-title-full"> Manager</span>
             </h1>
             <p
+              className="topbar-subtitle"
               style={{
                 margin: '2px 0 0',
                 fontSize: '11px',
@@ -364,7 +365,7 @@ export const TopbarV2: React.FC<TopbarV2Props> = ({ user, onLogout }) => {
         </div>
 
         {/* Help Dropdown */}
-        <div ref={helpRef} style={{ position: 'relative' }}>
+        <div ref={helpRef} className="topbar-help" style={{ position: 'relative' }}>
           <button
             onClick={() => {
               setIsHelpOpen(!isHelpOpen);
@@ -591,6 +592,15 @@ export const TopbarV2: React.FC<TopbarV2Props> = ({ user, onLogout }) => {
             display: none !important;
           }
           .topbar-user-info {
+            display: none !important;
+          }
+          .topbar-subtitle {
+            display: none !important;
+          }
+          .topbar-title-full {
+            display: none !important;
+          }
+          .topbar-help {
             display: none !important;
           }
         }

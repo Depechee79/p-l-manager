@@ -59,7 +59,7 @@ export const ActionHeader: React.FC<ActionHeaderProps> = ({
 
       {/* Actions */}
       {actions && (
-        <div className="flex items-center gap-2 pt-1 justify-end">
+        <div className="flex items-center gap-2 pt-1 w-full md:w-auto justify-end">
           {actions}
         </div>
       )}

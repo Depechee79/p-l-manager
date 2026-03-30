@@ -115,7 +115,7 @@ export const CierresPage: FC = () => {
         header={
           <ActionHeader
             actions={
-              <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenForm}>
+              <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenForm} className="w-full md:w-auto">
                 Nuevo Cierre
               </Button>
             }
@@ -138,6 +138,7 @@ export const CierresPage: FC = () => {
           onFilterChange={handleFilterPeriod}
           onEditClosing={handleEdit}
           onDeleteClosing={handleDelete}
+          onNewClosing={handleOpenForm}
         />
       </PageLayout>
         <ConfirmDialog

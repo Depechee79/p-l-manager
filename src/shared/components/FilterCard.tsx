@@ -2,14 +2,17 @@
  * FilterCard - Compact filter panel
  *
  * Session 007: New design matching Almacen reference
+ * Mobile fix: Search always visible, other filters collapse behind toggle
  * Features:
  * - White card with subtle border and shadow
  * - Compact filter inputs (32px height)
- * - Uppercase tiny labels (8px)
+ * - Labels without uppercase (clean, readable)
  * - Grid layout responsive
+ * - Mobile: search visible, other filters behind "Filtros" toggle
  */
 import React from 'react';
 import type { ReactNode } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 
 export interface FilterCardProps {
   children: ReactNode;
@@ -17,6 +20,8 @@ export interface FilterCardProps {
   columns?: 1 | 2 | 3 | 4;
   /** Extra class name */
   className?: string;
+  /** Number of active filters (shown as badge on mobile toggle) */
+  activeFilterCount?: number;
 }
 
 
@@ -24,7 +29,10 @@ export const FilterCard: React.FC<FilterCardProps> = ({
   children,
   columns = 4,
   className = '',
+  activeFilterCount = 0,
 }) => {
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+
   const colsClass = {
     1: 'grid-cols-1',
     2: 'grid-cols-1 sm:grid-cols-2',
@@ -32,10 +40,69 @@ export const FilterCard: React.FC<FilterCardProps> = ({
     4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
   }[columns];
 
+  // Split children: first child is search (always visible), rest are collapsible on mobile
+  const childArray = React.Children.toArray(children);
+  const searchChild = childArray[0];
+  const filterChildren = childArray.slice(1);
+  const hasExtraFilters = filterChildren.length > 0;
+
   return (
-    <div className={`bg-surface p-5 rounded-[var(--radius)] shadow-sm border border-border ${className}`}>
-      <div className={`grid ${colsClass} gap-sm`}>
+    <div className={`bg-surface p-3 md:p-5 rounded-[var(--radius)] shadow-sm border border-border ${className}`}>
+      {/* Desktop: full grid as before */}
+      <div className={`hidden md:grid ${colsClass} gap-sm`}>
         {children}
+      </div>
+
+      {/* Mobile: search always visible + toggle for extra filters */}
+      <div className="flex md:hidden flex-col gap-2">
+        {/* Search bar row with optional toggle button */}
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            {searchChild}
+          </div>
+          {hasExtraFilters && (
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className={`
+                flex items-center gap-1.5 h-[var(--app-filter-input-h)]
+                px-3 rounded-[var(--app-interactive-radius)]
+                text-[var(--app-filter-input-size)] font-medium
+                transition-all duration-150 whitespace-nowrap
+                border-none cursor-pointer
+                ${filtersOpen
+                  ? 'bg-accent text-white'
+                  : 'bg-surface-muted text-text-secondary'
+                }
+              `.replace(/\s+/g, ' ').trim()}
+            >
+              <SlidersHorizontal size={14} />
+              <span>Filtros</span>
+              {activeFilterCount > 0 && (
+                <span
+                  className={`
+                    inline-flex items-center justify-center
+                    min-w-[18px] h-[18px] rounded-full
+                    text-[10px] font-bold leading-none px-1
+                    ${filtersOpen
+                      ? 'bg-white text-accent'
+                      : 'bg-accent text-white'
+                    }
+                  `.replace(/\s+/g, ' ').trim()}
+                >
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Collapsible filter area */}
+        {hasExtraFilters && filtersOpen && (
+          <div className="grid grid-cols-1 gap-2 pt-1 border-t border-border mt-1">
+            {filterChildren}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -60,7 +127,7 @@ export const FilterInput: React.FC<FilterInputProps> = ({
 }) => {
   return (
     <div className={`flex flex-col ${grow ? 'flex-1' : ''}`}>
-      <label className="block text-[var(--app-filter-label-size)] font-bold text-text-light uppercase tracking-[0.1em] mb-1.5">
+      <label className="block text-[var(--app-filter-label-size)] font-bold text-text-light mb-1.5">
         {label}
       </label>
       {children}

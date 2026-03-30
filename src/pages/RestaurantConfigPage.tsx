@@ -434,6 +434,10 @@ export const RestaurantConfigPage: React.FC = () => {
                         header={null}
                     >
                         <Card style={{ ...glassCardStyle, padding: '32px', minHeight: '100%' }}>
+                            {/* Grupo 1: Identidad */}
+                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Identidad
+                            </h4>
                             <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
                                 <Input
                                     label="Nombre Comercial del Grupo"
@@ -457,6 +461,16 @@ export const RestaurantConfigPage: React.FC = () => {
                                     placeholder="Ej: B12345678"
                                     disabled={!isEditingGroup}
                                 />
+                            </div>
+
+                            {/* Separador */}
+                            <div style={{ borderBottom: '1px solid var(--border)', margin: '24px 0' }} />
+
+                            {/* Grupo 2: Contacto */}
+                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Contacto
+                            </h4>
+                            <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
                                 <Input
                                     label="Sede Central (Dirección)"
                                     value={companyFormData.direccion || ''}
@@ -502,8 +516,14 @@ export const RestaurantConfigPage: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Notas */}
-                            <div style={{ marginTop: '24px' }}>
+                            {/* Separador */}
+                            <div style={{ borderBottom: '1px solid var(--border)', margin: '24px 0' }} />
+
+                            {/* Grupo 3: Notas */}
+                            <h4 style={{ margin: '0 0 16px 0', fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Notas
+                            </h4>
+                            <div>
                                 <label style={{ display: 'block', fontSize: 'var(--font-size-sm)', fontWeight: 500, marginBottom: '8px', color: 'var(--text-main)' }}>
                                     <FileText size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                                     Notas / Observaciones

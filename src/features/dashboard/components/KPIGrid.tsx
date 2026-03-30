@@ -34,11 +34,7 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ kpis, period }) => {
 
     return (
         <ErrorBoundary>
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: 'var(--spacing-md)',
-            }}>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {/* Ventas - Always visible (dashboard.view) */}
                 <KPICard
                     title={`Ventas ${period === 'day' ? 'Hoy' : 'Período'}`}
@@ -82,21 +78,19 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ kpis, period }) => {
                 {/* Flash Cost - Requires escandallos.view */}
                 {canViewEscandallos && (
                     <Card clickable>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div className="flex justify-between items-start p-0">
                             <div>
-                                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-xs)' }}>
+                                <div className="text-xs md:text-sm" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-xs)' }}>
                                     Flash Cost
                                 </div>
-                                <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>
+                                <div className="text-lg md:text-2xl" style={{ fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>
                                     {formatCurrency(kpis.costeReal)}
                                 </div>
                                 <div style={{ fontSize: 'var(--font-size-xs)', color: kpis.diferenciaCoste >= 0 ? 'var(--danger)' : 'var(--success)' }}>
                                     {kpis.diferenciaCoste >= 0 ? '+' : ''}{formatCurrency(kpis.diferenciaCoste)} vs teórico
                                 </div>
                             </div>
-                            <div style={{
-                                width: '48px',
-                                height: '48px',
+                            <div className="w-9 h-9 md:w-12 md:h-12 flex-shrink-0" style={{
                                 borderRadius: 'var(--radius)',
                                 backgroundColor: kpis.diferenciaCoste >= 0 ? 'var(--danger-bg)' : 'var(--success-bg)',
                                 display: 'flex',
@@ -113,21 +107,19 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ kpis, period }) => {
                 {/* EBITDA - Requires pnl.view */}
                 {canViewPnL && (
                     <Card clickable>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div className="flex justify-between items-start p-0">
                             <div>
-                                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-xs)' }}>
+                                <div className="text-xs md:text-sm" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-xs)' }}>
                                     Proyección EBITDA
                                 </div>
-                                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: '700', color: kpis.proyeccionEBITDA >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                <div className="text-lg md:text-2xl" style={{ fontWeight: '700', color: kpis.proyeccionEBITDA >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                                     {formatCurrency(kpis.proyeccionEBITDA)}
                                 </div>
                                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
                                     Food Cost: {(kpis.foodCostPct || 0).toFixed(1)}%
                                 </div>
                             </div>
-                            <div style={{
-                                width: '48px',
-                                height: '48px',
+                            <div className="w-9 h-9 md:w-12 md:h-12 flex-shrink-0" style={{
                                 borderRadius: 'var(--radius)',
                                 backgroundColor: kpis.proyeccionEBITDA >= 0 ? 'var(--success-bg)' : 'var(--danger-bg)',
                                 display: 'flex',
@@ -164,18 +156,16 @@ interface KPICardProps {
 
 const KPICard: React.FC<KPICardProps> = ({ title, value, icon, color, bgColor }) => (
     <Card clickable>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="flex justify-between items-start p-0">
             <div>
-                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-xs)' }}>
+                <div className="text-xs md:text-sm" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-xs)' }}>
                     {title}
                 </div>
-                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: '700', color: 'var(--text-main)' }}>
+                <div className="text-lg md:text-2xl" style={{ fontWeight: '700', color: 'var(--text-main)' }}>
                     {value}
                 </div>
             </div>
-            <div style={{
-                width: '48px',
-                height: '48px',
+            <div className="w-9 h-9 md:w-12 md:h-12 flex-shrink-0" style={{
                 borderRadius: 'var(--radius)',
                 backgroundColor: bgColor,
                 display: 'flex',

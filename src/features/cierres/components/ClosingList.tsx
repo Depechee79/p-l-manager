@@ -16,6 +16,7 @@ import {
   Coins,
   Share2,
   Wallet,
+  Plus,
 } from 'lucide-react';
 import {
   Button,
@@ -34,6 +35,7 @@ interface ClosingListProps {
   onFilterChange: (period: string) => void;
   onEditClosing: (cierre: Cierre) => void;
   onDeleteClosing: (cierre: Cierre) => void;
+  onNewClosing?: () => void;
 }
 
 export const ClosingList: FC<ClosingListProps> = ({
@@ -43,6 +45,7 @@ export const ClosingList: FC<ClosingListProps> = ({
   onFilterChange,
   onEditClosing,
   onDeleteClosing,
+  onNewClosing,
 }) => {
   const handleShare = (cierre: Cierre) => {
     const text = `📊 Resumen Cierre - ${formatDate(cierre.fecha)} (${cierre.turno.toUpperCase()})
@@ -96,6 +99,11 @@ Sent from P&L Manager`;
           emptyTitle="No hay cierres registrados"
           emptyDescription="Crea un nuevo cierre para comenzar a registrar la caja."
           emptyIcon={<Wallet size={32} color="var(--text-light)" strokeWidth={1.5} />}
+          emptyAction={onNewClosing ? (
+            <Button variant="primary" icon={<Plus size={16} />} onClick={onNewClosing}>
+              Nuevo Cierre
+            </Button>
+          ) : undefined}
         />
       ) : (
         <DataCard

@@ -417,15 +417,15 @@ export const PnLPage: React.FC = () => {
             actions={activeTab === 'resultados' ? (
               <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
                 <Button variant="secondary" icon={<Plus size={16} />} onClick={() => setIsManualModalOpen(true)}>
-                  Ajuste Manual
+                  <span className="hidden md:inline">Ajuste Manual</span>
                 </Button>
                 {pnlData && (
                   <Button variant="secondary" icon={<Download size={16} />} onClick={handleExport}>
-                    Exportar
+                    <span className="hidden md:inline">Exportar</span>
                   </Button>
                 )}
                 <Button variant="primary" icon={<Calendar size={16} />} onClick={handleCalculate}>
-                  Actualizar
+                  <span className="hidden md:inline">Actualizar</span>
                 </Button>
               </div>
             ) : undefined}
@@ -490,12 +490,7 @@ export const PnLPage: React.FC = () => {
       </Modal>
 
       {/* Period Selectors - Using shared Select component (R-13) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: 'var(--spacing-md)',
-        marginBottom: 'var(--spacing-lg)',
-      }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-6">
         <Select
           label="Modo de Visualización"
           value={viewType}

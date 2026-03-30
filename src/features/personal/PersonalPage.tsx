@@ -25,7 +25,7 @@ import {
     Palmtree,
     Receipt
 } from 'lucide-react';
-import { Button, Input, Select, Table, Card, FormSection, PageContainer, PageLayout, ActionHeader, FilterCard, FilterInput, FilterTextInput, type Tab } from '@shared/components';
+import { Button, Input, Select, Table, Card, FormSection, PageContainer, PageLayout, ActionHeader, FilterCard, FilterInput, FilterTextInput, DataCard, type Tab } from '@shared/components';
 import { useWorkers } from './hooks/useWorkers';
 import { HorariosPage } from './components/HorariosPage';
 import { FichajesPage } from './components/FichajesPage';
@@ -382,6 +382,23 @@ export const PersonalPage: React.FC = () => {
                             </FilterInput>
                         </FilterCard>
 
+                        {filteredWorkers.length === 0 ? (
+                            <div style={{ marginTop: 'var(--spacing-md)' }}>
+                                <DataCard
+                                    isEmpty
+                                    emptyTitle={searchQuery.trim() ? 'Sin resultados' : 'No hay personal registrado'}
+                                    emptyDescription={searchQuery.trim()
+                                        ? 'No se encontraron personas con los filtros aplicados.'
+                                        : 'Añade tu primer empleado para gestionar la plantilla del restaurante.'}
+                                    emptyIcon={<Users size={32} color="var(--text-light)" strokeWidth={1.5} />}
+                                    emptyAction={!searchQuery.trim() ? (
+                                        <Button variant="primary" icon={<Plus size={16} />} onClick={handleOpenForm}>
+                                            Añadir Persona
+                                        </Button>
+                                    ) : undefined}
+                                />
+                            </div>
+                        ) : (
                         <Card style={{ padding: 0, overflow: 'hidden', marginTop: 'var(--spacing-md)' }}>
                             <Table
                                 data={filteredWorkers}
@@ -470,6 +487,7 @@ export const PersonalPage: React.FC = () => {
                                 hoverable
                             />
                         </Card>
+                        )}
                     </>
                 )}
 

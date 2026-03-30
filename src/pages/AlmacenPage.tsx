@@ -86,7 +86,7 @@ export const AlmacenPage: React.FC = () => {
       case 'existencias':
         return (
           <>
-            <Button variant="primary" icon={<Plus size={16} />}>
+            <Button variant="primary" icon={<Plus size={16} />} className="w-full md:w-auto">
               Nuevo Producto
             </Button>
             <Button variant="secondary" icon={<Download size={16} />} iconOnly />
@@ -225,7 +225,14 @@ const ExistenciasTab: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
       {/* Filters */}
-      <FilterCard columns={4}>
+      <FilterCard
+        columns={4}
+        activeFilterCount={
+          (familiaFilter !== 'all' ? 1 : 0) +
+          (seccionFilter !== 'all' ? 1 : 0) +
+          (proveedorFilter !== 'all' ? 1 : 0)
+        }
+      >
           <FilterInput label="Buscar" grow>
             <FilterTextInput
               value={searchQuery}
@@ -273,7 +280,11 @@ const ExistenciasTab: React.FC = () => {
             <Button variant="ghost" icon={<RefreshCw size={14} />} onClick={clearFilters}>
               Limpiar filtros
             </Button>
-          ) : undefined
+          ) : (
+            <Button variant="primary" icon={<Plus size={16} />}>
+              Nuevo Producto
+            </Button>
+          )
         }
         noPadding
       >

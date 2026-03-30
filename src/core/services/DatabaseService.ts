@@ -201,12 +201,15 @@ export class DatabaseService implements Collections {
    * Sync specific critical collections needed for app startup
    */
   private async syncCriticalData(): Promise<void> {
+    // Only shared/global collections here. Restaurant-filtered collections
+    // (like gastosFijos) must NOT be loaded at startup because Firestore rules
+    // require restaurantId ownership checks, which fail before user profile is
+    // resolved. They are loaded on-demand via ensureLoaded() in each page.
     const criticalCollections: CollectionName[] = [
       'companies',
       'restaurants',
       'roles',
       'usuarios',
-      'gastosFijos'
     ];
 
     logger.info('🚀 [STARTUP] Loading critical configuration...');

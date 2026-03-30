@@ -67,7 +67,7 @@ export const LoginPage: React.FC = () => {
                         width: '64px',
                         height: '64px',
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
+                        background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

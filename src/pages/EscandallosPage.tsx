@@ -49,7 +49,7 @@ export const EscandallosPage: React.FC = () => {
   // Estado de la lista (READ from DB)
   const escandallos = (db.escandallos || []) as Escandallo[];
   const [searchQuery, setSearchQuery] = useState('');
-  const [monthFilter, setMonthFilter] = useState('');
+  const [monthFilter, setMonthFilter] = useState(new Date().toISOString().substring(0, 7));
 
   // Estado de navegacion / edicion
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
@@ -173,7 +173,7 @@ export const EscandallosPage: React.FC = () => {
             activeTab={activeTab}
             onTabChange={(id) => handleTabChange(id as TabId)}
             actions={activeTab === 'recetas' ? (
-              <Button variant="primary" icon={<Plus size={16} />} onClick={() => handleOpenForm()}>
+              <Button variant="primary" icon={<Plus size={16} />} onClick={() => handleOpenForm()} className="w-full md:w-auto">
                 Nuevo Escandallo
               </Button>
             ) : undefined}
@@ -185,6 +185,7 @@ export const EscandallosPage: React.FC = () => {
             escandallos={filteredEscandallos}
             loading={loading}
             onEdit={handleOpenForm}
+            onNew={() => handleOpenForm()}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             monthFilter={monthFilter}
