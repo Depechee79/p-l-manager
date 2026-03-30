@@ -24,7 +24,7 @@
   --app-sidebar-z: 40;
 
   /* Main Content */
-  --app-content-pad: 24px;
+  --app-content-pad: 16px;
   --app-content-pad-lg: 32px;
 
   /* Interactive Elements (tabs, nav items, buttons) - Unified with inputs */

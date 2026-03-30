@@ -33,8 +33,10 @@ export const PageContainer: React.FC<PageContainerProps> = ({
             ...(maxWidth ? { maxWidth, margin: '0 auto' } : {}),
             width: '100%',
             height: '100%',
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
+            overflow: 'hidden',
             ...style,
         }}>
             {children}

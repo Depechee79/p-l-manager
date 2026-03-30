@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, ReactNode } from 'react';
+import { InputHTMLAttributes, ReactNode, FocusEvent, useCallback } from 'react';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { generateId } from '../utils';
 import { ComponentBaseProps } from '../types';
@@ -25,9 +25,17 @@ export function Input({
   iconPosition = 'right',
   success = false,
   style,
+  onFocus,
   ...props
 }: InputProps) {
   const inputId = id || generateId('input');
+
+  const handleFocus = useCallback((e: FocusEvent<HTMLInputElement>) => {
+    if (props.type === 'number' && e.target.value === '0') {
+      e.target.select();
+    }
+    onFocus?.(e);
+  }, [props.type, onFocus]);
 
   const containerClasses = [
     'input-container',
@@ -61,6 +69,7 @@ export function Input({
           className={inputClasses}
           required={required}
           style={style}
+          onFocus={handleFocus}
           {...props}
         />
         {icon && iconPosition === 'left' && (

@@ -88,10 +88,12 @@ export const AppShellV2: React.FC<AppShellV2Props> = ({ children, user, onLogout
           style={{
             width: '100%',
             height: '100%',
+            minHeight: 0,
             maxWidth: 'var(--content-max-width-xl)',
-            margin: '0 auto', // Centrar contenido en pantallas anchas
+            margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
           {children}
