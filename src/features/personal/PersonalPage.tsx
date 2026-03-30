@@ -25,7 +25,7 @@ import {
     Palmtree,
     Receipt
 } from 'lucide-react';
-import { Button, Input, Select, Table, Card, FormSection, PageContainer, PageLayout, ActionHeader, FilterCard, FilterInput, FilterTextInput, DataCard, type Tab } from '@shared/components';
+import { Button, Input, Select, Table, Card, FormSection, PageContainer, PageLayout, ActionHeader, FilterCard, FilterInput, FilterTextInput, DataCard, ConfirmDialog, type Tab } from '@shared/components';
 import { useWorkers } from './hooks/useWorkers';
 import { HorariosPage } from './components/HorariosPage';
 import { FichajesPage } from './components/FichajesPage';
@@ -63,6 +63,10 @@ export const PersonalPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
     const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Confirm dialog state for delete worker
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [pendingDeleteWorker, setPendingDeleteWorker] = useState<Worker | null>(null);
 
     const [formData, setFormData] = useState<{
         nombre: string;
@@ -475,9 +479,8 @@ export const PersonalPage: React.FC = () => {
                                             <div style={{ display: 'flex', gap: '8px' }}>
                                                 <Button variant="secondary" size="sm" onClick={() => handleEdit(w)}><Edit size={14} /></Button>
                                                 <Button variant="danger" size="sm" onClick={() => {
-                                                    if (confirm('¿Eliminar ficha de personal?')) {
-                                                        // Logic
-                                                    }
+                                                    setPendingDeleteWorker(w);
+                                                    setShowDeleteConfirm(true);
                                                 }}><Trash2 size={14} /></Button>
                                             </div>
                                         )
@@ -551,6 +554,20 @@ export const PersonalPage: React.FC = () => {
 
                 {activeTab === 'nominas' && <NominasTab />}
             </PageLayout>
+
+            {/* Confirm Dialog for delete worker */}
+            <ConfirmDialog
+                open={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={() => {
+                    // Logic for delete worker (placeholder - no existing logic)
+                    setShowDeleteConfirm(false);
+                }}
+                title="Eliminar ficha de personal"
+                description={`¿Eliminar ficha de ${pendingDeleteWorker?.nombre ?? ''} ${pendingDeleteWorker?.apellidos ?? ''}?`}
+                variant="danger"
+                confirmLabel="Eliminar"
+            />
         </PageContainer>
     );
 };

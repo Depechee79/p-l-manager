@@ -63,6 +63,7 @@ export const TabsHorizontal: React.FC<TabsHorizontalProps> = ({
       <div
         ref={scrollRef}
         className="tabs-horizontal-container"
+        role="tablist"
         style={{
           backgroundColor: 'var(--background)',
           display: 'flex',
@@ -83,6 +84,11 @@ export const TabsHorizontal: React.FC<TabsHorizontalProps> = ({
           return (
             <button
               key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-disabled={isDisabled || undefined}
+              id={`tab-${tab.id}`}
               onClick={() => !isDisabled && onTabChange(tab.id)}
               disabled={isDisabled}
               className={`tab-horizontal-item ${isActive ? 'active' : ''}`}

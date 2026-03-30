@@ -41,7 +41,7 @@ describe('Modal', () => {
       </Modal>
     );
 
-    const closeButton = screen.getByRole('button', { name: /close/i });
+    const closeButton = screen.getByRole('button', { name: /cerrar/i });
     await user.click(closeButton);
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
@@ -128,6 +128,6 @@ describe('Modal', () => {
         Content
       </Modal>
     );
-    expect(screen.queryByRole('button', { name: /close/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cerrar/i })).not.toBeInTheDocument();
   });
 });

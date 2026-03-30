@@ -40,7 +40,24 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks(id: string) {
+          // React core — cached long-term, rarely changes
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router')) {
+            return 'vendor-react';
+          }
+          // Firebase — large SDK, cached separately
+          if (id.includes('node_modules/firebase/') || id.includes('node_modules/@firebase/')) {
+            return 'vendor-firebase';
+          }
+          // PDF.js — heavy, only used in OCR/docs
+          if (id.includes('node_modules/pdfjs-dist/')) {
+            return 'vendor-pdfjs';
+          }
+          // Lucide icons — tree-shaken but still significant
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'vendor-icons';
+          }
+        },
       },
     },
   },

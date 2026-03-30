@@ -5,7 +5,7 @@
  * - FilterCard for period filter
  * - DataCard for table and empty state
  */
-import type { FC, MouseEvent } from 'react';
+import { type FC, type MouseEvent, useState } from 'react';
 import {
   Pencil,
   Trash2,
@@ -24,6 +24,7 @@ import {
   FilterCard,
   FilterInput,
   DataCard,
+  ConfirmDialog,
 } from '@shared/components';
 import { formatCurrency, formatDate } from '@utils/formatters';
 import type { Cierre } from '@types';
@@ -47,7 +48,16 @@ export const ClosingList: FC<ClosingListProps> = ({
   onDeleteClosing,
   onNewClosing,
 }) => {
+  // Confirm dialog state for share
+  const [showShareConfirm, setShowShareConfirm] = useState(false);
+  const [pendingShareCierre, setPendingShareCierre] = useState<Cierre | null>(null);
+
   const handleShare = (cierre: Cierre) => {
+    setPendingShareCierre(cierre);
+    setShowShareConfirm(true);
+  };
+
+  const executeShare = (cierre: Cierre) => {
     const text = `📊 Resumen Cierre - ${formatDate(cierre.fecha)} (${cierre.turno.toUpperCase()})
 💰 Total Real: ${formatCurrency(cierre.totalReal)}
 💳 Tarjetas: ${formatCurrency(cierre.totalDatafonos)}
@@ -57,10 +67,7 @@ ${cierre.notasDescuadre ? `📝 Notas: ${cierre.notasDescuadre}` : ''}
 Sent from P&L Manager`;
 
     const encodedText = encodeURIComponent(text);
-
-    if (confirm(`¿Compartir resumen de ${cierre.fecha} por WhatsApp?`)) {
-      window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-    }
+    window.open(`https://wa.me/?text=${encodedText}`, '_blank');
   };
 
   // Initialize with current month if empty
@@ -232,6 +239,20 @@ Sent from P&L Manager`;
           />
         </DataCard>
       )}
+      {/* Confirm Dialog for share */}
+      <ConfirmDialog
+        open={showShareConfirm}
+        onClose={() => setShowShareConfirm(false)}
+        onConfirm={() => {
+          if (pendingShareCierre) {
+            executeShare(pendingShareCierre);
+          }
+          setShowShareConfirm(false);
+        }}
+        title="Compartir por WhatsApp"
+        description={`¿Compartir resumen de ${pendingShareCierre?.fecha ?? ''} por WhatsApp?`}
+        confirmLabel="Compartir"
+      />
     </div>
   );
 };

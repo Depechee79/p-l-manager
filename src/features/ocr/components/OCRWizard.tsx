@@ -526,7 +526,7 @@ export const OCRWizard: React.FC<OCRWizardProps> = ({
                                     <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-light)', marginBottom: 'var(--spacing-lg)' }}>Todos los datos parecen correctos.</p>
                                     <div style={{ display: 'flex', gap: 'var(--spacing-md)', justifyContent: 'center' }}>
                                         <Button variant="secondary" onClick={() => setStep(4)}><ArrowLeft size={16} /> Volver</Button>
-                                        <Button variant="primary" onClick={handleFinalSave}><CheckCircle size={16} /> Guadar Todo <ArrowRight size={16} /></Button>
+                                        <Button variant="primary" onClick={handleFinalSave}><CheckCircle size={16} /> Guardar Todo <ArrowRight size={16} /></Button>
                                     </div>
                                 </Card>
                             )}

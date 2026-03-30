@@ -41,7 +41,7 @@ export const LoginPage: React.FC = () => {
         }
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             handleLogin();
         }
@@ -103,7 +103,7 @@ export const LoginPage: React.FC = () => {
                             setEmail(e.target.value);
                             setError('');
                         }}
-                        onKeyPress={handleKeyPress}
+                        onKeyDown={handleKeyDown}
                         fullWidth
                         autoFocus
                     />
@@ -117,7 +117,7 @@ export const LoginPage: React.FC = () => {
                             setPassword(e.target.value);
                             setError('');
                         }}
-                        onKeyPress={handleKeyPress}
+                        onKeyDown={handleKeyDown}
                         fullWidth
                     />
                 </div>

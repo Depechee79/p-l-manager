@@ -16,7 +16,7 @@ describe('ClosingWizard Isolated Test', () => {
         expect(screen.getByText('Nuevo Cierre')).toBeInTheDocument();
         expect(screen.getByText('1. Información del Cierre')).toBeInTheDocument();
         expect(screen.getByLabelText(/Fecha/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Turno/i)).toBeInTheDocument();
+        expect(screen.getByText(/Turno/i)).toBeInTheDocument();
     });
 
     it('validates next button state based on inputs', async () => {

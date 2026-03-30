@@ -50,10 +50,8 @@ describe('Input', () => {
   it('should apply error styles when error exists', () => {
     render(<Input error="Error message" />);
     const input = screen.getByRole('textbox');
-    // Component uses inline styles for error, verify border contains danger color
-    const style = input.getAttribute('style') || '';
-    expect(style).toContain('border');
-    expect(style).toContain('var(--danger)');
+    // Component uses CSS class for error styling
+    expect(input).toHaveClass('input-field-error');
   });
 
   it('should render different input types', () => {

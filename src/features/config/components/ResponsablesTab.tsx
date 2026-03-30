@@ -11,7 +11,7 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 
-import { Card, Button, Table, Input, Select, Modal, FormSection, Badge, Checkbox } from '@shared/components';
+import { Card, Button, Table, Input, Select, Modal, FormSection, Badge, Checkbox, ConfirmDialog } from '@shared/components';
 import type { TableColumn } from '@shared/components';
 import { Mail, MessageCircle, Edit2, Plus, User2, Check, UserX, UserCheck, Copy, ArrowLeft } from 'lucide-react';
 import { useDatabase, useApp, useRestaurant, createInvitation } from '@core';
@@ -83,6 +83,10 @@ export const ResponsablesTab: React.FC = () => {
     const [inviteResult, setInviteResult] = useState<InviteResultState | null>(null);
 
     const [isSaving, setIsSaving] = useState(false);
+
+    // Confirm dialog state for toggle active
+    const [showToggleConfirm, setShowToggleConfirm] = useState(false);
+    const [pendingToggleUser, setPendingToggleUser] = useState<AppUser | null>(null);
 
     // Resolve the current authenticated user's full AppUser from the database
     const currentAppUser = useMemo((): AppUser | null => {
@@ -170,9 +174,12 @@ export const ResponsablesTab: React.FC = () => {
     };
 
     // AUDIT-1: Handle User Deactivation/Activation
-    const handleToggleActive = async (targetUser: AppUser) => {
-        if (!confirm(`¿Estás seguro de que deseas ${targetUser.activo ? 'desactivar' : 'activar'} a este usuario?`)) return;
+    const handleRequestToggleActive = (targetUser: AppUser) => {
+        setPendingToggleUser(targetUser);
+        setShowToggleConfirm(true);
+    };
 
+    const handleToggleActive = async (targetUser: AppUser) => {
         try {
             await db.update<AppUser>('usuarios', String(targetUser.id), {
                 activo: !targetUser.activo,
@@ -358,7 +365,7 @@ export const ResponsablesTab: React.FC = () => {
                     <Button
                         variant="secondary"
                         icon={row.activo ? <UserX size={14} /> : <UserCheck size={14} />}
-                        onClick={() => handleToggleActive(row)}
+                        onClick={() => handleRequestToggleActive(row)}
                         title={row.activo ? 'Desactivar usuario' : 'Reactivar usuario'}
                     />
                 </div>
@@ -508,7 +515,7 @@ export const ResponsablesTab: React.FC = () => {
                                                 <Button
                                                     variant="secondary"
                                                     icon={row.activo ? <UserX size={14} /> : <UserCheck size={14} />}
-                                                    onClick={() => handleToggleActive(row)}
+                                                    onClick={() => handleRequestToggleActive(row)}
                                                     title={row.activo ? 'Desactivar' : 'Reactivar'}
                                                     style={{ minHeight: '44px', minWidth: '44px' }}
                                                 />
@@ -738,6 +745,22 @@ export const ResponsablesTab: React.FC = () => {
                     </div>
                 )}
             </Modal>
+
+            {/* Confirm Dialog for toggle active */}
+            <ConfirmDialog
+                open={showToggleConfirm}
+                onClose={() => setShowToggleConfirm(false)}
+                onConfirm={() => {
+                    if (pendingToggleUser) {
+                        handleToggleActive(pendingToggleUser);
+                    }
+                    setShowToggleConfirm(false);
+                }}
+                title={pendingToggleUser?.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                description={`¿Estás seguro de que deseas ${pendingToggleUser?.activo ? 'desactivar' : 'activar'} a este usuario?`}
+                variant="warning"
+                confirmLabel={pendingToggleUser?.activo ? 'Desactivar' : 'Activar'}
+            />
         </>
     );
 };

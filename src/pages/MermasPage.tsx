@@ -6,7 +6,7 @@ import {
   Edit,
   Save
 } from 'lucide-react';
-import { Button, Input, Select, Table, Card, FormSection, DatePicker } from '@shared/components';
+import { Button, Input, Select, Table, Card, FormSection, DatePicker, ConfirmDialog } from '@shared/components';
 import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useDatabase, useRestaurant } from '@core';
 import { useToast } from '../utils/toast';
@@ -22,6 +22,10 @@ export const MermasPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [editingMerma, setEditingMerma] = useState<Merma | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Confirm dialog state for delete
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pendingDeleteMerma, setPendingDeleteMerma] = useState<Merma | null>(null);
   const [formData, setFormData] = useState<{
     fecha: string;
     productoId: string;
@@ -176,22 +180,25 @@ export const MermasPage: React.FC = () => {
   };
 
   const handleDelete = (merma: Merma) => {
-    if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
-      try {
-        db.delete('mermas', merma.id);
-        showToast({
-          type: 'success',
-          title: 'Registro eliminado',
-          message: 'La merma ha sido eliminada correctamente'
-        });
-      } catch (error: unknown) {
-        logger.error('Error eliminando merma:', error instanceof Error ? error.message : String(error));
-        showToast({
-          type: 'error',
-          title: 'Error',
-          message: 'No se pudo eliminar el registro'
-        });
-      }
+    setPendingDeleteMerma(merma);
+    setShowDeleteConfirm(true);
+  };
+
+  const executeDeleteMerma = (merma: Merma) => {
+    try {
+      db.delete('mermas', merma.id);
+      showToast({
+        type: 'success',
+        title: 'Registro eliminado',
+        message: 'La merma ha sido eliminada correctamente'
+      });
+    } catch (error: unknown) {
+      logger.error('Error eliminando merma:', error instanceof Error ? error.message : String(error));
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'No se pudo eliminar el registro'
+      });
     }
   };
 
@@ -436,6 +443,22 @@ export const MermasPage: React.FC = () => {
           </div>
         </Card>
       )}
+
+      {/* Confirm Dialog for delete */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          if (pendingDeleteMerma) {
+            executeDeleteMerma(pendingDeleteMerma);
+          }
+          setShowDeleteConfirm(false);
+        }}
+        title="Eliminar registro de merma"
+        description="¿Estás seguro de que deseas eliminar este registro?"
+        variant="danger"
+        confirmLabel="Eliminar"
+      />
     </div>
   );
 };

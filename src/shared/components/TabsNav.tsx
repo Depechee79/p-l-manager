@@ -66,17 +66,18 @@ export const TabsNav: React.FC<TabsNavProps> = ({
       <div
         ref={scrollRef}
         className="tabs-nav-v2"
+        role="tablist"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '4px',
-          padding: '4px 4px 8px 4px', // Extra padding inferior para sombra
-          backgroundColor: 'rgba(241, 245, 249, 0.5)', // slate-100/50
+          padding: '4px 4px 8px 4px',
+          backgroundColor: 'rgba(241, 245, 249, 0.5)',
           borderRadius: 'var(--app-interactive-radius)',
           width: 'fit-content',
           maxWidth: '100%',
           overflowX: 'auto',
-          overflowY: 'visible', // Permitir que sombra se muestre
+          overflowY: 'visible',
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -92,6 +93,11 @@ export const TabsNav: React.FC<TabsNavProps> = ({
           return (
             <button
               key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-disabled={isDisabled || undefined}
+              id={`tab-${tab.id}`}
               onClick={() => !isDisabled && onTabChange(tab.id)}
               disabled={isDisabled}
               style={{

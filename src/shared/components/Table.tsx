@@ -21,7 +21,8 @@ export interface TableProps<T> {
   containerStyle?: React.CSSProperties;
 }
 
-export const Table = <T extends Record<string, any>>({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic table requires index access on arbitrary row types
+export function Table<T extends Record<string, any>>({
   columns,
   data,
   onRowClick,
@@ -32,7 +33,7 @@ export const Table = <T extends Record<string, any>>({
   emptyText = 'No hay datos disponibles',
   expandedRowRender,
   containerStyle,
-}: TableProps<T>) => {
+}: TableProps<T>) {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
 
@@ -116,11 +117,11 @@ export const Table = <T extends Record<string, any>>({
   const displayData = onSort ? data : sortedData;
 
   if (loading) {
-    return <div style={{ padding: 'var(--spacing-lg)', textAlign: 'center', color: 'var(--text-secondary)' }}>Cargando datos...</div>;
+    return <div className="p-8 text-center text-text-secondary">Cargando datos...</div>;
   }
 
   if (data.length === 0) {
-    return <div style={{ padding: 'var(--spacing-lg)', textAlign: 'center', color: 'var(--text-secondary)' }}>{emptyText}</div>;
+    return <div className="p-8 text-center text-text-secondary">{emptyText}</div>;
   }
 
   const tableClasses = [
@@ -133,7 +134,7 @@ export const Table = <T extends Record<string, any>>({
     <div className="w-full relative rounded-[var(--radius)] overflow-x-auto bg-surface border border-border" style={containerStyle}>
       <table className={tableClasses}>
         <thead>
-          <tr className="border-b border-border bg-surface text-text-secondary uppercase text-[10px] tracking-wider font-semibold">
+          <tr className="border-b border-border bg-surface text-text-secondary uppercase text-[length:var(--font-size-2xs)] tracking-wider font-semibold">
             {columns.map((column) => (
               <th
                 key={column.key}
@@ -166,7 +167,7 @@ export const Table = <T extends Record<string, any>>({
         </thead>
         <tbody className="divide-y divide-border">
           {displayData.map((row, index) => {
-            const rowId = row.id || index;
+            const rowId = (row.id as string | number) || index;
             const isExpanded = expandedRows.has(rowId);
 
             return (
@@ -177,7 +178,7 @@ export const Table = <T extends Record<string, any>>({
                 >
                   {columns.map((column) => (
                     <td key={`${rowId}-${column.key}`} className="p-3 text-text-main font-medium">
-                      {column.render ? column.render(row[column.key], row) : row[column.key]}
+                      {column.render ? column.render(row[column.key], row) : String(row[column.key] ?? '')}
                     </td>
                   ))}
                   {expandedRowRender && (
@@ -208,4 +209,4 @@ export const Table = <T extends Record<string, any>>({
       </table>
     </div>
   );
-};
+}

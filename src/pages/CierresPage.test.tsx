@@ -172,8 +172,8 @@ describe('CierresPage', () => {
     const fechaInput = screen.getByLabelText(/fecha/i);
     fireEvent.change(fechaInput, { target: { value: '2024-01-20' } });
 
-    const turnoSelect = screen.getByLabelText(/turno/i);
-    await user.selectOptions(turnoSelect, 'dia_completo');
+    // Turno uses a custom Select (button trigger), default is already 'dia_completo'
+    expect(screen.getByText(/Turno/i)).toBeInTheDocument();
 
     await user.click(screen.getByText('Siguiente'));
 

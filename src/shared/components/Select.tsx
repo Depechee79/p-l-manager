@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, SelectHTMLAttributes } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, SelectHTMLAttributes } from 'react';
+import { ChevronDown, Check } from 'lucide-react';
 import { ComponentBaseProps } from '../types';
 
 export interface SelectOption {
@@ -18,7 +18,7 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
   error?: string;
 }
 
-export const Select: React.FC<SelectProps> = ({
+export function Select({
   label,
   value,
   onChange,
@@ -32,19 +32,24 @@ export const Select: React.FC<SelectProps> = ({
   required = false,
   style,
   ...props
-}) => {
+}: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find(opt => opt.value === value);
+  const selectId = id || `select-${label?.replace(/\s+/g, '-').toLowerCase() || 'unnamed'}`;
+  const listboxId = `${selectId}-listbox`;
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    };
+    }
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
@@ -54,162 +59,204 @@ export const Select: React.FC<SelectProps> = ({
     };
   }, [isOpen]);
 
-  const handleSelect = (optionValue: string) => {
+  // Scroll highlighted option into view
+  useEffect(() => {
+    if (isOpen && highlightedIndex >= 0 && listRef.current) {
+      const option = listRef.current.children[highlightedIndex] as HTMLElement | undefined;
+      option?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightedIndex, isOpen]);
+
+  const handleSelect = useCallback((optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
-  };
+    triggerRef.current?.focus();
+  }, [onChange]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case 'Enter':
+      case ' ': {
+        e.preventDefault();
+        if (isOpen && highlightedIndex >= 0) {
+          handleSelect(options[highlightedIndex].value);
+        } else {
+          setIsOpen(true);
+          const currentIndex = options.findIndex(opt => opt.value === value);
+          setHighlightedIndex(currentIndex >= 0 ? currentIndex : 0);
+        }
+        break;
+      }
+      case 'ArrowDown': {
+        e.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          const currentIndex = options.findIndex(opt => opt.value === value);
+          setHighlightedIndex(currentIndex >= 0 ? currentIndex : 0);
+        } else {
+          setHighlightedIndex(prev => (prev + 1) % options.length);
+        }
+        break;
+      }
+      case 'ArrowUp': {
+        e.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          const currentIndex = options.findIndex(opt => opt.value === value);
+          setHighlightedIndex(currentIndex >= 0 ? currentIndex : options.length - 1);
+        } else {
+          setHighlightedIndex(prev => (prev - 1 + options.length) % options.length);
+        }
+        break;
+      }
+      case 'Escape': {
+        e.preventDefault();
+        setIsOpen(false);
+        triggerRef.current?.focus();
+        break;
+      }
+      case 'Home': {
+        if (isOpen) {
+          e.preventDefault();
+          setHighlightedIndex(0);
+        }
+        break;
+      }
+      case 'End': {
+        if (isOpen) {
+          e.preventDefault();
+          setHighlightedIndex(options.length - 1);
+        }
+        break;
+      }
+      case 'Tab': {
+        if (isOpen) {
+          setIsOpen(false);
+        }
+        break;
+      }
+    }
+  }, [isOpen, highlightedIndex, options, value, handleSelect]);
 
   const containerClasses = [
-    'select-container',
-    fullWidth ? 'select-full-width' : '',
-    className
+    'select-v2-container',
+    fullWidth ? 'select-v2-full-width' : '',
+    disabled ? 'select-v2-disabled' : '',
+    className,
+  ].filter(Boolean).join(' ');
+
+  const triggerClasses = [
+    'select-v2-trigger',
+    isOpen ? 'select-v2-open' : '',
+    error ? 'select-v2-error' : '',
+  ].filter(Boolean).join(' ');
+
+  const valueClasses = [
+    'select-v2-value',
+    !selectedOption ? 'select-v2-placeholder' : '',
+  ].filter(Boolean).join(' ');
+
+  const chevronClasses = [
+    'select-v2-chevron',
+    isOpen ? 'select-v2-chevron-open' : '',
   ].filter(Boolean).join(' ');
 
   return (
     <div
       className={containerClasses}
       ref={containerRef}
-      style={{
-        position: 'relative',
-        width: fullWidth ? '100%' : 'auto',
-        ...style
-      }}
+      style={style}
     >
       {label && (
-        <label className="input-label" htmlFor={id || `select-${label.replace(/\s+/g, '-').toLowerCase()}`}>
+        <label className="input-label" htmlFor={selectId}>
           {label}
-          {required && <span style={{ color: 'var(--danger)' }}> *</span>}
+          {required && <span className="input-required-mark"> *</span>}
         </label>
       )}
 
-      <div
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        style={{
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: error
-            ? 'var(--danger-bg)'
-            : 'var(--surface-muted)',
-          border: error
-            ? '1px solid var(--danger)'
-            : isOpen
-              ? '1px solid var(--accent)'
-              : 'none',
-          borderRadius: 'var(--app-interactive-radius)',
-          padding: '0 12px',
-          boxShadow: isOpen
-            ? '0 0 0 1px var(--accent), 0 0 0 3px rgba(225, 29, 72, 0.1)'
-            : 'none',
-          transition: 'all 0.15s ease',
-          height: 'var(--app-interactive-h)',
-          boxSizing: 'border-box',
-          opacity: disabled ? 0.6 : 1,
-        }}
-        onMouseEnter={(e) => {
-          if (!disabled && !isOpen && !error) {
-            e.currentTarget.style.borderColor = 'var(--border-focus)';
+      <button
+        ref={triggerRef}
+        type="button"
+        id={selectId}
+        className={triggerClasses}
+        onClick={() => {
+          if (!disabled) {
+            setIsOpen(!isOpen);
+            if (!isOpen) {
+              const currentIndex = options.findIndex(opt => opt.value === value);
+              setHighlightedIndex(currentIndex >= 0 ? currentIndex : 0);
+            }
           }
         }}
-        onMouseLeave={(e) => {
-          if (!isOpen && !error) {
-            e.currentTarget.style.borderColor = 'var(--border)';
-          }
-        }}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? listboxId : undefined}
+        aria-labelledby={label ? `${selectId}-label` : undefined}
       >
-        <span style={{
-          color: selectedOption ? 'var(--text-main)' : 'var(--text-light)',
-          fontSize: 'var(--font-size-base)',
-          flex: 1,
-          textAlign: 'left',
-          fontFamily: 'var(--font-body)',
-        }}>
+        <span className={valueClasses}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown
-          size={18}
-          color="var(--text-secondary)"
-          style={{
-            transform: isOpen ? 'rotate(180deg)' : 'none',
-            transition: 'transform 200ms ease',
-            flexShrink: 0,
-            marginLeft: 'var(--spacing-xs)',
-          }}
-        />
-      </div>
+        <ChevronDown size={18} className={chevronClasses} />
+      </button>
 
       {isOpen && !disabled && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          marginTop: '4px',
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-lg)',
-          zIndex: 1200,
-          maxHeight: '300px',
-          overflowY: 'auto',
-          padding: '4px',
-        }}>
-          {options.map((option) => (
-            <div
-              key={option.value}
-              onClick={() => handleSelect(option.value)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                color: option.value === value ? 'var(--accent)' : 'var(--text-main)',
-                background: option.value === value
-                  ? 'var(--surface-muted)'
-                  : 'transparent',
-                fontWeight: option.value === value ? '600' : '500',
-                fontSize: 'var(--app-filter-input-size)',
-                transition: 'background-color 0.15s',
-                marginBottom: '2px',
-              }}
-              onMouseEnter={(e) => {
-                if (option.value !== value) {
-                  e.currentTarget.style.background = 'var(--surface-muted)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (option.value !== value) {
-                  e.currentTarget.style.background = 'transparent';
-                }
-              }}
-            >
-              {option.label}
-            </div>
-          ))}
+        <div
+          ref={listRef}
+          className="select-v2-dropdown"
+          role="listbox"
+          id={listboxId}
+          aria-label={label || 'Opciones'}
+        >
+          {options.map((option, index) => {
+            const isSelected = option.value === value;
+            const isHighlighted = index === highlightedIndex;
+
+            const optionClasses = [
+              'select-v2-option',
+              isSelected ? 'select-v2-option-selected' : '',
+              isHighlighted ? 'select-v2-option-highlighted' : '',
+            ].filter(Boolean).join(' ');
+
+            return (
+              <div
+                key={option.value}
+                className={optionClasses}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => handleSelect(option.value)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+              >
+                <span className="select-v2-option-label">{option.label}</span>
+                {isSelected && (
+                  <Check size={16} className="select-v2-option-check" />
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
       {error && (
-        <span style={{
-          color: 'var(--danger)',
-          fontSize: 'var(--font-size-xs)',
-          marginTop: 'var(--spacing-xs)',
-          display: 'block'
-        }}>
-          {error}
-        </span>
+        <span className="select-v2-error-text">{error}</span>
       )}
-      {/* Hidden select for form integration if needed */}
+
+      {/* Hidden native select for form integration */}
       <select
-        id={id || `select-${label?.replace(/\s+/g, '-').toLowerCase()}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{ display: 'none' }}
         required={required}
         disabled={disabled}
+        tabIndex={-1}
+        aria-hidden="true"
         {...props}
       >
-        {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
       </select>
     </div>
   );
-};
+}

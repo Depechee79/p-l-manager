@@ -1,18 +1,37 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useApp, RestaurantProvider, AppProvider, DatabaseProvider, runMigrationIfNeeded } from '@core';
 import { ProtectedRoute } from '@components';
 import { AppShellV2 } from '@shared/components/layout';
 import { Skeleton, SkeletonKPIGrid } from '@shared/components/LoadingSkeleton';
-import { DashboardPage, AlmacenPage, CierresPage, OCRPage, PnLPage, EscandallosPage, PersonalPage, RestaurantConfigPage, LoginPage, SignUpPage, InvitationSignUpPage } from '@pages';
+import { LoginPage, SignUpPage, InvitationSignUpPage } from '@pages';
 import { useDatabase } from '@hooks';
 import { ToastProvider } from '@utils';
 import { logger } from '@core/services/LoggerService';
+
+// Lazy-loaded pages — code-split per route to reduce initial bundle
+const DashboardPage = lazy(() => import('@pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const AlmacenPage = lazy(() => import('@pages/AlmacenPage').then(m => ({ default: m.AlmacenPage })));
+const CierresPage = lazy(() => import('@pages/CierresPage').then(m => ({ default: m.CierresPage })));
+const OCRPage = lazy(() => import('@pages/OCRPage').then(m => ({ default: m.OCRPage })));
+const PnLPage = lazy(() => import('@pages/PnLPage').then(m => ({ default: m.PnLPage })));
+const EscandallosPage = lazy(() => import('@pages/EscandallosPage').then(m => ({ default: m.EscandallosPage })));
+const PersonalPage = lazy(() => import('@features/personal').then(m => ({ default: m.PersonalPage })));
+const RestaurantConfigPage = lazy(() => import('@pages/RestaurantConfigPage').then(m => ({ default: m.RestaurantConfigPage })));
 
 /**
  * AppShellV2 is now used for ALL routes (Canon Stitch design)
  * Session 006: Expanded from /almacen and /docs to all routes
  */
+
+// Route-level loading fallback for lazy-loaded pages
+const RouteFallback: React.FC = () => (
+  <div style={{ padding: 'var(--spacing-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)' }}>
+    <Skeleton height={32} width="30%" />
+    <SkeletonKPIGrid count={4} />
+    <Skeleton height={200} />
+  </div>
+);
 
 // App content with routing
 const AppContent: React.FC = () => {
@@ -94,14 +113,27 @@ const AppContent: React.FC = () => {
   return (
     <BrowserRouter>
       <AppShellV2 user={user} onLogout={logout}>
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
-          {/* Main routes - Session 004 reorganization */}
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/docs" element={<OCRPage />} />
-          <Route path="/cierres" element={<CierresPage />} />
-          <Route path="/escandallos" element={<EscandallosPage />} />
-          <Route path="/almacen" element={<AlmacenPage />} />
-          <Route path="/equipo" element={<PersonalPage />} />
+          {/* Main routes - All protected by permission checks */}
+          <Route path="/" element={
+            <ProtectedRoute element={<DashboardPage />} requiredPermissions={['dashboard.view']} />
+          } />
+          <Route path="/docs" element={
+            <ProtectedRoute element={<OCRPage />} requiredPermissions={['ocr.view']} />
+          } />
+          <Route path="/cierres" element={
+            <ProtectedRoute element={<CierresPage />} requiredPermissions={['cierres.view']} />
+          } />
+          <Route path="/escandallos" element={
+            <ProtectedRoute element={<EscandallosPage />} requiredPermissions={['escandallos.view']} />
+          } />
+          <Route path="/almacen" element={
+            <ProtectedRoute element={<AlmacenPage />} requiredPermissions={['almacen.view']} />
+          } />
+          <Route path="/equipo" element={
+            <ProtectedRoute element={<PersonalPage />} requiredPermissions={['personal.view']} />
+          } />
           {/* Protected routes - require specific permissions */}
           <Route
             path="/pnl"
@@ -137,6 +169,7 @@ const AppContent: React.FC = () => {
           <Route path="/usuarios" element={<Navigate to="/equipo" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </AppShellV2>
     </BrowserRouter>
   );

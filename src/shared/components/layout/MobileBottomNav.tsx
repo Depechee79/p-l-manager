@@ -87,7 +87,7 @@ export const MobileBottomNav: React.FC = () => {
                     role="menu"
                     style={{
                         position: 'fixed',
-                        bottom: '70px',
+                        bottom: 'calc(70px + env(safe-area-inset-bottom, 0px))',
                         right: '8px',
                         backgroundColor: 'var(--surface)',
                         borderRadius: 'var(--radius-lg)',
@@ -142,9 +142,10 @@ export const MobileBottomNav: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-around',
-                    padding: '8px 12px',
+                    padding: '8px 12px env(safe-area-inset-bottom, 0px)',
+                    paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
                     zIndex: 'var(--z-fixed)' as string,
-                    boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    boxShadow: 'var(--shadow)',
                 }}
             >
                 {/* Primary nav items */}

@@ -13,7 +13,7 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   success?: boolean;
 }
 
-export const Input = ({
+export function Input({
   label,
   error,
   helperText,
@@ -26,112 +26,66 @@ export const Input = ({
   success = false,
   style,
   ...props
-}: InputProps) => {
+}: InputProps) {
   const inputId = id || generateId('input');
-  const fullWidthClass = fullWidth ? 'input-full-width' : '';
 
-  const containerClasses = ['input-container', fullWidthClass, className]
+  const containerClasses = [
+    'input-container',
+    fullWidth ? 'input-full-width' : '',
+    className,
+  ]
     .filter(Boolean)
     .join(' ');
 
-  const inputStyle: React.CSSProperties = {
-    ...style,
-    paddingLeft: icon && iconPosition === 'left' ? '40px' : style?.paddingLeft || '12px',
-    paddingRight: icon && iconPosition === 'right' ? '40px' : style?.paddingRight || '12px',
-  };
+  const inputClasses = [
+    'input-field',
+    error ? 'input-field-error' : '',
+    success ? 'input-field-success' : '',
+    icon && iconPosition === 'left' ? 'input-has-icon-left' : '',
+    (icon && iconPosition === 'right') || error || success ? 'input-has-icon-right' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className={containerClasses} style={{ width: fullWidth ? '100%' : 'auto' }}>
+    <div className={containerClasses} style={fullWidth ? { width: '100%' } : undefined}>
       {label && (
-        <label
-          htmlFor={inputId}
-          className="input-label"
-        >
+        <label htmlFor={inputId} className="input-label">
           {label}
-          {required && <span style={{ color: 'var(--danger)' }}> *</span>}
+          {required && <span className="input-required-mark"> *</span>}
         </label>
       )}
-      <div style={{ position: 'relative' }}>
+      <div className="input-wrapper">
         <input
           id={inputId}
-          className="input-field"
+          className={inputClasses}
           required={required}
-          style={{
-            ...inputStyle,
-            backgroundColor: error ? 'var(--danger-bg)' : success ? 'var(--success-bg)' : 'var(--surface-muted)',
-            border: error
-              ? '1px solid var(--danger)'
-              : success
-                ? '1px solid var(--success)'
-                : '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            color: 'var(--text-main)',
-            fontSize: 'var(--font-size-sm)', // 12px - Unified scale
-            fontFamily: 'var(--font-body)',
-            height: 'var(--height-input)',
-            boxSizing: 'border-box',
-            transition: 'all 200ms ease',
-          }}
+          style={style}
           {...props}
         />
         {icon && iconPosition === 'left' && (
-          <div
-            style={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              pointerEvents: 'none',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
+          <div className="input-icon input-icon-left">
             {icon}
           </div>
         )}
         {(icon && iconPosition === 'right') || error || success ? (
-          <div
-            style={{
-              position: 'absolute',
-              right: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
+          <div className="input-icon input-icon-right">
             {error ? (
               <AlertCircle size={18} color="var(--danger)" />
             ) : success ? (
               <CheckCircle size={18} color="var(--success)" />
             ) : icon ? (
-              <div style={{ color: 'var(--text-secondary)' }}>{icon}</div>
+              icon
             ) : null}
           </div>
         ) : null}
       </div>
       {error && (
-        <span style={{
-          fontSize: 'var(--font-size-xs)',
-          color: 'var(--danger)',
-          marginTop: 'var(--spacing-xs)',
-          display: 'block'
-        }}>
-          {error}
-        </span>
+        <span className="input-error-text">{error}</span>
       )}
       {!error && helperText && (
-        <span style={{
-          fontSize: 'var(--font-size-xs)',
-          color: 'var(--text-secondary)',
-          marginTop: 'var(--spacing-xs)',
-          display: 'block'
-        }}>
-          {helperText}
-        </span>
+        <span className="input-helper-text">{helperText}</span>
       )}
     </div>
   );
-};
+}

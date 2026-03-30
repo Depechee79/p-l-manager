@@ -241,45 +241,12 @@ export async function loginUser(email: string, password: string): Promise<LoginR
         let userDoc = await getDoc(doc(db, 'usuarios', firebaseUser.uid));
 
         if (!userDoc.exists()) {
-            logger.warn('User not found in Firestore, creating profile', { uid: firebaseUser.uid });
-
-            const tsNow = Timestamp.now();
-            const newUserProfile: Omit<AppUser, 'id'> = {
-                uid: firebaseUser.uid,
-                nombre: firebaseUser.displayName || email.split('@')[0],
-                email: email,
-                rolId: 'director_operaciones',
-                restaurantIds: [],
-                activo: true,
-                fechaCreacion: tsNow,
-                ultimoAcceso: tsNow,
-            };
-
-            await setDoc(doc(db, 'usuarios', firebaseUser.uid), newUserProfile);
-
-            const restaurantRef = doc(collection(db, 'restaurants'));
-            await setDoc(restaurantRef, {
-                companyId: '',
-                nombre: 'Mi Restaurante',
-                direccion: '',
-                codigo: generateRestaurantCode(),
-                activo: true,
-                configuracion: {
-                    zonaHoraria: 'Europe/Madrid',
-                    moneda: 'EUR',
-                    ivaRestaurante: 10,
-                    ivaTakeaway: 10,
-                },
-                trabajadores: [firebaseUser.uid],
-                createdAt: tsNow,
-                updatedAt: tsNow,
-            });
-
-            await updateDoc(doc(db, 'usuarios', firebaseUser.uid), {
-                restaurantIds: [restaurantRef.id],
-            });
-
-            userDoc = await getDoc(doc(db, 'usuarios', firebaseUser.uid));
+            // SECURITY: Do NOT auto-create profiles. Users must be invited or registered
+            // through the proper signup flow. An auth credential without a Firestore
+            // profile means the user was not onboarded correctly.
+            logger.warn('Login attempt without Firestore profile — access denied', { uid: firebaseUser.uid, email });
+            await signOut(auth);
+            return { success: false, error: 'Tu cuenta no tiene un perfil configurado. Contacta con tu administrador.' };
         }
 
         const userData = userDoc.data() as Omit<AppUser, 'id'>;

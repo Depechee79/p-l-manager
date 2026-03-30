@@ -14,7 +14,7 @@ import {
     Users,
     Check
 } from 'lucide-react';
-import { Button, Input, Select, Table, Card, FormSection, Badge } from '@shared/components';
+import { Button, Input, Select, Table, Card, FormSection, Badge, ConfirmDialog } from '@shared/components';
 import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useDatabase, useRestaurant } from '@core';
 import { logger } from '@core/services/LoggerService';
@@ -47,6 +47,10 @@ export const NominasPage: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterMes, setFilterMes] = useState<number>(new Date().getMonth() + 1);
     const [filterAnio, setFilterAnio] = useState<number>(new Date().getFullYear());
+
+    // Confirm dialog state for delete
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [pendingDeleteNomina, setPendingDeleteNomina] = useState<Nomina | null>(null);
 
     // AUDIT-FIX: Ensure data is loaded (R-14)
     React.useEffect(() => {
@@ -249,14 +253,17 @@ export const NominasPage: React.FC = () => {
 
     // Delete nomina
     const handleDelete = (nomina: Nomina) => {
-        if (confirm(`¿Eliminar nómina de ${nomina.workerNombre}?`)) {
-            try {
-                db.delete('nominas', nomina.id);
-                showToast({ type: 'success', title: 'Eliminada', message: 'La nómina ha sido eliminada' });
-            } catch (error: unknown) {
-                logger.error('Error deleting nomina', error);
-                showToast({ type: 'error', title: 'Error', message: 'No se pudo eliminar' });
-            }
+        setPendingDeleteNomina(nomina);
+        setShowDeleteConfirm(true);
+    };
+
+    const executeDeleteNomina = (nomina: Nomina) => {
+        try {
+            db.delete('nominas', nomina.id);
+            showToast({ type: 'success', title: 'Eliminada', message: 'La nómina ha sido eliminada' });
+        } catch (error: unknown) {
+            logger.error('Error deleting nomina', error);
+            showToast({ type: 'error', title: 'Error', message: 'No se pudo eliminar' });
         }
     };
 
@@ -650,6 +657,22 @@ export const NominasPage: React.FC = () => {
                     </div>
                 </Card>
             )}
+
+            {/* Confirm Dialog for delete */}
+            <ConfirmDialog
+                open={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={() => {
+                    if (pendingDeleteNomina) {
+                        executeDeleteNomina(pendingDeleteNomina);
+                    }
+                    setShowDeleteConfirm(false);
+                }}
+                title="Eliminar nomina"
+                description={`¿Eliminar nomina de ${pendingDeleteNomina?.workerNombre ?? ''}?`}
+                variant="danger"
+                confirmLabel="Eliminar"
+            />
         </div>
     );
 };

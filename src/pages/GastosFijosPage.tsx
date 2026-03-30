@@ -15,7 +15,7 @@ import {
     Save,
     Building2
 } from 'lucide-react';
-import { Button, Input, Select, Table, Card, FormSection, DatePicker } from '@shared/components';
+import { Button, Input, Select, Table, Card, FormSection, DatePicker, ConfirmDialog } from '@shared/components';
 import { formatDateOnly } from '@shared/utils/dateUtils';
 import { useDatabase, useRestaurant } from '@core';
 import { logger } from '@core/services/LoggerService';
@@ -55,6 +55,10 @@ export const GastosFijosPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
     const [editingGasto, setEditingGasto] = useState<GastoFijo | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Confirm dialog state for delete
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [pendingDeleteGasto, setPendingDeleteGasto] = useState<GastoFijo | null>(null);
 
     // Form state
     const [formData, setFormData] = useState<{
@@ -199,22 +203,25 @@ export const GastosFijosPage: React.FC = () => {
 
     // Delete gasto
     const handleDelete = (gasto: GastoFijo) => {
-        if (confirm(`¿Eliminar "${gasto.descripcion}"?`)) {
-            try {
-                db.delete('gastosFijos', gasto.id);
-                showToast({
-                    type: 'success',
-                    title: 'Gasto eliminado',
-                    message: 'El gasto fijo ha sido eliminado'
-                });
-            } catch (error: unknown) {
-                logger.error('Error deleting gasto fijo', error);
-                showToast({
-                    type: 'error',
-                    title: 'Error',
-                    message: 'No se pudo eliminar el gasto fijo'
-                });
-            }
+        setPendingDeleteGasto(gasto);
+        setShowDeleteConfirm(true);
+    };
+
+    const executeDeleteGasto = (gasto: GastoFijo) => {
+        try {
+            db.delete('gastosFijos', gasto.id);
+            showToast({
+                type: 'success',
+                title: 'Gasto eliminado',
+                message: 'El gasto fijo ha sido eliminado'
+            });
+        } catch (error: unknown) {
+            logger.error('Error deleting gasto fijo', error);
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: 'No se pudo eliminar el gasto fijo'
+            });
         }
     };
 
@@ -479,6 +486,22 @@ export const GastosFijosPage: React.FC = () => {
                     </div>
                 </Card>
             )}
+
+            {/* Confirm Dialog for delete */}
+            <ConfirmDialog
+                open={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={() => {
+                    if (pendingDeleteGasto) {
+                        executeDeleteGasto(pendingDeleteGasto);
+                    }
+                    setShowDeleteConfirm(false);
+                }}
+                title="Eliminar gasto fijo"
+                description={`¿Eliminar "${pendingDeleteGasto?.descripcion ?? ''}"?`}
+                variant="danger"
+                confirmLabel="Eliminar"
+            />
         </div>
     );
 };
