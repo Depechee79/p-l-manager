@@ -365,7 +365,6 @@ export const RestaurantConfigPage: React.FC = () => {
     return (
         <PageContainer>
             <PageLayout
-                disableScroll={true}
                 header={
                     <ActionHeader
                         tabs={CONFIG_TABS}

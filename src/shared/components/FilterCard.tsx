@@ -47,7 +47,7 @@ export const FilterCard: React.FC<FilterCardProps> = ({
   const hasExtraFilters = filterChildren.length > 0;
 
   return (
-    <div className={`bg-surface p-3 md:p-5 rounded-[var(--radius)] shadow-sm border border-border ${className}`}>
+    <div className={`bg-surface p-3 md:p-4 rounded-[var(--radius)] ${className}`}>
       {/* Desktop: full grid as before */}
       <div className={`hidden md:grid ${colsClass} gap-sm`}>
         {children}

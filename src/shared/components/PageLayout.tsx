@@ -47,23 +47,6 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
         {children}
       </div>
 
-      {/* Scrollbar styling (not achievable with Tailwind alone) */}
-      <style>{`
-        .page-layout-v2-content::-webkit-scrollbar {
-          width: 8px;
-        }
-        .page-layout-v2-content::-webkit-scrollbar-track {
-          background: var(--surface-muted);
-          border-radius: 4px;
-        }
-        .page-layout-v2-content::-webkit-scrollbar-thumb {
-          background: var(--border);
-          border-radius: 4px;
-        }
-        .page-layout-v2-content::-webkit-scrollbar-thumb:hover {
-          background: var(--border-focus);
-        }
-      `}</style>
     </div>
   );
 };

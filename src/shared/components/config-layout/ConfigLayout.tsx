@@ -21,11 +21,11 @@ interface ConfigDetailLayoutProps {
 export const ConfigListLayout: React.FC<ConfigListLayoutProps> = ({ header, children }) => {
     return (
         <div style={{
-            height: 'calc(100vh - 200px)', // Ajuste aproximado descontando header global + tabs
-            minHeight: '500px',
+            flex: '1 1 auto',
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: '24px',
+            gap: '16px',
             animation: 'fadeIn 0.3s ease'
         }}>
             {/* Header Fijo */}
@@ -40,9 +40,8 @@ export const ConfigListLayout: React.FC<ConfigListLayoutProps> = ({ header, chil
             {/* Cuerpo Scrollable */}
             <div style={{
                 flex: '1 1 auto',
+                minHeight: 0,
                 overflowY: 'auto',
-                paddingRight: '4px', // Evitar solapamiento scrollbar
-                // Scrollbar styling (opcional, nice to have)
                 scrollbarWidth: 'thin',
                 display: 'flex',
                 flexDirection: 'column'
@@ -60,16 +59,15 @@ export const ConfigListLayout: React.FC<ConfigListLayoutProps> = ({ header, chil
 export const ConfigDetailLayout: React.FC<ConfigDetailLayoutProps> = ({ header, children }) => {
     return (
         <div style={{
-            height: 'calc(100vh - 200px)',
-            minHeight: '500px',
+            flex: '1 1 auto',
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            // gap: '24px', // Gap controlado por children mejor
             animation: 'slideInRight 0.3s ease'
         }}>
             {/* Header Detalles Fijo */}
             {header && (
-                <div style={{ flex: '0 0 auto', marginBottom: '24px' }}>
+                <div style={{ flex: '0 0 auto', marginBottom: '16px' }}>
                     {header}
                 </div>
             )}
@@ -77,6 +75,7 @@ export const ConfigDetailLayout: React.FC<ConfigDetailLayoutProps> = ({ header, 
             {/* Form Scrollable */}
             <div style={{
                 flex: '1 1 auto',
+                minHeight: 0,
                 overflowY: 'auto',
                 scrollbarWidth: 'thin'
             }}>

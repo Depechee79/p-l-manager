@@ -63,7 +63,7 @@ export const DataCard: React.FC<DataCardProps> = ({
   };
 
   return (
-    <div className="bg-surface rounded-[var(--radius)] shadow-sm border border-border overflow-hidden flex flex-col">
+    <div className="bg-surface rounded-[var(--radius)] overflow-hidden flex flex-col">
       {/* KPI Header */}
       {kpis && kpis.length > 0 && (
         <div
@@ -88,8 +88,8 @@ export const DataCard: React.FC<DataCardProps> = ({
 
       {/* Content or Empty State */}
       {isEmpty ? (
-        <div className="py-20 px-5 flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mb-4">
+        <div className="py-10 px-4 flex flex-col items-center justify-center text-center">
+          <div className="w-12 h-12 bg-surface-muted rounded-full flex items-center justify-center mb-3">
             {emptyIcon || <Package size={32} color="var(--text-light)" strokeWidth={1.5} />}
           </div>
           <h3 className="text-lg font-bold text-text-main m-0">
