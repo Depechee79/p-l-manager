@@ -183,7 +183,7 @@ h6 {
 
 .card-footer {
   margin-top: var(--spacing-md);
-  padding-top: var(--spacing-sm);
+  padding-top: 16px;
   border-top: 1px solid var(--border);
 }
 
@@ -210,11 +210,11 @@ h6 {
 }
 
 .card-padding-small {
-  padding: var(--spacing-sm);
+  padding: 16px;
 }
 
 .card-padding-large {
-  padding: var(--spacing-lg);
+  padding: 24px;
 }
 
 /* Card padding responsive */
@@ -224,7 +224,7 @@ h6 {
 
 @media (max-width: 768px) {
   .card {
-    padding: var(--spacing-sm);
+    padding: 16px;
   }
 }
 
@@ -326,11 +326,11 @@ button {
   transition: all 0.2s ease;
   border-radius: var(--radius);
   border: 1px solid transparent;
-  padding: var(--spacing-xs) var(--spacing-md);
+  padding: 10px 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-xs);
+  gap: 8px;
 }
 
 button:active {
@@ -471,7 +471,7 @@ textarea {
   /* Filled style */
   border: 1px solid transparent;
   border-radius: var(--radius);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 10px 14px;
   font-size: var(--font-size-sm);
   /* 12px - Unified with filter inputs */
   color: var(--text-main);
@@ -495,7 +495,7 @@ textarea:focus {
   background-color: var(--surface-muted);
   border: 1px solid transparent;
   border-radius: var(--radius);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: 10px 14px;
   font-size: var(--font-size-base);
   color: var(--text-main);
   transition: all 0.2s ease;
@@ -995,7 +995,7 @@ input[type="time"]::-webkit-datetime-edit-minute-field {
 }
 
 .modal-body {
-  padding: var(--spacing-lg);
+  padding: 24px;
 }
 
 .modal-footer {
