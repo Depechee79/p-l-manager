@@ -36,7 +36,6 @@ export const PageContainer: React.FC<PageContainerProps> = ({
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
             ...style,
         }}>
             {children}

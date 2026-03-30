@@ -63,7 +63,7 @@ export const DataCard: React.FC<DataCardProps> = ({
   };
 
   return (
-    <div className="bg-surface rounded-[var(--radius)] overflow-hidden flex flex-col">
+    <div className="bg-surface rounded-[var(--radius)] border border-border overflow-hidden flex flex-col">
       {/* KPI Header */}
       {kpis && kpis.length > 0 && (
         <div

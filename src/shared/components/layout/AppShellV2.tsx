@@ -93,7 +93,6 @@ export const AppShellV2: React.FC<AppShellV2Props> = ({ children, user, onLogout
             margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
           }}
         >
           {children}
